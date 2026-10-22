@@ -1,0 +1,6 @@
+{
+  "name": "Ludo 3D",
+  "description": "Immersive 3D Ludo board game with realistic physics, Three.js graphics, fluid token animations, and responsive touch controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

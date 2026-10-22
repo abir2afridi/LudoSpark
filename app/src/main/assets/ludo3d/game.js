@@ -1,0 +1,983 @@
+/**
+ * Complete 3D Ludo Game Engine with Three.js, Cannon.js physics, authentic rules,
+ * fluid token hop animations, particle celebrations, smart AI bots, and Android bridge.
+ * 
+ * Camera is fixed and automatically fitted to the mobile screen so the table never
+ * shifts, drifts, or moves when the user touches the screen.
+ */
+class LudoGame {
+  constructor() {
+    this.container = document.getElementById('canvas-container');
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.builder = null;
+    this.physics = null;
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+
+    // Persisted settings (localStorage safe)
+    const ls = (typeof localStorage !== 'undefined') ? localStorage : null;
+    this.currentPreset = (ls && ls.getItem('ludoSpark.camera')) || 'top';
+    this.difficulty = (ls && ls.getItem('ludoSpark.difficulty')) || 'normal';
+
+    // Game Configuration
+    // Game Configuration (matches screenshot: P1 Blue BL, P2 Red TL, P3 Green TR, P4 Yellow BR)
+    this.playerConfigs = [
+      { id: 0, name: 'Player 1', color: '#2563EB', isAI: false, startTrack: 39 },
+      { id: 1, name: 'Player 2', color: '#E11D48', isAI: true, startTrack: 0 },
+      { id: 2, name: 'Player 3', color: '#16A34A', isAI: true, startTrack: 13 },
+      { id: 3, name: 'Player 4', color: '#EAB308', isAI: true, startTrack: 26 }
+    ];
+    this.numPlayers = 4;
+
+    // Game State
+    // Token: { id, player, step (0 = yard, 1 = start, 52..56 = home path, 57 = home), mesh, halo }
+    this.tokens = [];
+    this.activePlayerIndex = 0; // Player 1 (Human) starts
+    this.state = 'WAIT_ROLL';
+    this.currentRoll = 0;
+    this.consecutiveSixes = 0;
+    this.movableTokens = [];
+    this.turnHistory = [];
+    this.finishedPlayers = [];
+
+    // Track Coordinates (52 cells)
+    this.trackCells = this.generateTrackCells();
+    this.safeTrackIndices = [0, 8, 13, 21, 26, 34, 39, 47];
+
+    // Yard Nest coordinates matching 4 quadrants
+    this.yardPositions = [
+      // Player 1: Blue (bottom-left)
+      [{ r: 10.8, c: 1.8 }, { r: 10.8, c: 4.2 }, { r: 13.2, c: 1.8 }, { r: 13.2, c: 4.2 }],
+      // Player 2: Red (top-left)
+      [{ r: 1.8, c: 1.8 }, { r: 1.8, c: 4.2 }, { r: 4.2, c: 1.8 }, { r: 4.2, c: 4.2 }],
+      // Player 3: Green (top-right)
+      [{ r: 1.8, c: 10.8 }, { r: 1.8, c: 13.2 }, { r: 4.2, c: 10.8 }, { r: 4.2, c: 13.2 }],
+      // Player 4: Yellow (bottom-right)
+      [{ r: 10.8, c: 10.8 }, { r: 10.8, c: 13.2 }, { r: 13.2, c: 10.8 }, { r: 13.2, c: 13.2 }]
+    ];
+
+    // Home Corridor paths (5 cells each)
+    this.homePaths = [
+      // Player 1: Blue (col 7, rows 13..9)
+      [{ r: 13, c: 7 }, { r: 12, c: 7 }, { r: 11, c: 7 }, { r: 10, c: 7 }, { r: 9, c: 7 }],
+      // Player 2: Red (row 7, cols 1..5)
+      [{ r: 7, c: 1 }, { r: 7, c: 2 }, { r: 7, c: 3 }, { r: 7, c: 4 }, { r: 7, c: 5 }],
+      // Player 3: Green (col 7, rows 1..5)
+      [{ r: 1, c: 7 }, { r: 2, c: 7 }, { r: 3, c: 7 }, { r: 4, c: 7 }, { r: 5, c: 7 }],
+      // Player 4: Yellow (row 7, cols 13..9)
+      [{ r: 7, c: 13 }, { r: 7, c: 12 }, { r: 7, c: 11 }, { r: 7, c: 10 }, { r: 7, c: 9 }]
+    ];
+
+    // Center Home targets
+    this.homeGoals = [
+      { r: 7.8, c: 7 },   // Player 1 (Blue)
+      { r: 7, c: 6.2 },   // Player 2 (Red)
+      { r: 6.2, c: 7 },   // Player 3 (Green)
+      { r: 7, c: 7.8 }    // Player 4 (Yellow)
+    ];
+
+    // Particles
+    this.confettiParticles = [];
+
+    // Animation clocks
+    this.clock = new THREE.Clock();
+
+    this.initThree();
+    this.initBoard();
+    this.initTokens();
+    this.initTouch();
+    this.fitBoardToScreen();
+    this.notifyUI();
+  }
+
+  generateTrackCells() {
+    const cells = [];
+    // 0..4 (Red arm right)
+    for (let c = 1; c <= 5; c++) cells.push({ r: 6, c });
+    // 5..10 (Green arm up)
+    for (let r = 5; r >= 0; r--) cells.push({ r, c: 6 });
+    // 11 (Green top cross)
+    cells.push({ r: 0, c: 7 });
+    // 12..17 (Green arm down)
+    for (let r = 0; r <= 5; r++) cells.push({ r, c: 8 });
+    // 18..23 (Yellow arm right)
+    for (let c = 9; c <= 14; c++) cells.push({ r: 6, c });
+    // 24 (Yellow right cross)
+    cells.push({ r: 7, c: 14 });
+    // 25..30 (Yellow arm left)
+    for (let c = 14; c >= 9; c--) cells.push({ r: 8, c });
+    // 31..36 (Blue arm down)
+    for (let r = 9; r <= 14; r++) cells.push({ r, c: 8 });
+    // 37 (Blue bottom cross)
+    cells.push({ r: 14, c: 7 });
+    // 38..43 (Blue arm up)
+    for (let r = 14; r >= 9; r--) cells.push({ r, c: 6 });
+    // 44..49 (Red arm left)
+    for (let c = 5; c >= 0; c--) cells.push({ r: 8, c });
+    // 50 (Red left cross)
+    cells.push({ r: 7, c: 0 });
+    // 51 (Red arm entry)
+    cells.push({ r: 6, c: 0 });
+
+    return cells;
+  }
+
+  initThree() {
+    // Scene — transparent so the CSS starry gradient background shows through
+    this.scene = new THREE.Scene();
+    this.scene.background = null;
+
+    // Camera
+    const aspect = (this.container.clientWidth || window.innerWidth) / (this.container.clientHeight || window.innerHeight);
+    this.camera = new THREE.PerspectiveCamera(42, aspect, 0.1, 100);
+
+    // Renderer
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.setSize(this.container.clientWidth || window.innerWidth, this.container.clientHeight || window.innerHeight);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.container.appendChild(this.renderer.domElement);
+
+    // Lighting
+    const ambient = new THREE.AmbientLight(0xFFFFFF, 0.7);
+    this.scene.add(ambient);
+
+    const sun = new THREE.DirectionalLight(0xFFFBEB, 1.15);
+    sun.position.set(10, 26, 12);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 2048;
+    sun.shadow.mapSize.height = 2048;
+    sun.shadow.camera.near = 5;
+    sun.shadow.camera.far = 60;
+    sun.shadow.camera.left = -16;
+    sun.shadow.camera.right = 16;
+    sun.shadow.camera.top = 16;
+    sun.shadow.camera.bottom = -16;
+    sun.shadow.bias = -0.0005;
+    this.scene.add(sun);
+
+    // Soft rim blue light for 3D depth
+    const rimLight = new THREE.DirectionalLight(0x38BDF8, 0.45);
+    rimLight.position.set(-14, 12, -14);
+    this.scene.add(rimLight);
+
+    // Center focal point light for dice & board
+    this.spotLight = new THREE.PointLight(0xFDE047, 0.5, 18);
+    this.spotLight.position.set(0, 6, 0);
+    this.scene.add(this.spotLight);
+
+    // Resize listener
+    window.addEventListener('resize', () => this.onResize());
+
+    // Loop
+    this.animate = this.animate.bind(this);
+    requestAnimationFrame(this.animate);
+  }
+
+  /**
+   * Purely fits the 3D Ludo board inside the mobile screen bounds.
+   * Locked in place: the screen never moves or drifts when touched.
+   */
+  fitBoardToScreen() {
+    if (!this.container || !this.camera || !this.renderer) return;
+    const w = this.container.clientWidth || window.innerWidth;
+    const h = this.container.clientHeight || window.innerHeight;
+    if (w === 0 || h === 0) return;
+
+    const aspect = w / h;
+    this.camera.aspect = aspect;
+    this.camera.fov = 42;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h);
+
+    const boardExtent = 20.2; // total board width including trim and margin
+    const vFovRad = (this.camera.fov * Math.PI) / 180;
+    const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
+
+    // Ensure board fits horizontally within ~92% width, and vertically leaving margins for UI bars
+    const distW = (boardExtent / 2) / Math.tan(hFovRad / 2) / 0.92;
+    const distH = (boardExtent / 2) / Math.tan(vFovRad / 2) / 0.74;
+    const requiredDist = Math.max(distW, distH);
+
+    if (this.currentPreset === 'top') {
+      // Pure 2D Top-Down overhead view — perfectly straight, never skewed
+      this.camera.position.set(0, requiredDist, 0.0001);
+      this.camera.lookAt(0, 0, 0);
+    } else if (this.currentPreset === 'player') {
+      // Focus on active player quadrant
+      const angles = [Math.PI, -Math.PI / 2, 0, Math.PI / 2];
+      const angle = angles[this.activePlayerIndex] || 0;
+      const x = Math.sin(angle) * (requiredDist * 0.45);
+      const z = Math.cos(angle) * (requiredDist * 0.45);
+      this.camera.position.set(x, requiredDist * 0.88, z);
+      this.camera.lookAt(0, 0, 0.2);
+    } else {
+      // Default: Pure Screen Fit 3D
+      // Elevation angle 74 degrees provides gorgeous 3D token and dice perspective
+      // while keeping the entire board completely framed on mobile.
+      const angleRad = (74 * Math.PI) / 180;
+      const camY = requiredDist * Math.sin(angleRad);
+      const camZ = requiredDist * Math.cos(angleRad);
+      this.camera.position.set(0, camY, camZ);
+      this.camera.lookAt(0, 0, 0.35);
+    }
+  }
+
+  initBoard() {
+    this.builder = new LudoBoardBuilder();
+    this.builder.buildBoard(this.scene);
+
+    // Dice Physics & Mesh
+    this.physics = new DicePhysics(this.scene);
+    this.diceMesh = this.builder.createDiceMesh();
+    this.scene.add(this.diceMesh);
+    this.physics.setDiceMesh(this.diceMesh);
+  }
+
+  initTokens() {
+    // Clear old tokens
+    this.tokens.forEach(t => {
+      this.scene.remove(t.mesh);
+      this.scene.remove(t.halo);
+    });
+    this.tokens = [];
+
+    // Create 4 tokens for each active player
+    for (let p = 0; p < this.numPlayers; p++) {
+      const cfg = this.playerConfigs[p];
+      for (let i = 0; i < 4; i++) {
+        const mesh = this.builder.createTokenMesh(cfg.color, p, i);
+        this.scene.add(mesh);
+
+        // Highlight ring / beacon
+        const haloGeom = new THREE.RingGeometry(0.5, 0.75, 32);
+        const haloMat = new THREE.MeshBasicMaterial({
+          color: 0xFDE047,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.0
+        });
+        const halo = new THREE.Mesh(haloGeom, haloMat);
+        halo.rotation.x = -Math.PI / 2;
+        halo.position.y = 0.38;
+        this.scene.add(halo);
+
+        const token = {
+          id: `${p}_${i}`,
+          player: p,
+          tokenIndex: i,
+          step: 0, // In yard
+          mesh: mesh,
+          halo: halo,
+          isMoving: false
+        };
+
+        this.tokens.push(token);
+        this.updateTokenPosition(token, false);
+      }
+    }
+  }
+
+  /**
+   * Calculates 3D world coordinate for a token based on its step
+   */
+  getTokenWorldPos(token) {
+    const p = token.player;
+    if (token.step === 0) {
+      // In yard nest
+      const nest = this.yardPositions[p][token.tokenIndex];
+      const pos = this.builder.cellToWorld(nest.r, nest.c);
+      return new THREE.Vector3(pos.x, 0.36, pos.z);
+    } else if (token.step >= 1 && token.step <= 51) {
+      // Outer track
+      const startTrack = this.playerConfigs[p].startTrack;
+      const trackIdx = (startTrack + token.step - 1) % 52;
+      const cell = this.trackCells[trackIdx];
+      const pos = this.builder.cellToWorld(cell.r, cell.c);
+      return new THREE.Vector3(pos.x, 0.36, pos.z);
+    } else if (token.step >= 52 && token.step <= 56) {
+      // Private home corridor
+      const idx = token.step - 52;
+      const cell = this.homePaths[p][idx];
+      const pos = this.builder.cellToWorld(cell.r, cell.c);
+      return new THREE.Vector3(pos.x, 0.36, pos.z);
+    } else if (token.step >= 57) {
+      // Home goal quadrant
+      const goal = this.homeGoals[p];
+      const pos = this.builder.cellToWorld(goal.r, goal.c);
+      const angle = (token.tokenIndex / 4) * Math.PI * 2;
+      return new THREE.Vector3(pos.x + Math.cos(angle) * 0.3, 0.36, pos.z + Math.sin(angle) * 0.3);
+    }
+    return new THREE.Vector3(0, 0.36, 0);
+  }
+
+  updateTokenPosition(token, animate = false) {
+    const targetPos = this.getTokenWorldPos(token);
+    if (!animate) {
+      token.mesh.position.copy(targetPos);
+      token.halo.position.set(targetPos.x, 0.38, targetPos.z);
+    }
+    this.adjustOverlappingTokens();
+  }
+
+  adjustOverlappingTokens() {
+    const cellGroups = {};
+    this.tokens.forEach(t => {
+      if (t.step > 0 && t.step < 57 && !t.isMoving) {
+        let key = '';
+        if (t.step <= 51) {
+          const trackIdx = (this.playerConfigs[t.player].startTrack + t.step - 1) % 52;
+          key = `track_${trackIdx}`;
+        } else {
+          key = `home_${t.player}_${t.step}`;
+        }
+        if (!cellGroups[key]) cellGroups[key] = [];
+        cellGroups[key].push(t);
+      }
+    });
+
+    Object.values(cellGroups).forEach(group => {
+      if (group.length > 1) {
+        group.forEach((t, i) => {
+          const basePos = this.getTokenWorldPos(t);
+          const angle = (i / group.length) * Math.PI * 2;
+          const offsetRadius = 0.32;
+          t.mesh.position.x = basePos.x + Math.cos(angle) * offsetRadius;
+          t.mesh.position.z = basePos.z + Math.sin(angle) * offsetRadius;
+          t.halo.position.set(t.mesh.position.x, 0.38, t.mesh.position.z);
+        });
+      }
+    });
+  }
+
+  /**
+   * Touch interactions: Only interacts with 3D game elements (dice and tokens).
+   * The board and screen stay completely stationary and fixed.
+   */
+  initTouch() {
+    const handleTap = (clientX, clientY) => {
+      if (!this.renderer || !this.camera) return;
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+
+      // 1. Tapping dice to roll
+      if (this.state === 'WAIT_ROLL') {
+        const activeCfg = this.playerConfigs[this.activePlayerIndex];
+        if (!activeCfg.isAI) {
+          const intersects = this.raycaster.intersectObject(this.diceMesh);
+          if (intersects.length > 0) {
+            this.handleRoll();
+            return;
+          }
+        }
+      }
+      // 2. Tapping highlighted token to move
+      else if (this.state === 'WAIT_SELECT') {
+        const activeCfg = this.playerConfigs[this.activePlayerIndex];
+        if (!activeCfg.isAI) {
+          const candidateMeshes = this.movableTokens.map(t => t.mesh);
+          const intersects = this.raycaster.intersectObjects(candidateMeshes, true);
+          if (intersects.length > 0) {
+            let obj = intersects[0].object;
+            while (obj && !obj.userData.isToken) {
+              obj = obj.parent;
+            }
+            if (obj && obj.userData.isToken) {
+              const token = this.movableTokens.find(
+                t => t.player === obj.userData.playerId && t.tokenIndex === obj.userData.tokenIndex
+              );
+              if (token) {
+                this.handleTokenSelect(token);
+                return;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    const canvas = this.renderer.domElement;
+
+    // Use pointerdown to ensure fast, zero-delay touch response
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      handleTap(e.clientX, e.clientY);
+    }, { passive: false });
+
+    // Block any touch dragging or scrolling on the 3D canvas
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+  }
+
+  handleRoll() {
+    if (this.state !== 'WAIT_ROLL') return;
+    this.state = 'ROLLING';
+    this.clearHighlights();
+
+    // Fair dice roll 1..6
+    const rollValue = Math.floor(Math.random() * 6) + 1;
+    this.currentRoll = rollValue;
+
+    if (window.soundEngine) window.soundEngine.init();
+    if (window.AndroidBridge && window.AndroidBridge.vibrate) {
+      window.AndroidBridge.vibrate(40);
+    }
+
+    this.notifyUI();
+
+    // Toss dice with realistic Cannon.js rigid body physics
+    this.physics.roll(rollValue, (finalValue) => {
+      this.onDiceRollComplete(finalValue);
+    });
+  }
+
+  onDiceRollComplete(roll) {
+    this.currentRoll = roll;
+
+    // Check consecutive sixes
+    if (roll === 6) {
+      this.consecutiveSixes++;
+      if (this.consecutiveSixes >= 3) {
+        this.addHistory(`Rolled 3 consecutive 6s! Turn passed.`);
+        this.consecutiveSixes = 0;
+        this.state = 'WAIT_ROLL';
+        setTimeout(() => this.passTurn(), 900);
+        this.notifyUI();
+        this.saveGame();
+        return;
+      }
+    } else {
+      this.consecutiveSixes = 0;
+    }
+
+    // Determine legal moves
+    this.movableTokens = this.getMovableTokens(this.activePlayerIndex, roll);
+
+    if (this.movableTokens.length === 0) {
+      this.addHistory(`Rolled a ${roll}. No moves available.`);
+      this.state = 'WAIT_ROLL';
+      setTimeout(() => this.passTurn(), 900);
+    } else if (this.movableTokens.length === 1 && this.playerConfigs[this.activePlayerIndex].isAI) {
+      this.state = 'MOVING';
+      this.handleTokenSelect(this.movableTokens[0]);
+    } else {
+      this.state = 'WAIT_SELECT';
+      this.highlightMovableTokens();
+      if (this.playerConfigs[this.activePlayerIndex].isAI) {
+        setTimeout(() => {
+          const best = this.chooseAIBestToken(this.movableTokens, roll);
+          this.handleTokenSelect(best);
+        }, 700);
+      }
+    }
+
+    this.notifyUI();
+    this.saveGame();
+  }
+
+  getMovableTokens(playerId, roll) {
+    const playerTokens = this.tokens.filter(t => t.player === playerId);
+    const movable = [];
+
+    playerTokens.forEach(t => {
+      if (t.step === 0) {
+        if (roll === 6) movable.push(t);
+      } else if (t.step + roll <= 57) {
+        movable.push(t);
+      }
+    });
+
+    return movable;
+  }
+
+  highlightMovableTokens() {
+    this.clearHighlights();
+    this.movableTokens.forEach(t => {
+      t.halo.material.opacity = 0.85;
+    });
+  }
+
+  clearHighlights() {
+    this.tokens.forEach(t => {
+      t.halo.material.opacity = 0.0;
+    });
+  }
+
+  /**
+   * Returns true if any opponent token can capture the given track cell with a single roll (1..6).
+   */
+  isCellThreatened(trackIdx, playerId) {
+    if (this.safeTrackIndices.includes(trackIdx)) return false;
+    return this.tokens.some(other => {
+      if (other.player === playerId || other.step === 0 || other.step > 51) return false;
+      const otherTrackIdx = (this.playerConfigs[other.player].startTrack + other.step - 1) % 52;
+      const dist = ((trackIdx - otherTrackIdx) + 52) % 52;
+      return dist >= 1 && dist <= 6;
+    });
+  }
+
+  chooseAIBestToken(movableTokens, roll) {
+    // Easy: mostly random picks for a chill experience
+    if (this.difficulty === 'easy' && movableTokens.length > 1 && Math.random() < 0.35) {
+      return movableTokens[Math.floor(Math.random() * movableTokens.length)];
+    }
+
+    let bestToken = movableTokens[0];
+    let maxScore = -9999;
+
+    movableTokens.forEach(token => {
+      let score = 0;
+      const targetStep = token.step === 0 ? 1 : token.step + roll;
+
+      if (targetStep === 57) {
+        score += 1000;
+      } else if (token.step === 0) {
+        score += 400;
+      } else if (targetStep <= 51) {
+        const startTrack = this.playerConfigs[token.player].startTrack;
+        const targetTrackIdx = (startTrack + targetStep - 1) % 52;
+        if (!this.safeTrackIndices.includes(targetTrackIdx)) {
+          const opponentsOnTarget = this.tokens.filter(
+            other => other.player !== token.player &&
+            other.step > 0 && other.step <= 51 &&
+            (this.playerConfigs[other.player].startTrack + other.step - 1) % 52 === targetTrackIdx
+          );
+          if (opponentsOnTarget.length > 0) {
+            score += 800;
+          }
+        }
+      }
+
+      if (targetStep <= 51) {
+        const startTrack = this.playerConfigs[token.player].startTrack;
+        const targetTrackIdx = (startTrack + targetStep - 1) % 52;
+        if (this.safeTrackIndices.includes(targetTrackIdx)) {
+          score += 250;
+        } else if (this.difficulty !== 'easy' && this.isCellThreatened(targetTrackIdx, token.player)) {
+          // Threat avoidance — don't step into capture range if possible
+          score -= this.difficulty === 'hard' ? 500 : 200;
+        }
+      }
+
+      if (token.step <= 51 && targetStep > 51) {
+        score += 350;
+      }
+
+      // Hard: prefer advancing tokens that are already deep (get them home faster)
+      if (this.difficulty === 'hard' && token.step > 20) {
+        score += 60;
+      }
+
+      score += targetStep * 2;
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestToken = token;
+      }
+    });
+
+    return bestToken;
+  }
+
+  handleTokenSelect(token) {
+    if (this.state !== 'WAIT_SELECT' && this.state !== 'MOVING') return;
+    this.state = 'MOVING';
+    this.clearHighlights();
+
+    const startStep = token.step;
+    const targetStep = startStep === 0 ? 1 : startStep + this.currentRoll;
+    token.isMoving = true;
+
+    if (window.soundEngine) window.soundEngine.init();
+
+    const waypoints = [];
+    if (startStep === 0) {
+      waypoints.push(this.getTokenWorldPos({ ...token, step: 1 }));
+    } else {
+      for (let s = startStep + 1; s <= targetStep; s++) {
+        waypoints.push(this.getTokenWorldPos({ ...token, step: s }));
+      }
+    }
+
+    let waypointIdx = 0;
+    const hopDuration = 160;
+    let hopStartTime = performance.now();
+    let fromPos = token.mesh.position.clone();
+
+    const stepHop = () => {
+      if (waypointIdx >= waypoints.length) {
+        token.step = targetStep;
+        token.isMoving = false;
+        token.mesh.position.copy(waypoints[waypoints.length - 1]);
+        token.halo.position.set(token.mesh.position.x, 0.38, token.mesh.position.z);
+
+        this.onTokenMoveComplete(token);
+        return;
+      }
+
+      const toPos = waypoints[waypointIdx];
+      const elapsed = performance.now() - hopStartTime;
+      const t = Math.min(1.0, elapsed / hopDuration);
+
+      const hopHeight = 0.85;
+      const currentX = THREE.MathUtils.lerp(fromPos.x, toPos.x, t);
+      const currentZ = THREE.MathUtils.lerp(fromPos.z, toPos.z, t);
+      const currentY = fromPos.y + 4 * hopHeight * t * (1 - t);
+
+      token.mesh.position.set(currentX, currentY, currentZ);
+      token.halo.position.set(currentX, 0.38, currentZ);
+
+      if (t >= 1.0) {
+        if (window.soundEngine) {
+          window.soundEngine.playTokenHop(startStep + waypointIdx);
+        }
+        waypointIdx++;
+        fromPos = toPos.clone();
+        hopStartTime = performance.now();
+      }
+
+      requestAnimationFrame(stepHop);
+    };
+
+    requestAnimationFrame(stepHop);
+  }
+
+  onTokenMoveComplete(token) {
+    let awardedExtraTurn = false;
+    this.adjustOverlappingTokens();
+
+    if (token.step === 57) {
+      this.addHistory(`${this.playerConfigs[token.player].name} token reached HOME!`);
+      if (window.soundEngine) window.soundEngine.playTokenHome();
+      this.spawnConfetti(token.mesh.position);
+      awardedExtraTurn = true;
+
+      const allTokensHome = this.tokens
+        .filter(t => t.player === token.player)
+        .every(t => t.step === 57);
+
+      if (allTokensHome && !this.finishedPlayers.includes(token.player)) {
+        this.finishedPlayers.push(token.player);
+        const rank = this.finishedPlayers.length;
+        const rankSuffix = rank === 1 ? '1st' : rank === 2 ? '2nd' : rank === 3 ? '3rd' : '4th';
+        this.addHistory(`🎉 ${this.playerConfigs[token.player].name} finished in ${rankSuffix} place!`);
+        if (window.soundEngine) window.soundEngine.playVictory();
+        this.spawnConfetti({ x: 0, y: 5, z: 0 }, 150);
+
+        if (this.finishedPlayers.length >= this.numPlayers - 1) {
+          this.state = 'GAME_OVER';
+          this.notifyUI();
+          this.saveGame(); // clears save on GAME_OVER
+          return;
+        }
+      }
+    } else if (token.step <= 51) {
+      const startTrack = this.playerConfigs[token.player].startTrack;
+      const trackIdx = (startTrack + token.step - 1) % 52;
+
+      if (!this.safeTrackIndices.includes(trackIdx)) {
+        const opponents = this.tokens.filter(
+          other => other.player !== token.player &&
+          other.step > 0 && other.step <= 51 &&
+          (this.playerConfigs[other.player].startTrack + other.step - 1) % 52 === trackIdx
+        );
+
+        if (opponents.length > 0) {
+          opponents.forEach(opp => {
+            opp.step = 0;
+            this.updateTokenPosition(opp, false);
+            this.addHistory(`${this.playerConfigs[token.player].name} captured ${this.playerConfigs[opp.player].name}'s token!`);
+          });
+          if (window.soundEngine) window.soundEngine.playCapture();
+          if (window.AndroidBridge && window.AndroidBridge.vibrate) {
+            window.AndroidBridge.vibrate(80);
+          }
+          awardedExtraTurn = true;
+        }
+      } else {
+        if (window.soundEngine) window.soundEngine.playSafeSpot();
+      }
+    }
+
+    if (this.currentRoll === 6 || awardedExtraTurn) {
+      this.state = 'WAIT_ROLL';
+      this.addHistory(`${this.playerConfigs[token.player].name} earned a bonus roll!`);
+      this.notifyUI();
+      this.saveGame();
+      if (this.playerConfigs[this.activePlayerIndex].isAI) {
+        setTimeout(() => this.handleRoll(), 900);
+      }
+    } else {
+      this.passTurn();
+    }
+  }
+
+  passTurn() {
+    let nextPlayer = (this.activePlayerIndex + 1) % this.numPlayers;
+    let loops = 0;
+    while (this.finishedPlayers.includes(nextPlayer) && loops < this.numPlayers) {
+      nextPlayer = (nextPlayer + 1) % this.numPlayers;
+      loops++;
+    }
+
+    this.activePlayerIndex = nextPlayer;
+    this.consecutiveSixes = 0;
+    this.state = 'WAIT_ROLL';
+    this.movableTokens = [];
+    this.clearHighlights();
+    this.notifyUI();
+    this.saveGame();
+
+    if (this.playerConfigs[this.activePlayerIndex].isAI && this.state === 'WAIT_ROLL') {
+      setTimeout(() => this.handleRoll(), 800);
+    }
+  }
+
+  spawnConfetti(center, count = 60) {
+    const colors = [0xEF4444, 0x10B981, 0xF59E0B, 0x3B82F6, 0xEC4899, 0x8B5CF6];
+    for (let i = 0; i < count; i++) {
+      const geom = new THREE.PlaneGeometry(0.2, 0.2);
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const mat = new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
+      const mesh = new THREE.Mesh(geom, mat);
+
+      mesh.position.set(
+        center.x + (Math.random() - 0.5) * 1.5,
+        center.y + 0.5 + Math.random() * 2,
+        center.z + (Math.random() - 0.5) * 1.5
+      );
+
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+      this.scene.add(mesh);
+      this.confettiParticles.push({
+        mesh,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 5, 4 + Math.random() * 6, (Math.random() - 0.5) * 5),
+        rotVel: new THREE.Vector3(Math.random() * 8, Math.random() * 8, Math.random() * 8),
+        lifetime: 1.8,
+        age: 0
+      });
+    }
+  }
+
+  /**
+   * Set Camera Mode - smoothly transitions between locked viewpoints,
+   * always perfectly fitted to the mobile screen with 0% accidental screen dragging.
+   */
+  setCameraPreset(mode) {
+    this.currentPreset = mode;
+    this.fitBoardToScreen();
+  }
+
+  addHistory(msg) {
+    this.turnHistory.unshift(msg);
+    if (this.turnHistory.length > 20) this.turnHistory.pop();
+    this.notifyUI();
+  }
+
+  /**
+   * Per-player win progress: average steps taken toward 57, as 0..100
+   */
+  getPlayerProgress(playerId) {
+    const playerTokens = this.tokens.filter(t => t.player === playerId);
+    if (playerTokens.length === 0) return 0;
+    const total = playerTokens.reduce((sum, t) => sum + Math.min(t.step, 57), 0);
+    return Math.round((total / (playerTokens.length * 57)) * 100);
+  }
+
+  notifyUI() {
+    const activeCfg = this.playerConfigs[this.activePlayerIndex];
+    const data = {
+      activePlayer: {
+        id: activeCfg.id,
+        name: activeCfg.name,
+        color: activeCfg.color,
+        isAI: activeCfg.isAI
+      },
+      state: this.state,
+      currentRoll: this.currentRoll,
+      movableCount: this.movableTokens.length,
+      history: this.turnHistory.slice(0, 5),
+      finishedPlayers: this.finishedPlayers.map(p => this.playerConfigs[p].name),
+      isGameOver: this.state === 'GAME_OVER',
+      numPlayers: this.numPlayers,
+      playerProgress: this.playerConfigs.map((_, i) => this.getPlayerProgress(i))
+    };
+
+    if (window.onGameStateChanged) {
+      window.onGameStateChanged(data);
+    }
+    if (window.AndroidBridge && window.AndroidBridge.onGameStateUpdate) {
+      window.AndroidBridge.onGameStateUpdate(JSON.stringify(data));
+    }
+  }
+
+  newGame(numPlayers = 4, botCount = 3, difficulty = this.difficulty) {
+    this.numPlayers = numPlayers;
+    this.difficulty = difficulty;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ludoSpark.difficulty', difficulty);
+    }
+    for (let i = 0; i < 4; i++) {
+      this.playerConfigs[i].isAI = i > 0 && (i <= botCount);
+    }
+    this.activePlayerIndex = 0;
+    this.state = 'WAIT_ROLL';
+    this.currentRoll = 0;
+    this.consecutiveSixes = 0;
+    this.finishedPlayers = [];
+    this.turnHistory = [];
+    this.initTokens();
+    this.fitBoardToScreen();
+    this.addHistory(`New game started with ${numPlayers} players!`);
+    this.notifyUI();
+    this.saveGame();
+  }
+
+  // ---- Save / Resume (localStorage) ----
+
+  saveGame() {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      if (this.state === 'GAME_OVER') {
+        this.clearSave();
+        return;
+      }
+      const data = {
+        v: 1,
+        numPlayers: this.numPlayers,
+        isAI: this.playerConfigs.map(c => c.isAI),
+        difficulty: this.difficulty,
+        activePlayerIndex: this.activePlayerIndex,
+        state: this.state,
+        currentRoll: this.currentRoll,
+        consecutiveSixes: this.consecutiveSixes,
+        finishedPlayers: this.finishedPlayers,
+        tokenSteps: this.tokens.map(t => t.step)
+      };
+      localStorage.setItem('ludoSparkSave', JSON.stringify(data));
+    } catch (e) { /* storage unavailable — ignore */ }
+  }
+
+  loadSave() {
+    try {
+      if (typeof localStorage === 'undefined') return null;
+      const raw = localStorage.getItem('ludoSparkSave');
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !Array.isArray(data.tokenSteps) || data.tokenSteps.length !== 16) return null;
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  clearSave() {
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('ludoSparkSave');
+    } catch (e) { /* ignore */ }
+  }
+
+  restoreGame(data) {
+    if (!data) return false;
+    try {
+      this.numPlayers = data.numPlayers || 4;
+      this.playerConfigs.forEach((c, i) => { c.isAI = !!(data.isAI && data.isAI[i]); });
+      this.difficulty = data.difficulty || 'normal';
+      this.activePlayerIndex = data.activePlayerIndex || 0;
+      this.currentRoll = data.currentRoll || 0;
+      this.consecutiveSixes = data.consecutiveSixes || 0;
+      this.finishedPlayers = Array.isArray(data.finishedPlayers) ? data.finishedPlayers : [];
+      this.turnHistory = [];
+
+      this.initTokens();
+      this.tokens.forEach((t, i) => {
+        t.step = data.tokenSteps[i] || 0;
+        this.updateTokenPosition(t, false);
+      });
+      this.adjustOverlappingTokens();
+
+      // Restore stable state only (ROLLING/MOVING are never saved, but guard anyway)
+      if (data.state === 'WAIT_SELECT' && this.currentRoll >= 1 && this.currentRoll <= 6) {
+        this.movableTokens = this.getMovableTokens(this.activePlayerIndex, this.currentRoll);
+        if (this.movableTokens.length > 0) {
+          this.state = 'WAIT_SELECT';
+          this.highlightMovableTokens();
+        } else {
+          this.state = 'WAIT_ROLL';
+          this.movableTokens = [];
+        }
+      } else {
+        this.state = 'WAIT_ROLL';
+        this.movableTokens = [];
+      }
+
+      this.addHistory('Game resumed!');
+      this.notifyUI();
+
+      if (this.playerConfigs[this.activePlayerIndex].isAI && this.state === 'WAIT_ROLL') {
+        setTimeout(() => this.handleRoll(), 800);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  onResize() {
+    this.fitBoardToScreen();
+  }
+
+  animate() {
+    requestAnimationFrame(this.animate);
+    const delta = this.clock.getDelta();
+
+    // Physics step
+    if (this.physics) {
+      this.physics.update(delta);
+    }
+
+    // Pulse highlight halos
+    const time = performance.now() * 0.005;
+    this.tokens.forEach(t => {
+      if (t.halo.material.opacity > 0.05) {
+        const scale = 1.0 + Math.sin(time * 3) * 0.18;
+        t.halo.scale.set(scale, scale, 1);
+      }
+    });
+
+    // Animate Confetti Particles
+    for (let i = this.confettiParticles.length - 1; i >= 0; i--) {
+      const p = this.confettiParticles[i];
+      p.age += delta;
+      p.vel.y -= 9.8 * delta;
+      p.mesh.position.addScaledVector(p.vel, delta);
+      p.mesh.rotation.x += p.rotVel.x * delta;
+      p.mesh.rotation.y += p.rotVel.y * delta;
+      p.mesh.rotation.z += p.rotVel.z * delta;
+
+      if (p.mesh.position.y < 0.35) {
+        p.vel.y = -p.vel.y * 0.3;
+        p.vel.x *= 0.6;
+        p.vel.z *= 0.6;
+      }
+
+      if (p.age >= p.lifetime) {
+        this.scene.remove(p.mesh);
+        this.confettiParticles.splice(i, 1);
+      }
+    }
+
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+
+window.LudoGame = LudoGame;
