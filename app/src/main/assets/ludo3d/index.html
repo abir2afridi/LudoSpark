@@ -484,43 +484,67 @@
     <!-- Center Toast Prompt -->
     <div id="center-toast" class="center-toast">Your Turn: Roll the Dice!</div>
 
-    <!-- 4 Corner Player Avatars -->
+    <!-- 4 Corner Player Avatars with SVG Countdown Timer Rings & Speech Bubbles -->
+    <!-- Top-Left: Player 2 (Red) -->
     <div class="player-corner corner-top-left" id="corner-p2">
       <div class="avatar-box red-border" id="avatar-p2">
+        <svg class="timer-ring-svg" id="timer-ring-1" viewBox="0 0 74 74">
+          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+          <circle class="timer-ring-fill" id="timer-fill-1" cx="37" cy="37" r="32" />
+        </svg>
         <img src="avatar2.jpg" alt="Player 2">
         <div class="player-tag">Player 2</div>
+        <div class="timer-sec-badge" id="timer-badge-1">15</div>
       </div>
+      <div class="player-speech-bubble" id="bubble-p2">Thinking...</div>
     </div>
 
+    <!-- Top-Right: Player 3 (Green) -->
     <div class="player-corner corner-top-right" id="corner-p3">
       <div class="avatar-box green-border" id="avatar-p3">
+        <svg class="timer-ring-svg" id="timer-ring-2" viewBox="0 0 74 74">
+          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+          <circle class="timer-ring-fill" id="timer-fill-2" cx="37" cy="37" r="32" />
+        </svg>
         <img src="avatar3.jpg" alt="Player 3">
         <div class="player-tag">Player 3</div>
+        <div class="timer-sec-badge" id="timer-badge-2">15</div>
       </div>
+      <div class="player-speech-bubble" id="bubble-p3">Thinking...</div>
     </div>
 
+    <!-- Bottom-Left: Player 1 (Blue - Human) -->
     <div class="player-corner corner-bottom-left" id="corner-p1">
       <div class="avatar-box blue-border active-turn" id="avatar-p1">
+        <svg class="timer-ring-svg" id="timer-ring-0" viewBox="0 0 74 74">
+          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+          <circle class="timer-ring-fill" id="timer-fill-0" cx="37" cy="37" r="32" />
+        </svg>
         <img src="avatar1.jpg" alt="Player 1">
         <div class="player-tag">Player 1</div>
+        <div class="timer-sec-badge" id="timer-badge-0">15</div>
       </div>
-    </div>
+      <div class="player-speech-bubble" id="bubble-p1">Your Turn: Tap Dice</div>
 
-    <div class="player-corner corner-bottom-right" id="corner-p4">
-      <div class="avatar-box yellow-border" id="avatar-p4">
-        <img src="avatar4.jpg" alt="Player 4">
-        <div class="player-tag">Player 4</div>
-      </div>
-    </div>
-
-    <div id="token-selector-bar" class="token-selector-bar"></div>
-
-    <!-- Fixed central dice dock -->
-    <div id="dice-dock">
+      <!-- Standalone Interactive Dice Slot (Moves dynamically next to Active Player Avatar) -->
       <div class="dice-slot" id="dice-slot">
         <div class="dice-content" id="dice-display"></div>
+        <div class="pointing-hand" id="pointing-hand">👆</div>
       </div>
-      <div class="dice-label" id="dice-label">TAP TO ROLL</div>
+    </div>
+
+    <!-- Bottom-Right: Player 4 (Yellow) -->
+    <div class="player-corner corner-bottom-right" id="corner-p4">
+      <div class="avatar-box yellow-border" id="avatar-p4">
+        <svg class="timer-ring-svg" id="timer-ring-3" viewBox="0 0 74 74">
+          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+          <circle class="timer-ring-fill" id="timer-fill-3" cx="37" cy="37" r="32" />
+        </svg>
+        <img src="avatar4.jpg" alt="Player 4">
+        <div class="player-tag">Player 4</div>
+        <div class="timer-sec-badge" id="timer-badge-3">15</div>
+      </div>
+      <div class="player-speech-bubble" id="bubble-p4">Thinking...</div>
     </div>
 
     <div style="position:absolute; bottom:88px; right:16px; pointer-events:auto; z-index:25;">
@@ -658,6 +682,89 @@
 
       <button id="btn-do-spin" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900; font-size:17px;">SPIN NOW!</button>
       <button id="btn-close-spin" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- 7-Day Check-In Streak Calendar Modal -->
+  <div id="modal-daily-calendar" class="modal-overlay">
+    <div class="modal-card" style="text-align:center; max-width:380px;">
+      <div class="modal-ribbon-header">
+        <h2 class="modal-ribbon-title">7-DAY CHECK-IN STREAK</h2>
+      </div>
+      <p class="modal-desc">Login daily to claim free coins & exclusive rewards!</p>
+
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin:10px 0;">
+        <div class="streak-day-card" id="streak-day-1" style="background:#0F172A; padding:8px 4px; border-radius:10px; border:1px solid #38BDF8;">
+          <div style="font-size:10px; color:#94A3B8;">Day 1</div>
+          <div style="font-size:16px;">🪙</div>
+          <b style="font-size:11px; color:#FBBF24;">500</b>
+        </div>
+        <div class="streak-day-card" id="streak-day-2" style="background:#0F172A; padding:8px 4px; border-radius:10px; border:1px solid #38BDF8;">
+          <div style="font-size:10px; color:#94A3B8;">Day 2</div>
+          <div style="font-size:16px;">🪙</div>
+          <b style="font-size:11px; color:#FBBF24;">1,000</b>
+        </div>
+        <div class="streak-day-card" id="streak-day-3" style="background:#0F172A; padding:8px 4px; border-radius:10px; border:1px solid #38BDF8;">
+          <div style="font-size:10px; color:#94A3B8;">Day 3</div>
+          <div style="font-size:16px;">🪙</div>
+          <b style="font-size:11px; color:#FBBF24;">1,500</b>
+        </div>
+        <div class="streak-day-card" id="streak-day-4" style="background:#0F172A; padding:8px 4px; border-radius:10px; border:1px solid #38BDF8;">
+          <div style="font-size:10px; color:#94A3B8;">Day 4</div>
+          <div style="font-size:16px;">💎</div>
+          <b style="font-size:11px; color:#38BDF8;">50</b>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:10px;">
+        <div class="streak-day-card" id="streak-day-5" style="background:#0F172A; padding:8px 4px; border-radius:10px; border:1px solid #38BDF8;">
+          <div style="font-size:10px; color:#94A3B8;">Day 5</div>
+          <div style="font-size:16px;">🪙</div>
+          <b style="font-size:11px; color:#FBBF24;">3,000</b>
+        </div>
+        <div class="streak-day-card" id="streak-day-6" style="background:#0F172A; padding:8px 4px; border-radius:10px; border:1px solid #38BDF8;">
+          <div style="font-size:10px; color:#94A3B8;">Day 6</div>
+          <div style="font-size:16px;">🪙</div>
+          <b style="font-size:11px; color:#FBBF24;">5,000</b>
+        </div>
+        <div class="streak-day-card" id="streak-day-7" style="background:linear-gradient(180deg, #F59E0B 0%, #B45309 100%); padding:8px 4px; border-radius:10px; border:1.5px solid #FEF3C7; box-shadow:0 0 10px rgba(251,191,36,0.6);">
+          <div style="font-size:9px; color:#FEF3C7; font-weight:900;">DAY 7 JACKPOT</div>
+          <div style="font-size:16px;">👑🪙</div>
+          <b style="font-size:10px; color:#FFFFFF;">10,000 + Gold Skin</b>
+        </div>
+      </div>
+
+      <button id="btn-claim-streak" class="modal-btn" style="background:#10B981; font-weight:900; font-size:15px;">CLAIM TODAY'S REWARD!</button>
+      <button id="btn-close-streak" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- 8-Player Knockout Tournament Bracket Modal -->
+  <div id="modal-tournament-bracket" class="modal-overlay">
+    <div class="modal-card" style="text-align:center; max-width:390px;">
+      <div class="modal-ribbon-header">
+        <h2 class="modal-ribbon-title">8-PLAYER TOURNAMENT</h2>
+      </div>
+      <p class="modal-desc">Win Quarter-Finals, Semi-Finals, and Final to claim 10,000 Coins!</p>
+
+      <div style="background:#0F172A; padding:10px; border-radius:14px; border:1px solid #38BDF8; margin:8px 0; font-size:11px;">
+        <b style="color:#FBBF24; display:block; margin-bottom:6px;">🏆 Tournament Bracket Tree:</b>
+        <div style="display:flex; justify-content:space-between; align-items:center; color:#CBD5E1; margin-bottom:4px;">
+          <span>Quarter-Finals:</span>
+          <b id="tourney-qf-status" style="color:#10B981;">Match 1 Ready ✓</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; color:#CBD5E1; margin-bottom:4px;">
+          <span>Semi-Finals:</span>
+          <b id="tourney-sf-status" style="color:#94A3B8;">Locked 🔒</b>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; color:#CBD5E1;">
+          <span>Final:</span>
+          <b id="tourney-final-status" style="color:#94A3B8;">Locked 🔒</b>
+        </div>
+      </div>
+
+      <button id="btn-start-tourney-match" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900; font-size:15px;">▶ PLAY NEXT MATCH</button>
+      <button id="btn-close-tourney" class="modal-btn" style="background:#475569;">Close</button>
     </div>
   </div>
 
@@ -845,7 +952,7 @@
             <path d="M16 16H8c0 10 6 14 8 15v-15z" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="1.5"/>
             <path d="M48 16h8c0 10-6 14-8 15v-15z" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="1.5"/>
             <path d="M28 46h8v8h-8z" fill="url(#goldTrophyGrad)"/>
-            <path d="M18 54h28v6H18z" rx="2" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="1.5"/>
+            <rect x="18" y="54" width="28" height="6" rx="2" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="1.5"/>
             <circle cx="32" cy="24" r="5" fill="#FEF3C7" opacity="0.8"/>
           </svg>
         </div>
@@ -990,9 +1097,12 @@
         pauseModal.style.display = 'none';
         winnerModal.style.display = 'none';
       };
+      let diceInputLockUntil = 0;
       const startGameScreen = () => {
         mainMenuEl.style.display = 'none';
         uiOverlayEl.style.display = 'flex';
+        // Prevent the Start Match tap from accidentally landing on the dice dock
+        diceInputLockUntil = performance.now() + 700;
       };
 
       // Hardware/back-button hook (called from Android MainActivity)
@@ -1125,7 +1235,46 @@
         }, 300);
       };
 
-      document.getElementById('mode-btn-tournament').onclick = () => openNavInfo('👑 Ludo Tournament', 'Compete in 8-player bracket tournaments and win massive coin pots!');
+      // ---- 7-Day Daily Check-In Streak ----
+      const dailyCalendarModal = document.getElementById('modal-daily-calendar');
+      const streakRewards = [500, 1000, 1500, 50, 3000, 5000, 10000];
+      let currentStreakDay = parseInt(localStorage.getItem('ludoSpark.streakDay') || '1');
+      let lastClaimDate = localStorage.getItem('ludoSpark.lastClaimDate') || '';
+
+      const todayStr = new Date().toDateString();
+      if (lastClaimDate !== todayStr) {
+        setTimeout(() => {
+          if (dailyCalendarModal) dailyCalendarModal.style.display = 'flex';
+        }, 800);
+      }
+
+      document.getElementById('btn-close-streak').onclick = () => { playClick(); dailyCalendarModal.style.display = 'none'; };
+      document.getElementById('btn-claim-streak').onclick = () => {
+        playClick();
+        const rewardAmt = streakRewards[(currentStreakDay - 1) % 7];
+        if (currentStreakDay === 4) {
+          window.addGems(rewardAmt);
+        } else {
+          window.addCoins(rewardAmt);
+        }
+        localStorage.setItem('ludoSpark.lastClaimDate', todayStr);
+        localStorage.setItem('ludoSpark.streakDay', (currentStreakDay % 7) + 1);
+        dailyCalendarModal.style.display = 'none';
+        alert(`🎁 Day ${currentStreakDay} Daily Streak Reward Claimed!`);
+      };
+
+      // ---- 8-Player Knockout Tournament ----
+      const tourneyModal = document.getElementById('modal-tournament-bracket');
+      document.getElementById('mode-btn-tournament').onclick = () => { playClick(); tourneyModal.style.display = 'flex'; };
+      document.getElementById('btn-close-tourney').onclick = () => { playClick(); tourneyModal.style.display = 'none'; };
+
+      document.getElementById('btn-start-tourney-match').onclick = () => {
+        playClick();
+        tourneyModal.style.display = 'none';
+        game.newGame(4, 3, 'normal');
+        startGameScreen();
+      };
+
       document.getElementById('mode-btn-snake').onclick = () => {
         playClick();
         game.newSnakeLadderGame(selectedPlayers, isVsBot ? selectedPlayers - 1 : 0);
@@ -1191,7 +1340,6 @@
       // ---- In-Game Emoji & Voice Dialogs ----
       const emojiToggleBtn = document.getElementById('btn-emoji-toggle');
       const emojiPanel = document.getElementById('emoji-picker-panel');
-      const floatingBubble = document.getElementById('floating-emoji-bubble');
 
       if (emojiToggleBtn) {
         emojiToggleBtn.onclick = () => {
@@ -1203,12 +1351,16 @@
       const triggerBubble = (textStr) => {
         playClick();
         emojiPanel.style.display = 'none';
-        floatingBubble.innerText = textStr;
-        floatingBubble.style.display = 'block';
-        floatingBubble.style.animation = 'none';
-        floatingBubble.offsetHeight; // trigger reflow
-        floatingBubble.style.animation = 'floatBubble 1.8s ease-out forwards';
-        setTimeout(() => { floatingBubble.style.display = 'none'; }, 1800);
+        const p1Bubble = document.getElementById('bubble-p1');
+        if (p1Bubble) {
+          p1Bubble.innerText = textStr;
+          p1Bubble.classList.add('active');
+          setTimeout(() => {
+            if (game && game.activePlayerIndex !== 0) {
+              p1Bubble.classList.remove('active');
+            }
+          }, 2400);
+        }
       };
 
       ['1', '2', '3', '4', '5', '6'].forEach(i => {
@@ -1574,6 +1726,41 @@
         document.getElementById('corner-p4')
       ];
 
+      // ---- 15s SVG Circular Countdown Timer Ring Update ----
+      const pointingHand = document.getElementById('pointing-hand');
+
+      window.onTimerUpdate = (activePlayerId, remainingSec, totalSec) => {
+        const secInt = Math.ceil(remainingSec);
+        const maxOffset = 201; // Circumference of r=32 circle
+        const ratio = Math.max(0, Math.min(1, remainingSec / totalSec));
+        const offset = maxOffset * (1 - ratio);
+
+        [0, 1, 2, 3].forEach(idx => {
+          const ringSvg = document.getElementById(`timer-ring-${idx}`);
+          const ringFill = document.getElementById(`timer-fill-${idx}`);
+          const badge = document.getElementById(`timer-badge-${idx}`);
+
+          if (idx === activePlayerId && game.timerActive) {
+            if (ringSvg) ringSvg.style.display = 'block';
+            if (badge) {
+              badge.style.display = 'flex';
+              badge.innerText = secInt;
+            }
+
+            if (ringFill) {
+              ringFill.style.strokeDashoffset = offset;
+              ringFill.classList.toggle('warning', secInt <= 5);
+            }
+            if (badge) {
+              badge.classList.toggle('warning', secInt <= 5);
+            }
+          } else {
+            if (ringSvg) ringSvg.style.display = 'none';
+            if (badge) badge.style.display = 'none';
+          }
+        });
+      };
+
       // ---- Handle Game State updates ----
       window.onGameStateChanged = (data) => {
         const { activePlayer, state, currentRoll, history, isGameOver } = data;
@@ -1584,8 +1771,11 @@
           if (el) el.style.display = (idx < numPlayers) ? '' : 'none';
         });
 
+        // 1. Move interactive dice slot dynamically into ACTIVE player's corner
         const activeCorner = cornerEls[activePlayer.id];
-        // Dice now lives in a fixed bottom-center dock; corners only show avatars
+        if (activeCorner && diceSlot && diceSlot.parentElement !== activeCorner) {
+          activeCorner.appendChild(diceSlot);
+        }
 
         avatarBoxes.forEach((box, idx) => {
           if (box) {
@@ -1597,56 +1787,44 @@
           }
         });
 
+        // Pointer Finger Guide for Human Turn
+        if (pointingHand) {
+          pointingHand.style.display = (state === 'WAIT_ROLL' && activePlayer.id === 0) ? 'block' : 'none';
+        }
+
         if (state === 'ROLLING') {
           diceSlot.classList.add('rolling');
-          diceSlot.classList.remove('waiting');
           renderDiceIcon(currentRoll);
-          toastEl.innerText = `${activePlayer.name} rolling...`;
         } else {
           diceSlot.classList.remove('rolling');
           renderDiceIcon(currentRoll >= 1 && currentRoll <= 6 ? currentRoll : 6);
         }
 
-        // Dice frame keeps blinking until the player rolls
-        diceSlot.classList.toggle('waiting', state === 'WAIT_ROLL');
-        if (diceLabel) {
-          diceLabel.innerText =
-            state === 'WAIT_ROLL' ? (activePlayer.isAI ? 'AI TURN' : 'TAP TO ROLL') :
-            state === 'ROLLING' ? 'ROLLING...' :
-            state === 'WAIT_SELECT' ? 'PICK A TOKEN' :
-            state === 'MOVING' ? 'MOVING...' :
-            state === 'GAME_OVER' ? 'GAME OVER' : '';
+        // 2. Speech bubble attached to active player's avatar
+        let promptMsg = '';
+        if (state === 'WAIT_ROLL') {
+          promptMsg = activePlayer.isAI ? 'Thinking...' : 'Your Turn: Tap Dice!';
+        } else if (state === 'ROLLING') {
+          promptMsg = 'Rolling dice...';
+        } else if (state === 'WAIT_SELECT') {
+          promptMsg = activePlayer.isAI ? `Rolled ${currentRoll}!` : `Rolled ${currentRoll}! Tap token on board`;
+        } else if (state === 'MOVING') {
+          promptMsg = 'Moving token...';
         }
 
-        if (state === 'WAIT_ROLL') {
-          tokenSelectorBar.style.display = 'none';
-          toastEl.innerText = activePlayer.isAI
-            ? `${activePlayer.name} (AI) thinking...`
-            : 'Your Turn: Tap the Dice to Roll!';
-        } else if (state === 'WAIT_SELECT') {
-          toastEl.innerText = activePlayer.isAI ? 'AI selecting token...' : `Rolled ${currentRoll}! Tap token to move`;
-
-          tokenSelectorBar.innerHTML = '';
-          if (!activePlayer.isAI && game.movableTokens.length > 0) {
-            tokenSelectorBar.style.display = 'flex';
-            game.movableTokens.forEach(t => {
-              const b = document.createElement('button');
-              b.className = 'token-choice-btn highlight';
-              const locationStr = t.step === 0 ? 'Yard ➔ Start' : `Step ${t.step} (+${currentRoll})`;
-              b.innerHTML = `<span>Token ${t.tokenIndex + 1}</span><small style="color:#94A3B8;">${locationStr}</small>`;
-              b.onclick = () => {
-                game.handleTokenSelect(t);
-              };
-              tokenSelectorBar.appendChild(b);
-            });
-          } else {
-            tokenSelectorBar.style.display = 'none';
+        [0, 1, 2, 3].forEach(pIdx => {
+          const bubble = document.getElementById(`bubble-p${pIdx + 1}`);
+          if (bubble) {
+            if (pIdx === activePlayer.id) {
+              bubble.innerText = promptMsg;
+              bubble.classList.add('active');
+            } else {
+              bubble.classList.remove('active');
+            }
           }
-        } else if (state === 'MOVING') {
-          tokenSelectorBar.style.display = 'none';
-          toastEl.innerText = `${activePlayer.name} moving...`;
-        } else if (state === 'GAME_OVER') {
-          tokenSelectorBar.style.display = 'none';
+        });
+
+        if (state === 'GAME_OVER') {
           const winnerName = data.finishedPlayers[0] || 'Champion';
           document.getElementById('winner-title').innerText = `${winnerName} Wins!`;
           document.getElementById('winner-desc').innerText = `Congratulations on winning the match!`;
@@ -1660,6 +1838,7 @@
 
       // Tapping the Dice Dock triggers roll
       const tryRoll = () => {
+        if (performance.now() < diceInputLockUntil) return;
         if (game.state === 'WAIT_ROLL' && !game.playerConfigs[game.activePlayerIndex].isAI) {
           game.handleRoll();
         }

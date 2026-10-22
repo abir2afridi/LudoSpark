@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LudoSpark 3D Characters & Realistic Humanoid Pawns Studio
  * 
  * Features:
@@ -577,13 +577,13 @@ class LudoCharacters {
       // Active pedestal breathing pulse
       if (isActive) {
         const pulse = 0.5 + 0.5 * Math.sin(this.time * 4.5);
-        ch.ringMat.emissiveIntensity = 0.6 + 0.7 * pulse;
+        ch.ringMat.emissiveIntensity = 0.9 + 0.8 * pulse;
         ch.spot.intensity = 1.3 + 0.5 * pulse;
         // Subtle energetic hovering/scale spring
         const targetScale = 1.05 + 0.02 * pulse;
         ch.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
       } else {
-        ch.ringMat.emissiveIntensity = 0.25;
+        ch.ringMat.emissiveIntensity = 0.5;
         ch.spot.intensity = 0.25;
         ch.group.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
       }
@@ -666,7 +666,7 @@ class LudoCharacters {
           parts.legL.rotation.x = 0;
 
         } else {
-          // Finished throw — return control to normal idle
+          // Finished throw â€” return control to normal idle
           parts.torso.rotation.set(0, 0, 0);
           parts.armR.rotation.set(0, 0, 0);
           parts.armL.rotation.set(0, 0, 0);
@@ -816,3 +816,4 @@ class LudoCharacters {
 
 window.createHumanoidMesh = createHumanoidMesh;
 window.LudoCharacters = LudoCharacters;
+
