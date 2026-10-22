@@ -505,10 +505,21 @@ class LudoCharacters {
         baseYaw: lookYaw,
         holdingPose: false,
         throwAnim: null,
+        emoteAnim: null,
         idleSeed: i * 2.37,
         activePulse: 0.0
       });
     }
+  }
+
+  triggerEmote(playerId, emoteType, duration = 2.4) {
+    const ch = this.chars[playerId];
+    if (!ch) return;
+    ch.emoteAnim = {
+      type: emoteType, // 'cheer', 'sad', 'angry', 'cool', 'laugh'
+      t: 0,
+      duration: duration
+    };
   }
 
   setActive(activeId) {
@@ -664,6 +675,75 @@ class LudoCharacters {
           parts.head.rotation.set(0, 0, 0);
           ch.body.position.set(0, 0.2, 0);
           ch.throwAnim = null;
+        }
+
+      } else if (ch.emoteAnim) {
+        // ---- EMOTE REACTION ANIMATIONS ----
+        const anim = ch.emoteAnim;
+        anim.t += delta;
+
+        if (anim.type === 'cheer' || anim.type === 'win' || anim.type === 'laugh') {
+          // Joyful celebratory jump & waving arms high!
+          const wave = Math.sin(anim.t * 14);
+          parts.armL.rotation.x = 2.4 + wave * 0.25;
+          parts.armL.rotation.z = 0.35 + Math.cos(anim.t * 10) * 0.15;
+          parts.armR.rotation.x = 2.4 - wave * 0.25;
+          parts.armR.rotation.z = -0.35 - Math.cos(anim.t * 10) * 0.15;
+          if (parts.forearmL) parts.forearmL.rotation.x = -0.2;
+          if (parts.forearmR) parts.forearmR.rotation.x = -0.2;
+
+          ch.body.position.y = 0.2 + Math.abs(Math.sin(anim.t * 8)) * 0.18;
+          parts.torso.rotation.x = -0.08;
+          parts.head.rotation.x = -0.15;
+          parts.head.rotation.y = Math.sin(anim.t * 12) * 0.15;
+
+        } else if (anim.type === 'sad' || anim.type === 'cry' || anim.type === 'captured') {
+          // Head in hands / crying pose
+          parts.armL.rotation.x = 1.6;
+          parts.armL.rotation.z = 0.85;
+          parts.armR.rotation.x = 1.6;
+          parts.armR.rotation.z = -0.85;
+          if (parts.forearmL) parts.forearmL.rotation.x = -1.35;
+          if (parts.forearmR) parts.forearmR.rotation.x = -1.35;
+
+          parts.head.rotation.x = 0.42;
+          parts.torso.rotation.x = 0.22;
+          ch.body.position.y = 0.18 + Math.sin(anim.t * 16) * 0.015;
+
+        } else if (anim.type === 'angry') {
+          // Clenched fists, stomping and shaking head
+          parts.armL.rotation.x = -0.65;
+          parts.armL.rotation.z = -0.35;
+          parts.armR.rotation.x = -0.65;
+          parts.armR.rotation.z = 0.35;
+          if (parts.forearmL) parts.forearmL.rotation.x = -0.85;
+          if (parts.forearmR) parts.forearmR.rotation.x = -0.85;
+
+          parts.head.rotation.y = Math.sin(anim.t * 20) * 0.30;
+          parts.torso.rotation.x = 0.18;
+          ch.body.position.y = 0.2 + Math.abs(Math.sin(anim.t * 10)) * 0.06;
+
+        } else {
+          // 'cool' / 'thumbsup' pose
+          parts.armR.rotation.x = -1.45;
+          parts.armR.rotation.z = 0.25;
+          if (parts.forearmR) parts.forearmR.rotation.x = -0.35;
+          parts.armL.rotation.x = -0.3;
+          parts.armL.rotation.z = -0.45;
+          parts.head.rotation.x = -0.12;
+          parts.head.rotation.y = 0.18;
+          parts.torso.rotation.x = -0.05;
+        }
+
+        if (anim.t >= anim.duration) {
+          parts.armL.rotation.set(0, 0, 0);
+          parts.armR.rotation.set(0, 0, 0);
+          if (parts.forearmL) parts.forearmL.rotation.set(0, 0, 0);
+          if (parts.forearmR) parts.forearmR.rotation.set(0, 0, 0);
+          parts.torso.rotation.set(0, 0, 0);
+          parts.head.rotation.set(0, 0, 0);
+          ch.body.position.set(0, 0.2, 0);
+          ch.emoteAnim = null;
         }
 
       } else if (ch.holdingPose) {

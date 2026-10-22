@@ -15,6 +15,8 @@ class DicePhysics {
     this.trayCenter = { x: 0, y: 0.6, z: 0 };
     this.lastImpactTime = 0;
     this.isHeld = false;
+    this.hasImpacted = false;
+    this.onFirstImpact = null;
 
     this.initPhysics();
   }
@@ -73,9 +75,13 @@ class DicePhysics {
     this.diceBody.position.set(0, 0.95, 0);
     this.world.addBody(this.diceBody);
 
-    // Sound collision listener
+    // Sound collision listener & impact FX
     this.diceBody.addEventListener('collide', (e) => {
       const now = performance.now();
+      if (!this.hasImpacted && this.onFirstImpact) {
+        this.hasImpacted = true;
+        this.onFirstImpact(this.diceBody.position.clone());
+      }
       if (now - this.lastImpactTime > 75) {
         this.lastImpactTime = now;
         const speed = e.contact.getImpactVelocityAlongNormal();
@@ -167,6 +173,7 @@ class DicePhysics {
     if (this.isRolling) return;
     this.isRolling = true;
     this.isHeld = false;
+    this.hasImpacted = false;
     this.targetFace = targetValue;
     this.onRollComplete = onComplete;
     this.rollStartTime = performance.now();

@@ -81,8 +81,17 @@ class LudoGame {
       { r: 7, c: 7.8 }    // Player 4 (Yellow)
     ];
 
-    // Particles
+    // Particles & FX
     this.confettiParticles = [];
+    this.diceTrailParticles = [];
+    this.cameraShake = 0;
+
+    // Turn timer
+    this.turnTimeLimit = 15;
+    this.turnTimeRemaining = 15;
+    this.timerActive = false;
+    this.lastTickSec = -1;
+    this._timerPlayer = -1;
 
     // Cell blink highlights during token movement
     this.moveHighlights = [];
@@ -245,6 +254,10 @@ class LudoGame {
 
     // Dice Physics & Mesh
     this.physics = new DicePhysics(this.scene);
+    this.physics.onFirstImpact = (pos) => {
+      this.spawnBoardShockwave(pos);
+      this.triggerCameraShake(0.12);
+    };
     if (this.diceMesh) this.scene.remove(this.diceMesh);
     this.diceMesh = this.builder.createDiceMesh(this.diceSkin);
     this.scene.add(this.diceMesh);
@@ -509,6 +522,7 @@ class LudoGame {
     // Check consecutive sixes
     if (roll === 6) {
       if (window.soundEngine) window.soundEngine.playSixRoll();
+      if (this.characters) this.characters.triggerEmote(this.activePlayerIndex, 'cheer');
       this.consecutiveSixes++;
       if (this.consecutiveSixes >= 3) {
         this.addHistory(`Rolled 3 consecutive 6s! Turn passed.`);
@@ -904,6 +918,7 @@ class LudoGame {
     if (token.step === 57) {
       this.addHistory(`${this.playerConfigs[token.player].name} token reached HOME!`);
       if (window.soundEngine) window.soundEngine.playTokenHome();
+      if (this.characters) this.characters.triggerEmote(token.player, 'win', 3.0);
       this.spawnConfetti(token.mesh.position);
       awardedExtraTurn = true;
 
@@ -938,10 +953,19 @@ class LudoGame {
         );
 
         if (opponents.length > 0) {
+          this.triggerCameraShake(0.42);
+          this.spawnKnockoutBlast(token.mesh.position, this.playerConfigs[token.player].color);
+
+          if (this.characters) {
+            this.characters.triggerEmote(token.player, 'cheer', 2.8);
+          }
+
           opponents.forEach(opp => {
-            opp.step = 0;
-            this.updateTokenPosition(opp, false);
+            if (this.characters) {
+              this.characters.triggerEmote(opp.player, 'sad', 2.8);
+            }
             this.addHistory(`${this.playerConfigs[token.player].name} captured ${this.playerConfigs[opp.player].name}'s token!`);
+            this.animateTokenKnockoutReturn(opp);
           });
           if (window.soundEngine) window.soundEngine.playCapture();
           if (window.AndroidBridge && window.AndroidBridge.vibrate) {
@@ -968,6 +992,8 @@ class LudoGame {
   }
 
   passTurn() {
+    this.timerActive = false;
+    this._timerPlayer = -1;
     let nextPlayer = (this.activePlayerIndex + 1) % this.numPlayers;
     let loops = 0;
     while (this.finishedPlayers.includes(nextPlayer) && loops < this.numPlayers) {
@@ -1015,6 +1041,118 @@ class LudoGame {
     }
   }
 
+  spawnBoardShockwave(pos) {
+    const geom = new THREE.RingGeometry(0.35, 0.65, 32);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xFEF08A,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85
+    });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(pos.x, 0.355, pos.z);
+    this.scene.add(mesh);
+
+    const startTime = performance.now();
+    const duration = 420;
+    const animateWave = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(1.0, elapsed / duration);
+      const scale = 1.0 + t * 2.8;
+      mesh.scale.set(scale, scale, 1);
+      mat.opacity = 0.85 * (1 - t);
+      if (t < 1.0) {
+        requestAnimationFrame(animateWave);
+      } else {
+        this.scene.remove(mesh);
+        geom.dispose();
+        mat.dispose();
+      }
+    };
+    requestAnimationFrame(animateWave);
+  }
+
+  triggerCameraShake(intensity = 0.35) {
+    this.cameraShake = Math.max(this.cameraShake || 0, intensity);
+  }
+
+  spawnKnockoutBlast(pos, colorHex) {
+    if (window.soundEngine) window.soundEngine.playBlast();
+    const blastColors = [0xF59E0B, 0xEF4444, 0xFFFFFF, new THREE.Color(colorHex).getHex()];
+    const count = 36;
+    for (let i = 0; i < count; i++) {
+      const geom = new THREE.SphereGeometry(0.08 + Math.random() * 0.06, 6, 6);
+      const col = blastColors[Math.floor(Math.random() * blastColors.length)];
+      const mat = new THREE.MeshBasicMaterial({ color: col });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.position.set(pos.x, pos.y + 0.1, pos.z);
+      this.scene.add(mesh);
+
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 3.5 + Math.random() * 5.0;
+      const vel = new THREE.Vector3(
+        Math.cos(angle) * speed,
+        3.5 + Math.random() * 5.5,
+        Math.sin(angle) * speed
+      );
+
+      this.confettiParticles.push({
+        mesh,
+        vel,
+        rotVel: new THREE.Vector3(Math.random() * 10, Math.random() * 10, Math.random() * 10),
+        lifetime: 0.65,
+        age: 0
+      });
+    }
+
+    this.spawnBoardShockwave(pos);
+  }
+
+  animateTokenKnockoutReturn(opp) {
+    opp.isMoving = true;
+    opp.step = 0;
+    const fromPos = opp.mesh.position.clone();
+    const toPos = this.getTokenWorldPos(opp);
+    const duration = 650;
+    const startTime = performance.now();
+    const apexY = 4.2;
+
+    const flyStep = () => {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(1.0, elapsed / duration);
+
+      // Parabolic ballistic arc
+      const curX = THREE.MathUtils.lerp(fromPos.x, toPos.x, t);
+      const curZ = THREE.MathUtils.lerp(fromPos.z, toPos.z, t);
+      const curY = THREE.MathUtils.lerp(fromPos.y, toPos.y, t) + 4 * (apexY - fromPos.y) * t * (1 - t);
+
+      opp.mesh.position.set(curX, curY, curZ);
+      opp.mesh.rotation.x += 0.35;
+      opp.mesh.rotation.y += 0.45;
+      opp.mesh.rotation.z += 0.30;
+      opp.halo.position.set(curX, 0.38, curZ);
+
+      if (t < 1.0) {
+        requestAnimationFrame(flyStep);
+      } else {
+        opp.isMoving = false;
+        opp.mesh.position.copy(toPos);
+        opp.mesh.rotation.set(0, 0, 0);
+        opp.halo.position.set(toPos.x, 0.38, toPos.z);
+        this.adjustOverlappingTokens();
+        this.spawnBoardShockwave(toPos);
+      }
+    };
+    requestAnimationFrame(flyStep);
+  }
+
+  triggerPlayerEmote(playerId, emoteType) {
+    if (this.characters) {
+      this.characters.triggerEmote(playerId, emoteType);
+    }
+  }
+
   /**
    * Set Camera Mode - smoothly transitions between locked viewpoints,
    * always perfectly fitted to the mobile screen with 0% accidental screen dragging.
@@ -1044,6 +1182,19 @@ class LudoGame {
     // Apply a queued pawn skin once the board is stable again
     if (this.pendingSkinApply && (this.state === 'WAIT_ROLL' || this.state === 'WAIT_SELECT')) {
       this.applyPawnSkin();
+    }
+
+    // Turn Timer state management
+    if (this.state === 'WAIT_ROLL' || this.state === 'WAIT_SELECT') {
+      if (!this.timerActive || this._timerPlayer !== this.activePlayerIndex) {
+        this.timerActive = true;
+        this.turnTimeRemaining = this.turnTimeLimit;
+        this._timerPlayer = this.activePlayerIndex;
+        this.lastTickSec = -1;
+      }
+    } else {
+      this.timerActive = false;
+      this._timerPlayer = -1;
     }
 
     // Highlight the active player's 3D character
@@ -1248,16 +1399,22 @@ class LudoGame {
   }
 
   spawnDiceTrailParticle(pos) {
-    const geom = new THREE.SphereGeometry(0.08, 8, 8);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xFBBF24, transparent: true, opacity: 0.85 });
+    const geom = new THREE.SphereGeometry(0.12, 6, 6);
+    const colors = [0xFDE047, 0xF59E0B, 0xFEF08A, 0x60A5FA];
+    const col = colors[Math.floor(Math.random() * colors.length)];
+    const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.85 });
     const mesh = new THREE.Mesh(geom, mat);
-    mesh.position.copy(pos);
+    mesh.position.set(
+      pos.x + (Math.random() - 0.5) * 0.25,
+      pos.y + (Math.random() - 0.5) * 0.25,
+      pos.z + (Math.random() - 0.5) * 0.25
+    );
     this.scene.add(mesh);
     this.confettiParticles.push({
       mesh,
-      vel: new THREE.Vector3((Math.random() - 0.5) * 1, Math.random() * 2, (Math.random() - 0.5) * 1),
-      rotVel: new THREE.Vector3(0,0,0),
-      lifetime: 0.4,
+      vel: new THREE.Vector3((Math.random() - 0.5) * 0.8, 0.4 + Math.random() * 1.2, (Math.random() - 0.5) * 0.8),
+      rotVel: new THREE.Vector3(0, 0, 0),
+      lifetime: 0.35,
       age: 0
     });
   }
@@ -1266,14 +1423,55 @@ class LudoGame {
     requestAnimationFrame(this.animate);
     const delta = this.clock.getDelta();
 
-    // Physics step
+    // Physics step & dice trail emission
     if (this.physics) {
       this.physics.update(delta);
-      if (this.physics.isRolling && this.diceMesh && Math.random() < 0.6) {
+      if (this.physics.isRolling && this.diceMesh && Math.random() < 0.75) {
         this.spawnDiceTrailParticle(this.diceMesh.position);
       }
     }
-      this.physics.update(delta);
+
+    // Camera trauma / impact shake
+    if (this.cameraShake > 0.005) {
+      const sx = (Math.random() - 0.5) * this.cameraShake * 1.4;
+      const sy = (Math.random() - 0.5) * this.cameraShake * 0.8;
+      const sz = (Math.random() - 0.5) * this.cameraShake * 1.4;
+      this.camera.position.x += sx;
+      this.camera.position.y += sy;
+      this.camera.position.z += sz;
+      this.cameraShake *= 0.86;
+    }
+
+    // Turn countdown timer
+    if (this.timerActive) {
+      this.turnTimeRemaining -= delta;
+      const secInt = Math.ceil(Math.max(0, this.turnTimeRemaining));
+      if (secInt <= 5 && secInt > 0 && secInt !== this.lastTickSec) {
+        this.lastTickSec = secInt;
+        if (window.soundEngine) window.soundEngine.playTick(true);
+      }
+
+      if (window.onTimerUpdate) {
+        window.onTimerUpdate(
+          this.activePlayerIndex,
+          Math.max(0, this.turnTimeRemaining),
+          this.turnTimeLimit
+        );
+      }
+
+      if (this.turnTimeRemaining <= 0) {
+        this.timerActive = false;
+        if (this.state === 'WAIT_ROLL') {
+          this.handleRoll();
+        } else if (this.state === 'WAIT_SELECT') {
+          if (this.movableTokens.length > 0) {
+            const best = this.chooseAIBestToken(this.movableTokens, this.currentRoll);
+            this.handleTokenSelect(best);
+          } else {
+            this.passTurn();
+          }
+        }
+      }
     }
 
     // ---- 3D player characters + dice holding/throw ----
