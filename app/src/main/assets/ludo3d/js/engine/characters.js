@@ -466,6 +466,7 @@ class LudoCharacters {
         baseYaw: lookYaw,
         holdingPose: false,
         throwAnim: null,
+        catchAnim: null,
         emoteAnim: null,
         idleSeed: i * 2.37,
         activePulse: 0.0
@@ -618,13 +619,56 @@ class LudoCharacters {
       if (onRelease) onRelease();
       return;
     }
+    ch.emoteAnim = null;
+    ch.catchAnim = null;
     ch.throwAnim = {
       t: 0,
       released: false,
       onRelease,
+      kind: 'throw', // full-force board throw
       windupDuration: 0.32,
       releaseDuration: 0.18,
       followDuration: 0.45
+    };
+  }
+
+  /**
+   * DICE HANDOFF (dice-handoff.js থেকে call হয়) —
+   * আস্তে করে next player-এর দিকে dice pass করা। startThrow-এর ছোট ও
+   * কম-শক্তিশালী সংস্করণ: কম windup, কম lunge — যেন দেখে বোঝা যায় এটা
+   * "দেওয়া" আর board-এ "ছোড়া" নয়।
+   */
+  startPass(playerId, onRelease) {
+    const ch = this.chars[playerId];
+    if (!ch) {
+      if (onRelease) onRelease();
+      return;
+    }
+    ch.emoteAnim = null;
+    ch.catchAnim = null;
+    ch.throwAnim = {
+      t: 0,
+      released: false,
+      onRelease,
+      kind: 'pass', // gentle handoff toss (dice-handoff.js)
+      windupDuration: 0.22,
+      releaseDuration: 0.16,
+      followDuration: 0.34
+    };
+  }
+
+  /**
+   * DICE HANDOFF (dice-handoff.js থেকে call হয়) —
+   * পরের player আগতীয়া dice ধরতে হাত বাড়ায়, ধরে, বুকে টেনে আনে।
+   */
+  startCatch(playerId, duration = 0.9) {
+    const ch = this.chars[playerId];
+    if (!ch) return;
+    ch.throwAnim = null;
+    ch.emoteAnim = null;
+    ch.catchAnim = {
+      t: 0,
+      duration
     };
   }
 
@@ -657,6 +701,9 @@ class LudoCharacters {
         const wD = anim.windupDuration;
         const rD = anim.releaseDuration;
         const fD = anim.followDuration;
+        // 'pass' (dice-handoff handoff toss) হলে সব motion অর্ধেকের কাছাকাছি —
+        // যাতে দেখে বোঝা যায় এটা board-এ ছোড়া নয়, পাশের খেলোয়াড়কে দেওয়া
+        const A = (anim.kind === 'pass') ? 0.48 : 1.0;
 
         // Release exactly once, even if a long frame skips past the release window.
         if (!anim.released && anim.t >= wD) {
@@ -670,24 +717,24 @@ class LudoCharacters {
           const p = anim.t / wD;
           const easeBack = p * p;
 
-          parts.torso.rotation.x = -0.32 * easeBack;
-          parts.torso.rotation.y = 0.35 * easeBack;
-          parts.head.rotation.x = 0.15 * easeBack;
+          parts.torso.rotation.x = -0.32 * A * easeBack;
+          parts.torso.rotation.y = 0.35 * A * easeBack;
+          parts.head.rotation.x = 0.15 * A * easeBack;
 
           // Right arm raised high back with dice
-          parts.armR.rotation.x = 1.8 * easeBack;
-          parts.armR.rotation.z = -0.4 * easeBack;
-          if (parts.forearmR) parts.forearmR.rotation.x = -1.1 * easeBack;
+          parts.armR.rotation.x = 1.8 * A * easeBack;
+          parts.armR.rotation.z = -0.4 * A * easeBack;
+          if (parts.forearmR) parts.forearmR.rotation.x = -1.1 * A * easeBack;
 
           // Left arm balances out in front
-          parts.armL.rotation.x = -0.6 * easeBack;
-          parts.armL.rotation.z = -0.3 * easeBack;
+          parts.armL.rotation.x = -0.6 * A * easeBack;
+          parts.armL.rotation.z = -0.3 * A * easeBack;
 
           // Slight step back into back foot
-          ch.body.position.z = -0.12 * easeBack;
-          ch.body.position.y = 0.2 - 0.04 * easeBack;
-          parts.legR.rotation.x = -0.2 * easeBack;
-          parts.legL.rotation.x = 0.15 * easeBack;
+          ch.body.position.z = -0.12 * A * easeBack;
+          ch.body.position.y = 0.2 - 0.04 * A * easeBack;
+          parts.legR.rotation.x = -0.2 * A * easeBack;
+          parts.legL.rotation.x = 0.15 * A * easeBack;
 
         } else if (anim.t < wD + rD) {
           // PHASE 2: POWER THROW & LAUNCH
@@ -695,34 +742,34 @@ class LudoCharacters {
           const easeThrow = Math.sin(p * Math.PI * 0.5);
 
           // Torso lunges forward and twists toward the board center
-          parts.torso.rotation.x = -0.32 + 0.65 * easeThrow;
-          parts.torso.rotation.y = 0.35 - 0.55 * easeThrow;
-          parts.head.rotation.x = -0.2 * easeThrow;
+          parts.torso.rotation.x = -0.32 * A + 0.65 * A * easeThrow;
+          parts.torso.rotation.y = 0.35 * A - 0.55 * A * easeThrow;
+          parts.head.rotation.x = -0.2 * A * easeThrow;
 
           // Right arm sweeps forward like a baseball/bowling pitch
-          parts.armR.rotation.x = 1.8 - 3.4 * easeThrow;
-          parts.armR.rotation.z = -0.4 + 0.6 * easeThrow;
-          if (parts.forearmR) parts.forearmR.rotation.x = -1.1 + 1.3 * easeThrow;
+          parts.armR.rotation.x = 1.8 * A - 3.4 * A * easeThrow;
+          parts.armR.rotation.z = -0.4 * A + 0.6 * A * easeThrow;
+          if (parts.forearmR) parts.forearmR.rotation.x = -1.1 * A + 1.3 * A * easeThrow;
 
           // Lunge forward
-          ch.body.position.z = -0.12 + 0.28 * easeThrow;
-          ch.body.position.y = 0.16 + 0.03 * easeThrow;
+          ch.body.position.z = -0.12 * A + 0.28 * A * easeThrow;
+          ch.body.position.y = 0.16 + 0.03 * A * easeThrow;
 
         } else if (anim.t < wD + rD + fD) {
           // PHASE 3: FOLLOW-THROUGH & SETTLE
           const p = (anim.t - wD - rD) / fD;
           const settle = 1.0 - Math.min(1.0, p);
 
-          parts.torso.rotation.x = 0.33 * settle;
-          parts.torso.rotation.y = -0.2 * settle;
-          parts.armR.rotation.x = -1.6 * settle;
-          parts.armR.rotation.z = 0.2 * settle;
-          if (parts.forearmR) parts.forearmR.rotation.x = 0.2 * settle;
+          parts.torso.rotation.x = 0.33 * A * settle;
+          parts.torso.rotation.y = -0.2 * A * settle;
+          parts.armR.rotation.x = -1.6 * A * settle;
+          parts.armR.rotation.z = 0.2 * A * settle;
+          if (parts.forearmR) parts.forearmR.rotation.x = 0.2 * A * settle;
 
           // Head looks eagerly at the board
-          parts.head.rotation.x = -0.2 * settle;
+          parts.head.rotation.x = -0.2 * A * settle;
 
-          ch.body.position.z = 0.16 * settle;
+          ch.body.position.z = 0.16 * A * settle;
           ch.body.position.y = 0.2;
           parts.legR.rotation.x = 0;
           parts.legL.rotation.x = 0;
@@ -737,6 +784,53 @@ class LudoCharacters {
           parts.head.rotation.set(0, 0, 0);
           ch.body.position.set(0, 0.2, 0);
           ch.throwAnim = null;
+        }
+
+      } else if (ch.catchAnim) {
+        // ---- DICE CATCH ANIMATION (dice-handoff.js handoff এর জন্য) ----
+        // পরের player আগতীয়া dice ধরতে হাত বাড়ায়, ধরে, বুকে টেনে আনে
+        const anim = ch.catchAnim;
+        anim.t += delta;
+        const p = Math.min(1, anim.t / anim.duration);
+
+        if (p < 0.5) {
+          // Reach out toward the incoming dice
+          const e = p / 0.5;
+          const ease = e * e * (3 - 2 * e);
+          parts.armR.rotation.x = -0.4 - 1.05 * ease;
+          parts.armR.rotation.z = -0.15 - 0.18 * ease;
+          if (parts.forearmR) parts.forearmR.rotation.x = -0.3 - 0.35 * ease;
+          parts.armL.rotation.x = -0.3 - 0.75 * ease;
+          parts.armL.rotation.z = -0.2 - 0.22 * ease;
+          if (parts.forearmL) parts.forearmL.rotation.x = -0.2 - 0.25 * ease;
+          parts.head.rotation.x = 0.05 + 0.16 * ease;
+          parts.torso.rotation.x = 0.08 * ease;
+          ch.body.position.y = 0.2;
+        } else {
+          // Caught! Draw dice into chest with a tiny bounce
+          const e = (p - 0.5) / 0.5;
+          const ease = e * e * (3 - 2 * e);
+          parts.armR.rotation.x = -1.45 + 0.55 * ease;
+          parts.armR.rotation.z = -0.33 + 0.12 * ease;
+          if (parts.forearmR) parts.forearmR.rotation.x = -0.65 - 0.5 * ease;
+          parts.armL.rotation.x = -1.05 + 0.55 * ease;
+          parts.armL.rotation.z = -0.42 + 0.12 * ease;
+          if (parts.forearmL) parts.forearmL.rotation.x = -0.45 - 0.4 * ease;
+          parts.head.rotation.x = 0.21 - 0.05 * ease;
+          parts.torso.rotation.x = 0.08 - 0.08 * ease;
+          ch.body.position.y = 0.2 + Math.sin(e * Math.PI) * 0.03;
+        }
+
+        if (anim.t >= anim.duration) {
+          // Catch finished — holdingPose পরের ফ্রেমে থেকে দেবে (diceHolder সেট হলে)
+          parts.armL.rotation.set(0, 0, 0);
+          parts.armR.rotation.set(0, 0, 0);
+          if (parts.forearmL) parts.forearmL.rotation.set(0, 0, 0);
+          if (parts.forearmR) parts.forearmR.rotation.set(0, 0, 0);
+          parts.torso.rotation.set(0, 0, 0);
+          parts.head.rotation.set(0, 0, 0);
+          ch.body.position.set(0, 0.2, 0);
+          ch.catchAnim = null;
         }
 
       } else if (ch.emoteAnim) {

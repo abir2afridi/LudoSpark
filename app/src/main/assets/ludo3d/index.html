@@ -20,6 +20,7 @@
   <script src="js/engine/audio.js"></script>
   <script src="js/engine/physics.js"></script>
   <script src="js/engine/characters.js"></script>
+  <script src="js/engine/dice-handoff.js"></script>
   <script src="js/engine/board.js"></script>
   <script src="js/engine/game.js"></script>
   <script src="js/features/dice-3d.js"></script>
@@ -571,27 +572,27 @@
         <h2 class="modal-ribbon-title" id="mode-setup-title">GAME SETUP</h2>
       </div>
       <div class="modal-desc">
-        <p class="opt-label"><b>Number of Players:</b></p>
+        <p class="opt-label">👥 <b>Number of Players:</b></p>
         <div class="opt-row">
-          <button class="modal-btn" id="opt-2p">2 Players</button>
-          <button class="modal-btn" id="opt-3p">3 Players</button>
-          <button class="modal-btn active" id="opt-4p">4 Players</button>
+          <button class="opt-btn" id="opt-2p">2 Players</button>
+          <button class="opt-btn" id="opt-3p">3 Players</button>
+          <button class="opt-btn active" id="opt-4p">4 Players</button>
         </div>
 
-        <p class="opt-label"><b>Match Mode:</b></p>
+        <p class="opt-label">🎮 <b>Match Mode:</b></p>
         <div class="opt-row">
-          <button class="modal-btn active" id="opt-vs-bot">Vs AI Bots</button>
-          <button class="modal-btn" id="opt-pass-play">Pass & Play</button>
+          <button class="opt-btn active" id="opt-vs-bot">Vs AI Bots</button>
+          <button class="opt-btn" id="opt-pass-play">Pass & Play</button>
         </div>
 
-        <p class="opt-label"><b>AI Difficulty:</b></p>
+        <p class="opt-label">🤖 <b>AI Difficulty:</b></p>
         <div class="opt-row" id="difficulty-row">
-          <button class="modal-btn" id="opt-easy">Easy</button>
-          <button class="modal-btn active" id="opt-normal">Normal</button>
-          <button class="modal-btn" id="opt-hard">Hard</button>
+          <button class="opt-btn" id="opt-easy">Easy</button>
+          <button class="opt-btn active" id="opt-normal">Normal</button>
+          <button class="opt-btn" id="opt-hard">Hard</button>
         </div>
       </div>
-      <button id="btn-start-game" class="modal-btn btn-green">▶ Start Match</button>
+      <button id="btn-start-game" class="modal-btn btn-green">▶ START MATCH</button>
       <button id="btn-cancel-game" class="modal-btn btn-slate">Cancel</button>
     </div>
   </div>

@@ -101,6 +101,61 @@
   line-height: 1.5;
 }
 
+/* Option Label & Rows for Setup Dialogs */
+.opt-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #FEF3C7;
+  margin: 8px 0 4px 0;
+  text-align: left;
+}
+
+.opt-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+/* Individual Option Button */
+.opt-btn {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px solid rgba(56, 189, 248, 0.35);
+  color: #94A3B8;
+  border-radius: 14px;
+  padding: 10px 4px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.opt-btn:active {
+  transform: scale(0.95);
+}
+
+/* ACTIVE Selected Option State (Bright Gold + Checkmark Badge) */
+.opt-btn.active {
+  background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%) !important;
+  border-color: #FEF3C7 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.6), 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+.opt-btn.active::after {
+  content: " ✓";
+  font-weight: 900;
+  color: #FEF3C7;
+  margin-left: 4px;
+}
+
 /* AAA 3D Bevel Dialog Buttons */
 .modal-btn {
   background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);

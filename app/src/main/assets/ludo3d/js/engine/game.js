@@ -108,6 +108,10 @@ class LudoGame {
     // Cell blink highlights during token movement
     this.moveHighlights = [];
     this.diceHolder = -1;
+    // Dice handoff state (dice-handoff.js) — মাঝপথে passTurn ডেকে থাকলে
+    // animate() যেন dice হাতে টেনে না আনে (instant snap এড়াতে)
+    this._turnEndPending = false;
+    this.diceHandoff = null;
     this.pendingSkinApply = false;
     this._tmpVec = new THREE.Vector3();
 
@@ -142,6 +146,10 @@ class LudoGame {
     this.backgroundPaused = false;
     this.timerActive = false;
     this._timerPlayer = -1;
+    this._turnEndPending = false;
+    // মাঝপথে game বন্ধ হলে dice handoff flight থামাও — নাহলে
+    // পরের game-এ আটকে থাকা phase দেখতে পাওয়া যেত
+    if (this.diceHandoff) this.diceHandoff.cancel();
     this.stopLoop();
     if (this._aiTimer) {
       clearTimeout(this._aiTimer);
@@ -206,7 +214,7 @@ class LudoGame {
     const cfg = this.playerConfigs[this.activePlayerIndex];
     if (!cfg || !cfg.isAI) return;
     if (this.state === 'WAIT_ROLL') {
-      this.scheduleAction(() => this.handleRoll(), 800);
+      this.scheduleAction(() => this.handleRoll(true), 800);
     } else if (this.state === 'WAIT_SELECT' && this.movableTokens.length > 0) {
       this.scheduleAction(() => {
         if (this.state !== 'WAIT_SELECT') return;
@@ -365,6 +373,9 @@ class LudoGame {
       this.spawnBoardShockwave(pos);
       this.triggerCameraShake(0.12);
     };
+    // Dice handoff system — board↔hand retrieval + player→player pass
+    // (board-এর দিকে throw physics.js-এই থাকে, শুধু হাতে ফেরানো ও দেওয়া এখানে)
+    this.diceHandoff = new DiceHandoffSystem(this);
     if (this.diceMesh) this.scene.remove(this.diceMesh);
     this.diceMesh = this.builder.createDiceMesh(this.diceSkin);
     this.scene.add(this.diceMesh);
@@ -614,8 +625,20 @@ class LudoGame {
     }, { passive: false });
   }
 
-  handleRoll() {
+  /**
+   * Dice board-এ ছোড়ার main entry।
+   * fromRetry=true মানে এটা AI/timer থেকে আসা automatic retry —
+   * handoff animation চলাকালীন এটা পরে আবার চেষ্টা করবে। মানুষের tap
+   * হলে (fromRetry=false) handoff চলাকালীন ignore করা হয়, কারণ dice
+   * তখন মাঝ আকাশে উড়ছে বা কারো হাতে ধরা পড়ে আছে।
+   */
+  handleRoll(fromRetry = false) {
     if (!this.gameActive || this.state !== 'WAIT_ROLL') return;
+    // Dice handoff (retrieve/pass) চলাকালীন roll নেওয়া যাবে না — পরে আবার
+    if (this.diceHandoff && this.diceHandoff.isBusy()) {
+      if (fromRetry) this.scheduleAction(() => this.handleRoll(true), 250);
+      return;
+    }
     this.state = 'ROLLING';
     this.clearHighlights();
 
@@ -678,6 +701,9 @@ class LudoGame {
         this.addHistory(`Rolled 3 consecutive 6s! Turn passed.`);
         this.consecutiveSixes = 0;
         this.state = 'WAIT_ROLL';
+        // passTurn ডাকা হচ্ছে (৯০০ms পর) — ততক্ষণ animate() যেন dice হাতে
+        // টেনে না আনে (থেমে থাকা dice দেখতে ভুল লাগবে)
+        this._turnEndPending = true;
         this.scheduleAction(() => this.passTurn(), 900);
         this.notifyUI();
         this.saveGame();
@@ -693,6 +719,9 @@ class LudoGame {
     if (this.movableTokens.length === 0) {
       this.addHistory(`Rolled a ${roll}. No moves available.`);
       this.state = 'WAIT_ROLL';
+      // passTurn ডাকা হচ্ছে (৯০০ms পর) — ততক্ষণ animate() যেন dice হাতে
+      // টেনে না আনে (থেমে থাকা dice দেখতে ভুল লাগবে)
+      this._turnEndPending = true;
       this.scheduleAction(() => this.passTurn(), 900);
     } else if (this.movableTokens.length === 1 && this.playerConfigs[this.activePlayerIndex].isAI) {
       this.state = 'MOVING';
@@ -1150,8 +1179,19 @@ class LudoGame {
       this.addHistory(`${this.playerConfigs[token.player].name} earned a bonus roll!`);
       this.notifyUI();
       this.saveGame();
+      // ---- BONUS ROLL (double move) — dice-handoff.js FLOW A ----
+      // Move শেষ, dice এখন board-এ পড়ে আছে। একই খেলোয়াড় আবার পাবে,
+      // তাই প্রথমে dice ওর হাতে উড়ে ফিরবে (retrieve), তারপর সে আবার
+      // board-এ throw করবে (throw physics.js-এ)। handoff শেষ না হওয়া
+      // পর্যন্ত handleRoll busy guard দিয়ে অপেক্ষা করবে।
+      this.diceHolder = -1;
+      if (this.diceHandoff) {
+        this.diceHandoff.retrieveToPlayer(this.activePlayerIndex, () => {
+          this.diceHolder = this.activePlayerIndex;
+        });
+      }
       if (this.playerConfigs[this.activePlayerIndex].isAI) {
-        this.scheduleAction(() => this.handleRoll(), 900);
+        this.scheduleAction(() => this.handleRoll(true), 900);
       }
     } else {
       this.passTurn();
@@ -1160,8 +1200,11 @@ class LudoGame {
 
   passTurn() {
     if (!this.gameActive) return;
+    this._turnEndPending = false;
     this.timerActive = false;
     this._timerPlayer = -1;
+    // কে turn ছাড়ছে — ওই player-ই dice টাকে next player-এর হাতে (dice-handoff.js FLOW B)
+    const prevPlayer = this.activePlayerIndex;
     let nextPlayer = (this.activePlayerIndex + 1) % this.numPlayers;
     let loops = 0;
     while (this.finishedPlayers.includes(nextPlayer) && loops < this.numPlayers) {
@@ -1177,7 +1220,21 @@ class LudoGame {
     this.notifyUI();
     this.saveGame();
 
-    this.scheduleAITurn();
+    // ---- TURN-CHANGE DICE HANDOFF (dice-handoff.js FLOW B) ----
+    // board-এ পড়ে থাকা dice আগে আগের player-এর হাতে ফেরে (retrieve),
+    // তারপর ও আস্তে করে next player-এর হাতে ছুড়ে দেয় (pass), next player
+    // catch করে হাতে ধরে — এরপর তার নিজের turn-এ board-এ throw করবে।
+    // পুরো animation শেষ হলেই AI turn schedule হবে, যাতে আগে ছুড়ে না দিয়ে
+    // AI dice না নিয়ে roll করে ফেলে।
+    this.diceHolder = -1;
+    if (this.diceHandoff && this.characters) {
+      this.diceHandoff.passToNextPlayer(prevPlayer, nextPlayer, () => {
+        this.diceHolder = nextPlayer;
+        this.scheduleAITurn();
+      });
+    } else {
+      this.scheduleAITurn();
+    }
   }
 
   spawnConfetti(center, count = 60) {
@@ -1405,6 +1462,8 @@ class LudoGame {
     this._matchId++;
     this.timerActive = false;
     this._timerPlayer = -1;
+    if (this.diceHandoff) this.diceHandoff.cancel();
+    this._turnEndPending = false;
     this.gameMode = 'LUDO';
     this.numPlayers = numPlayers;
     this.difficulty = difficulty;
@@ -1440,6 +1499,8 @@ class LudoGame {
     this._matchId++;
     this.timerActive = false;
     this._timerPlayer = -1;
+    if (this.diceHandoff) this.diceHandoff.cancel();
+    this._turnEndPending = false;
     this.gameMode = 'SNAKE';
     this.numPlayers = numPlayers;
     this.pendingSkinApply = false;
@@ -1640,6 +1701,8 @@ class LudoGame {
         this.spawnDiceTrailParticle(this.diceMesh.position);
       }
     }
+    // Dice handoff arc flights (board↔hand retrieve + player→player pass)
+    if (this.diceHandoff) this.diceHandoff.update(delta);
 
     // Camera trauma / impact shake
     if (this.cameraShake > 0.005) {
@@ -1672,7 +1735,8 @@ class LudoGame {
       if (this.turnTimeRemaining <= 0) {
         this.timerActive = false;
         if (this.state === 'WAIT_ROLL') {
-          this.handleRoll();
+          // fromRetry=true — handoff চলাকালীন auto-roll অপেক্ষা করবে
+          this.handleRoll(true);
         } else if (this.state === 'WAIT_SELECT') {
           if (this.movableTokens.length > 0) {
             const best = this.chooseAIBestToken(this.movableTokens, this.currentRoll);
@@ -1688,7 +1752,14 @@ class LudoGame {
     if (this.characters) {
       this.characters.update(delta);
 
-      if (this.state === 'WAIT_ROLL' && !this.physics.isRolling) {
+      // Dice হাতে "ধরা" পড়ে থাকবে যখন:
+      //  - turn শুরুর জন্য অপেক্ষা (WAIT_ROLL), dice কোথাও উড়ছে না
+      //  - handoff retrieve বা pass চলছে না (else dice মাঝপথে হাতে টেনে আসত)
+      //  - passTurn ডাকা হয়েছে কিন্তু এখনো handoff শুরু হয়নি (else ছোট্ট
+      //    ঝলকে dice হাতে চলে যেত আর তারপর আবার উড়ত)
+      if (this.state === 'WAIT_ROLL' && !this.physics.isRolling &&
+          !(this.diceHandoff && this.diceHandoff.isBusy()) &&
+          !this._turnEndPending) {
         this.diceHolder = this.activePlayerIndex;
       }
 
