@@ -115,6 +115,9 @@ class LudoGame {
     // Board throw system (dice-board-throw.js) — handoff থেকে আলাদা
     // mechanism: character দিয়ে board-এ real physics throw
     this.boardThrow = null;
+    // Walk retrieve system (walk-retrieve.js) — bonus-এ character নিজে
+    // হেঁটে dice তুলে আনে
+    this.walkRetrieve = null;
     this.pendingSkinApply = false;
     this._tmpVec = new THREE.Vector3();
 
@@ -153,6 +156,7 @@ class LudoGame {
     // মাঝপথে game বন্ধ হলে dice handoff flight থামাও — নাহলে
     // পরের game-এ আটকে থাকা phase দেখতে পাওয়া যেত
     if (this.diceHandoff) this.diceHandoff.cancel();
+    if (this.walkRetrieve) this.walkRetrieve.cancel();
     this.stopLoop();
     if (this._aiTimer) {
       clearTimeout(this._aiTimer);
@@ -381,6 +385,9 @@ class LudoGame {
     this.diceHandoff = new DiceHandoffSystem(this);
     // Board throw system — handoff থেকে আলাদা mechanism (dice-board-throw.js)
     this.boardThrow = new DiceBoardThrowSystem(this);
+    // Walk retrieve system — bonus-এ চরিত্র হেঁটে dice তোলে (walk-retrieve.js)
+    if (this.walkRetrieve) this.walkRetrieve.cancel();
+    this.walkRetrieve = new WalkRetrieveSystem(this);
     if (this.diceMesh) this.scene.remove(this.diceMesh);
     this.diceMesh = this.builder.createDiceMesh(this.diceSkin);
     this.scene.add(this.diceMesh);
@@ -648,6 +655,12 @@ class LudoGame {
     // আবার roll করলে দ্বিতীয় roll চালু হয়ে passTurn তাকে মাঝপথে হত্যা করবে
     // → dice callback হারিয়ে গিয়ে game জমে থাকত। তাই এই উইন্ডোতে tap = ignore।
     if (this._turnEndPending) {
+      if (fromRetry) this.scheduleAction(() => this.handleRoll(true), 250);
+      return;
+    }
+    // Bonus walk চলাকালীন (player নিজে হেঁটে dice তুলতে গেছে — walk-retrieve.js)
+    // roll নেওয়া যাবে না — dice এখনো board-এ/মাঝপথে। শেষ হলেই চেষ্টা হবে।
+    if (this.walkRetrieve && this.walkRetrieve.isBusy()) {
       if (fromRetry) this.scheduleAction(() => this.handleRoll(true), 250);
       return;
     }
@@ -1173,29 +1186,52 @@ class LudoGame {
       this.addHistory(`${this.playerConfigs[token.player].name} earned a bonus roll!`);
       this.notifyUI();
       this.saveGame();
-      // ---- BONUS ROLL (double move) — dice-handoff.js FLOW A ----
+      // ---- BONUS ROLL (double move) — walk-retrieve.js ----
       // Move শেষ, dice এখন board-এ পড়ে আছে। একই খেলোয়াড় আবার পাবে,
-      // তাই প্রথমে dice ওর হাতে উড়ে ফিরবে (retrieve), তারপর সে আবার
-      // board-এ throw করবে (throw physics.js-এ)। handoff শেষ না হওয়া
-      // পর্যন্ত handleRoll busy guard দিয়ে অপেক্ষা করবে।
-      // ⚠️ Safety: কোনো কারণে retrieve শুরু না হলে তবু holder বসবে,
+      // তাই এবার realistic: player নিজে podium (lobby) থেকে নেমে হেঁটে
+      // board-এ যায়, dice তুলে নেয়, আবার podium-এ ফিরে দাঁড়ায়
+      // (walk-retrieve.js), তারপর সে আবার board-এ throw করবে
+      // (dice-board-throw.js)। walk শেষ না হওয়া পর্যন্ত handleRoll
+      // busy guard দিয়ে অপেক্ষা করবে।
+      // ⚠️ Safety: walk কোনো কারণে শুরু না হলে আগের flight retrieve
+      // (dice-handoff.js FLOW A) fallback চলবে; তাও না হলে holder বসবে —
       // নাহলে dice কোথাও না থেকে চিরতরে অদৃশ্য হয়ে যেত।
       this.diceHolder = -1;
-      if (this.diceHandoff) {
+      let walkStarted = false;
+      if (this.walkRetrieve && this.characters) {
         try {
-          this.diceHandoff.retrieveToPlayer(this.activePlayerIndex, () => {
+          this.walkRetrieve.start(this.activePlayerIndex, () => {
+            // walk শেষ — dice হাতে, character পুরোপুরি podium-এ ফিরেছে
             this.diceHolder = this.activePlayerIndex;
+            this.notifyUI();
+            if (this.playerConfigs[this.activePlayerIndex].isAI) {
+              this.scheduleAction(() => this.handleRoll(true), 700);
+            }
           });
-          if (!this.diceHandoff.isBusy()) this.diceHolder = this.activePlayerIndex;
+          walkStarted = this.walkRetrieve.isBusy();
         } catch (e) {
-          this.diceHolder = this.activePlayerIndex;
-          if (window.SysLogs) window.SysLogs.push('game', 'Retrieve error: ' + (e && e.message));
+          walkStarted = false;
+          if (window.SysLogs) window.SysLogs.push('game', 'Walk-retrieve error: ' + (e && e.message));
         }
-      } else {
-        this.diceHolder = this.activePlayerIndex;
       }
-      if (this.playerConfigs[this.activePlayerIndex].isAI) {
-        this.scheduleAction(() => this.handleRoll(true), 900);
+      if (!walkStarted) {
+        // Fallback: আগের flight retrieve (dice-handoff.js FLOW A)
+        if (this.diceHandoff) {
+          try {
+            this.diceHandoff.retrieveToPlayer(this.activePlayerIndex, () => {
+              this.diceHolder = this.activePlayerIndex;
+            });
+            if (!this.diceHandoff.isBusy()) this.diceHolder = this.activePlayerIndex;
+          } catch (e) {
+            this.diceHolder = this.activePlayerIndex;
+            if (window.SysLogs) window.SysLogs.push('game', 'Retrieve error: ' + (e && e.message));
+          }
+        } else {
+          this.diceHolder = this.activePlayerIndex;
+        }
+        if (this.playerConfigs[this.activePlayerIndex].isAI) {
+          this.scheduleAction(() => this.handleRoll(true), 900);
+        }
       }
     } else {
       this.passTurn();
@@ -1478,6 +1514,7 @@ class LudoGame {
     this.timerActive = false;
     this._timerPlayer = -1;
     if (this.diceHandoff) this.diceHandoff.cancel();
+    if (this.walkRetrieve) this.walkRetrieve.cancel();
     this._turnEndPending = false;
     this.gameMode = 'LUDO';
     this.numPlayers = numPlayers;
@@ -1515,6 +1552,7 @@ class LudoGame {
     this.timerActive = false;
     this._timerPlayer = -1;
     if (this.diceHandoff) this.diceHandoff.cancel();
+    if (this.walkRetrieve) this.walkRetrieve.cancel();
     this._turnEndPending = false;
     this.gameMode = 'SNAKE';
     this.numPlayers = numPlayers;
@@ -1728,6 +1766,9 @@ class LudoGame {
     }
     // Dice handoff arc flights (board↔hand retrieve + player→player pass)
     if (this.diceHandoff) this.diceHandoff.update(delta);
+    // Bonus walk-retrieve (walk-retrieve.js) — character হেঁটে dice তুলে
+    // আনে; এটাও প্রতি frame চলতে হবে, নাহলে walk জমে থাকবে
+    if (this.walkRetrieve) this.walkRetrieve.update(delta);
 
     // ---- ROLL WATCHDOG: state=ROLLING থাকলেও physics থেমে থাকলে
     // (callback কোথাও হারিয়ে গেলে) জবরদখ্তে roll শেষ দেখাও, নাহলে game
@@ -1802,6 +1843,7 @@ class LudoGame {
       //    ঝলকে dice হাতে চলে যেত আর তারপর আবার উড়ত)
       if (this.state === 'WAIT_ROLL' && !this.physics.isRolling &&
           !(this.diceHandoff && this.diceHandoff.isBusy()) &&
+          !(this.walkRetrieve && this.walkRetrieve.isBusy()) &&
           !this._turnEndPending) {
         this.diceHolder = this.activePlayerIndex;
       }

@@ -672,6 +672,65 @@ class LudoCharacters {
     };
   }
 
+  /**
+   * WALK RETRIEVE (walk-retrieve.js থেকে call হয়) — bonus-এ player
+   * নিজে podium থেকে নেমে হেঁটে dice তুলতে যায়।
+   * walkAnim: { t, phase:'walk'|'pick', crouch:0..1, carrying:bool }
+   *  - 'walk' = পা ওঠানোমা হাঁটা (system দেহ position চালায়, এখানে শুধু পোজ)
+   *  - 'pick' = হোঁচট দিয়ে ঝুঁকে হাত নামানো (crouch amount system দেয়)
+   *  - carrying = dice হাতে ধরে ফেরা (ডান হাত স্থির, বাম হাত দোলে)
+   */
+  startWalk(playerId) {
+    const ch = this.chars[playerId];
+    if (!ch) return;
+    ch.throwAnim = null;
+    ch.catchAnim = null;
+    ch.emoteAnim = null;
+    ch.holdingPose = false;
+    ch.walkAnim = { t: 0, phase: 'walk', crouch: 0, carrying: false };
+  }
+
+  /** 'walk' বা 'pick' — phase বদলালে t reset (stride নতুন করে শুরু) */
+  setWalkPhase(playerId, phase) {
+    const ch = this.chars[playerId];
+    if (!ch || !ch.walkAnim) return;
+    ch.walkAnim.phase = phase;
+    if (phase === 'walk') {
+      ch.walkAnim.t = 0;
+      ch.walkAnim.crouch = 0;
+    }
+  }
+
+  /** dice কুড়ানো হয়ে গেলে carrying=true — ডান হাত বাঁকিয়ে ধরবে */
+  setWalkCarry(playerId, carrying) {
+    const ch = this.chars[playerId];
+    if (!ch || !ch.walkAnim) return;
+    ch.walkAnim.carrying = carrying;
+  }
+
+  /** walk শেষ/বাতিল — সব pose রিসেট, body আগের জায়গায় */
+  stopWalk(playerId) {
+    const ch = this.chars[playerId];
+    if (!ch) return;
+    ch.walkAnim = null;
+    const parts = ch.parts;
+    parts.torso.rotation.set(0, 0, 0);
+    parts.armL.rotation.set(0, 0, 0);
+    parts.armR.rotation.set(0, 0, 0);
+    if (parts.forearmL) parts.forearmL.rotation.set(0, 0, 0);
+    if (parts.forearmR) parts.forearmR.rotation.set(0, 0, 0);
+    parts.head.rotation.set(0, 0, 0);
+    parts.legL.rotation.set(0, 0, 0);
+    parts.legR.rotation.set(0, 0, 0);
+    parts.pelvis.position.x = 0;
+    parts.pelvis.rotation.z = 0;
+    ch.body.position.set(0, 0.2, 0);
+    ch.body.rotation.y = 0;
+    if (parts.pony) {
+      parts.pony.rotation.set(-0.35, 0, 0);
+    }
+  }
+
   update(delta) {
     this.time += delta;
 
@@ -791,6 +850,69 @@ class LudoCharacters {
           parts.head.rotation.set(0, 0, 0);
           ch.body.position.set(0, 0.2, 0);
           ch.throwAnim = null;
+        }
+
+      } else if (ch.walkAnim) {
+        // ---- WALK ANIMATION (walk-retrieve.js — bonus dice fetch) ----
+        // দেহ position ও পথ walk-retrieve.js চালায়; এখানে শুধু limb poses.
+        // priority: throw-এর পরে (walk চলাকালীন throw হয় না — guard আছে),
+        // catch/emote/holding-এর আগে (walk-ই দৃশ্যে জিতবে)।
+        const wa = ch.walkAnim;
+        wa.t += delta;
+        const lerpK = Math.min(1, delta * 9);
+
+        if (wa.phase === 'walk') {
+          // পা ওঠানামা (stride) — সাথে সাথে বিপরীত দিকে হাত দোলা
+          const stride = Math.sin(wa.t * 9.5);
+          parts.legR.rotation.x += (stride * 0.50 - parts.legR.rotation.x) * lerpK;
+          parts.legL.rotation.x += (-stride * 0.50 - parts.legL.rotation.x) * lerpK;
+
+          if (wa.carrying) {
+            // dice ডান হাতে ধরে বহন — ডান হাত স্থির বাঁকা (dice নড়বে না),
+            // বাম হাত স্বাভাবিক দোলে
+            parts.armR.rotation.x += (-0.95 - parts.armR.rotation.x) * lerpK;
+            parts.armR.rotation.z += (-0.30 - parts.armR.rotation.z) * lerpK;
+            if (parts.forearmR) parts.forearmR.rotation.x += (-0.55 - parts.forearmR.rotation.x) * lerpK;
+            parts.armL.rotation.x += (-0.45 + stride * 0.42 - parts.armL.rotation.x) * lerpK;
+            parts.armL.rotation.z += (-0.12 - parts.armL.rotation.z) * lerpK;
+            if (parts.forearmL) parts.forearmL.rotation.x += (-0.20 - parts.forearmL.rotation.x) * lerpK;
+          } else {
+            // হাত খালি — দুই হাত পারাপার দোলে
+            parts.armR.rotation.x += (-0.12 - stride * 0.42 - parts.armR.rotation.x) * lerpK;
+            parts.armR.rotation.z += (0.10 - parts.armR.rotation.z) * lerpK;
+            parts.armL.rotation.x += (-0.12 + stride * 0.42 - parts.armL.rotation.x) * lerpK;
+            parts.armL.rotation.z += (-0.10 - parts.armL.rotation.z) * lerpK;
+            if (parts.forearmR) parts.forearmR.rotation.x += (-0.25 - parts.forearmR.rotation.x) * lerpK;
+            if (parts.forearmL) parts.forearmL.rotation.x += (-0.25 - parts.forearmL.rotation.x) * lerpK;
+          }
+
+          // সামনে হেলে হাঁটা + কাঁধের হালকা মোচড়
+          parts.torso.rotation.x += (0.10 - parts.torso.rotation.x) * lerpK;
+          parts.torso.rotation.y += (stride * 0.07 - parts.torso.rotation.y) * lerpK;
+          parts.torso.rotation.z = 0;
+          parts.head.rotation.x += (0.06 - parts.head.rotation.x) * lerpK;
+          parts.head.rotation.y += (0 - parts.head.rotation.y) * lerpK;
+          parts.pelvis.position.x = 0;
+          parts.pelvis.rotation.z = 0;
+
+        } else {
+          // 'pick' — হোঁচট দিয়ে ঝুঁকে ডান হাত নামিয়ে dice তোলা
+          // (crouch amount 0..1 walk-retrieve.js দেয়, এখানে pose মাত্র)
+          const k = wa.crouch;
+          parts.legR.rotation.x += (0.72 * k - parts.legR.rotation.x) * lerpK;
+          parts.legL.rotation.x += (0.66 * k - parts.legL.rotation.x) * lerpK;
+          parts.armR.rotation.x += (-1.35 * k - parts.armR.rotation.x) * lerpK;
+          parts.armR.rotation.z += (-0.22 * k - parts.armR.rotation.z) * lerpK;
+          if (parts.forearmR) parts.forearmR.rotation.x += (-0.45 * k - parts.forearmR.rotation.x) * lerpK;
+          parts.armL.rotation.x += (-0.55 * k - parts.armL.rotation.x) * lerpK;
+          parts.armL.rotation.z += (-0.28 * k - parts.armL.rotation.z) * lerpK;
+          if (parts.forearmL) parts.forearmL.rotation.x += (-0.30 * k - parts.forearmL.rotation.x) * lerpK;
+          parts.torso.rotation.x += (0.85 * k - parts.torso.rotation.x) * lerpK;
+          parts.torso.rotation.y += (0 - parts.torso.rotation.y) * lerpK;
+          parts.head.rotation.x += (0.50 * k - parts.head.rotation.x) * lerpK;
+          parts.head.rotation.y += (0 - parts.head.rotation.y) * lerpK;
+          parts.pelvis.position.x = 0;
+          parts.pelvis.rotation.z = 0;
         }
 
       } else if (ch.catchAnim) {
