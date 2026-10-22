@@ -22,6 +22,7 @@ class LudoGame {
     this.difficulty = (ls && ls.getItem('ludoSpark.difficulty')) || 'normal';
     this.diceSkin = (ls && ls.getItem('ludoSpark.diceSkin')) || 'white';
     this.boardTheme = (ls && ls.getItem('ludoSpark.boardTheme')) || 'classic';
+    this.pawnSkin = (ls && ls.getItem('ludoSpark.pawnSkin')) || 'classic';
 
     // Game Configuration
     // Game Configuration (matches screenshot: P1 Blue BL, P2 Red TL, P3 Green TR, P4 Yellow BR)
@@ -82,6 +83,12 @@ class LudoGame {
 
     // Particles
     this.confettiParticles = [];
+
+    // Cell blink highlights during token movement
+    this.moveHighlights = [];
+    this.diceHolder = -1;
+    this.pendingSkinApply = false;
+    this._tmpVec = new THREE.Vector3();
 
     // Animation clocks
     this.clock = new THREE.Clock();
@@ -234,6 +241,9 @@ class LudoGame {
     if (this.boardGroup) this.scene.remove(this.boardGroup);
     this.boardGroup = this.builder.buildBoard(this.scene, this.boardTheme);
 
+    // 3D humanoid players standing around the 4 sides of the board
+    this.characters = new LudoCharacters(this.scene, this.playerConfigs);
+
     // Dice Physics & Mesh
     this.physics = new DicePhysics(this.scene);
     if (this.diceMesh) this.scene.remove(this.diceMesh);
@@ -274,7 +284,7 @@ class LudoGame {
     for (let p = 0; p < this.numPlayers; p++) {
       const cfg = this.playerConfigs[p];
       for (let i = 0; i < 4; i++) {
-        const mesh = this.builder.createTokenMesh(cfg.color, p, i);
+        const mesh = this.builder.createTokenMesh(cfg.color, p, i, this.pawnSkin);
         this.scene.add(mesh);
 
         // Highlight ring / beacon
@@ -457,17 +467,33 @@ class LudoGame {
 
     this.notifyUI();
 
-    // Toss dice with realistic Cannon.js rigid body physics.
-    // The dice is thrown from the active player's own board quadrant.
+    // The dice is held in the active player's 3D character hand.
+    // On click, the character winds up and throws it onto the board.
     const tossAngles = [
       3 * Math.PI / 4,   // Player 1: bottom-left
       -3 * Math.PI / 4,  // Player 2: top-left
       -Math.PI / 4,      // Player 3: top-right
       Math.PI / 4        // Player 4: bottom-right
     ];
-    this.physics.roll(rollValue, (finalValue) => {
-      this.onDiceRollComplete(finalValue);
-    }, tossAngles[this.activePlayerIndex]);
+    const playerId = this.activePlayerIndex;
+
+    const launch = () => {
+      let handPos = null;
+      if (this.characters) {
+        const hand = this.characters.getHandWorldPosition(playerId, this._tmpVec);
+        if (hand) handPos = hand.clone();
+      }
+      this.diceHolder = -1;
+      this.physics.roll(rollValue, (finalValue) => {
+        this.onDiceRollComplete(finalValue);
+      }, tossAngles[playerId], handPos);
+    };
+
+    if (this.characters) {
+      this.characters.startThrow(playerId, launch);
+    } else {
+      launch();
+    }
   }
 
   onDiceRollComplete(roll) {
@@ -623,9 +649,12 @@ class LudoGame {
     if (this.state !== 'WAIT_SELECT' && this.state !== 'MOVING') return;
     this.state = 'MOVING';
     this.clearHighlights();
+    this.clearMoveHighlights();
 
     const startStep = token.step;
     const targetStep = startStep === 0 ? 1 : startStep + this.currentRoll;
+    const cfg = this.playerConfigs[token.player];
+    const isWalker = token.mesh.userData.skin === 'human';
     token.isMoving = true;
 
     if (window.soundEngine) window.soundEngine.init();
@@ -639,33 +668,77 @@ class LudoGame {
       }
     }
 
+    // Blinking cell highlights along the path the pawn will traverse
+    waypoints.forEach((wp, idx) => {
+      const hl = this.builder.createCellHighlight(cfg.color);
+      hl.position.set(wp.x, 0.356, wp.z);
+      hl.visible = true;
+      hl.userData.phase = idx * 0.85;
+      this.scene.add(hl);
+      this.moveHighlights.push(hl);
+    });
+
     let waypointIdx = 0;
-    const hopDuration = 160;
+    const stepDuration = isWalker ? 240 : 160;
     let hopStartTime = performance.now();
     let fromPos = token.mesh.position.clone();
+    const parts = token.mesh.userData.parts || null;
+
+    const finishMove = () => {
+      token.step = targetStep;
+      token.isMoving = false;
+      token.mesh.position.copy(waypoints[waypoints.length - 1]);
+      token.halo.position.set(token.mesh.position.x, 0.38, token.mesh.position.z);
+      if (parts) {
+        parts.legL.rotation.x = 0;
+        parts.legR.rotation.x = 0;
+        parts.armL.rotation.x = 0;
+        parts.armR.rotation.x = 0;
+      }
+      this.clearMoveHighlights();
+      this.onTokenMoveComplete(token);
+    };
 
     const stepHop = () => {
       if (waypointIdx >= waypoints.length) {
-        token.step = targetStep;
-        token.isMoving = false;
-        token.mesh.position.copy(waypoints[waypoints.length - 1]);
-        token.halo.position.set(token.mesh.position.x, 0.38, token.mesh.position.z);
-
-        this.onTokenMoveComplete(token);
+        finishMove();
         return;
       }
 
       const toPos = waypoints[waypointIdx];
       const elapsed = performance.now() - hopStartTime;
-      const t = Math.min(1.0, elapsed / hopDuration);
+      const t = Math.min(1.0, elapsed / stepDuration);
 
-      const hopHeight = 0.85;
-      const currentX = THREE.MathUtils.lerp(fromPos.x, toPos.x, t);
-      const currentZ = THREE.MathUtils.lerp(fromPos.z, toPos.z, t);
-      const currentY = fromPos.y + 4 * hopHeight * t * (1 - t);
+      if (isWalker && parts) {
+        // Realistic walk cycle: bob up/down, swinging legs and arms, turning to face travel
+        const currentX = THREE.MathUtils.lerp(fromPos.x, toPos.x, t);
+        const currentZ = THREE.MathUtils.lerp(fromPos.z, toPos.z, t);
+        const bob = Math.sin(t * Math.PI) * 0.05;
+        token.mesh.position.set(currentX, 0.36 + bob, currentZ);
 
-      token.mesh.position.set(currentX, currentY, currentZ);
-      token.halo.position.set(currentX, 0.38, currentZ);
+        const dx = toPos.x - fromPos.x;
+        const dz = toPos.z - fromPos.z;
+        if (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001) {
+          const targetYaw = Math.atan2(dx, dz);
+          let deltaYaw = targetYaw - token.mesh.rotation.y;
+          deltaYaw = Math.atan2(Math.sin(deltaYaw), Math.cos(deltaYaw));
+          token.mesh.rotation.y += deltaYaw * 0.35;
+        }
+
+        const swing = Math.sin(t * Math.PI * 2);
+        parts.legL.rotation.x = swing * 0.65;
+        parts.legR.rotation.x = -swing * 0.65;
+        parts.armL.rotation.x = -swing * 0.45;
+        parts.armR.rotation.x = swing * 0.45;
+      } else {
+        const hopHeight = 0.85;
+        const currentX = THREE.MathUtils.lerp(fromPos.x, toPos.x, t);
+        const currentZ = THREE.MathUtils.lerp(fromPos.z, toPos.z, t);
+        const currentY = fromPos.y + 4 * hopHeight * t * (1 - t);
+        token.mesh.position.set(currentX, currentY, currentZ);
+      }
+
+      token.halo.position.set(token.mesh.position.x, 0.38, token.mesh.position.z);
 
       if (t >= 1.0) {
         if (window.soundEngine) {
@@ -680,6 +753,42 @@ class LudoGame {
     };
 
     requestAnimationFrame(stepHop);
+  }
+
+  clearMoveHighlights() {
+    this.moveHighlights.forEach(hl => {
+      this.scene.remove(hl);
+      if (hl.geometry) hl.geometry.dispose();
+      if (hl.material) hl.material.dispose();
+    });
+    this.moveHighlights = [];
+  }
+
+  setPawnSkin(skin) {
+    if (this.pawnSkin === skin) return;
+    this.pawnSkin = skin;
+    try { localStorage.setItem('ludoSpark.pawnSkin', skin); } catch (e) { /* ignore */ }
+
+    // Never rebuild meshes mid-animation — defer until the board is stable
+    if (this.state === 'MOVING' || this.state === 'ROLLING') {
+      this.pendingSkinApply = true;
+      return;
+    }
+    this.applyPawnSkin();
+  }
+
+  applyPawnSkin() {
+    this.pendingSkinApply = false;
+    const steps = this.tokens.map(t => t.step);
+    this.initTokens();
+    this.tokens.forEach((t, i) => {
+      t.step = steps[i] || 0;
+      this.updateTokenPosition(t, false);
+    });
+    this.adjustOverlappingTokens();
+    if (this.state === 'WAIT_SELECT') this.highlightMovableTokens();
+    this.addHistory(this.pawnSkin === 'human' ? 'Equipped 3D Human Pawns!' : 'Equipped Classic Pawns!');
+    this.notifyUI();
   }
 
   onTokenMoveComplete(token) {
@@ -826,6 +935,14 @@ class LudoGame {
   }
 
   notifyUI() {
+    // Apply a queued pawn skin once the board is stable again
+    if (this.pendingSkinApply && (this.state === 'WAIT_ROLL' || this.state === 'WAIT_SELECT')) {
+      this.applyPawnSkin();
+    }
+
+    // Highlight the active player's 3D character
+    if (this.characters) this.characters.setActive(this.activePlayerIndex);
+
     const activeCfg = this.playerConfigs[this.activePlayerIndex];
     const data = {
       activePlayer: {
@@ -855,6 +972,7 @@ class LudoGame {
   newGame(numPlayers = 4, botCount = 3, difficulty = this.difficulty) {
     this.numPlayers = numPlayers;
     this.difficulty = difficulty;
+    this.pendingSkinApply = false;
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('ludoSpark.difficulty', difficulty);
     }
@@ -867,6 +985,8 @@ class LudoGame {
     this.consecutiveSixes = 0;
     this.finishedPlayers = [];
     this.turnHistory = [];
+    this.diceHolder = -1;
+    this.clearMoveHighlights();
     this.initTokens();
     this.fitBoardToScreen();
     this.addHistory(`New game started with ${numPlayers} players!`);
@@ -929,6 +1049,8 @@ class LudoGame {
       this.consecutiveSixes = data.consecutiveSixes || 0;
       this.finishedPlayers = Array.isArray(data.finishedPlayers) ? data.finishedPlayers : [];
       this.turnHistory = [];
+      this.diceHolder = -1;
+      this.clearMoveHighlights();
 
       this.initTokens();
       this.tokens.forEach((t, i) => {
@@ -975,6 +1097,34 @@ class LudoGame {
     // Physics step
     if (this.physics) {
       this.physics.update(delta);
+    }
+
+    // ---- 3D player characters + dice holding/throw ----
+    if (this.characters) {
+      this.characters.update(delta);
+
+      if (this.state === 'WAIT_ROLL' && !this.physics.isRolling) {
+        this.diceHolder = this.activePlayerIndex;
+      }
+
+      if (this.physics.isHeld && this.diceHolder >= 0) {
+        const hand = this.characters.getHandWorldPosition(this.diceHolder, this._tmpVec);
+        if (hand) {
+          this.physics.holdAt(hand.x, hand.y + 0.17, hand.z);
+        }
+        this.characters.setHolding(this.diceHolder);
+      } else {
+        this.characters.setHolding(-1);
+      }
+    }
+
+    // Blink the cells the pawn is walking across
+    if (this.moveHighlights.length > 0) {
+      const blinkTime = performance.now() * 0.007;
+      this.moveHighlights.forEach(hl => {
+        const wave = Math.max(0, Math.sin(blinkTime + hl.userData.phase));
+        hl.material.opacity = 0.12 + 0.55 * wave;
+      });
     }
 
     // Pulse highlight halos

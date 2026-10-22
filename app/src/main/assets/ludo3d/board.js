@@ -376,48 +376,110 @@ class LudoBoardBuilder {
     return group;
   }
 
-  createTokenMesh(colorHex, playerId, tokenIndex) {
+  createTokenMesh(colorHex, playerId, tokenIndex, skin = 'classic') {
+    // ---- 3D Human pawn skin: tiny walking humanoid ----
+    if (skin === 'human') {
+      const skinTones = [0xF1C27D, 0xC68642, 0xE0AC69, 0x8D5524];
+      const hairColors = [0x3B2417, 0x1C1108, 0x2E1B0F, 0x120D08];
+      const human = createHumanoidMesh({
+        color: new THREE.Color(colorHex).getHex(),
+        skinTone: skinTones[playerId % 4],
+        hairColor: hairColors[playerId % 4],
+        female: playerId === 0 || playerId === 3,
+        scale: 0.78
+      });
+      human.userData.playerId = playerId;
+      human.userData.tokenIndex = tokenIndex;
+      human.userData.isToken = true;
+      human.userData.origColor = colorHex;
+      human.userData.skin = 'human';
+      return human;
+    }
+
+    // ---- Classic pawn: refined tiered silhouette ----
     const pawnGroup = new THREE.Group();
 
-    const baseGeom = new THREE.CylinderGeometry(0.38, 0.44, 0.24, 24);
     const silverMat = new THREE.MeshStandardMaterial({
       color: 0xCBD5E1,
       metalness: 0.9,
       roughness: 0.2
     });
-    const baseMesh = new THREE.Mesh(baseGeom, silverMat);
-    baseMesh.position.y = 0.12;
-    baseMesh.castShadow = true;
-
-    const bodyGeom = new THREE.CylinderGeometry(0.24, 0.36, 0.5, 24);
-    const headGeom = new THREE.SphereGeometry(0.34, 24, 24);
-
     const tokenMat = new THREE.MeshStandardMaterial({
       color: colorHex,
       roughness: 0.18,
       metalness: 0.2
     });
 
-    const bodyMesh = new THREE.Mesh(bodyGeom, tokenMat);
-    bodyMesh.position.y = 0.45;
-    bodyMesh.castShadow = true;
+    // Tiered metallic base
+    const base1 = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.4, 0.1, 32), silverMat);
+    base1.position.y = 0.05;
+    base1.castShadow = true;
+    pawnGroup.add(base1);
 
-    const headMesh = new THREE.Mesh(headGeom, tokenMat);
-    headMesh.position.y = 0.85;
+    const base2 = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.33, 0.09, 32), silverMat);
+    base2.position.y = 0.14;
+    base2.castShadow = true;
+    pawnGroup.add(base2);
+
+    // Colored base ring
+    const ringBase = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.08, 32), tokenMat);
+    ringBase.position.y = 0.225;
+    ringBase.castShadow = true;
+    pawnGroup.add(ringBase);
+
+    // Tapered stem
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.24, 0.4, 24), tokenMat);
+    stem.position.y = 0.46;
+    stem.castShadow = true;
+    pawnGroup.add(stem);
+
+    // Collar
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.12, 0.07, 24), tokenMat);
+    collar.position.y = 0.695;
+    collar.castShadow = true;
+    pawnGroup.add(collar);
+
+    // Head
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.23, 24, 24), tokenMat);
+    headMesh.position.y = 0.9;
     headMesh.castShadow = true;
-
-    pawnGroup.add(baseMesh);
-    pawnGroup.add(bodyMesh);
     pawnGroup.add(headMesh);
+
+    // Silver tip knob
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 12), silverMat);
+    tip.position.y = 1.12;
+    tip.castShadow = true;
+    pawnGroup.add(tip);
 
     pawnGroup.userData = {
       playerId,
       tokenIndex,
       isToken: true,
-      origColor: colorHex
+      origColor: colorHex,
+      skin: 'classic'
     };
 
     return pawnGroup;
+  }
+
+  /**
+   * Transparent colored plane used to blink the cells a pawn walks across.
+   */
+  createCellHighlight(colorHex) {
+    const geometry = new THREE.PlaneGeometry(1.08, 1.08);
+    const material = new THREE.MeshBasicMaterial({
+      color: colorHex,
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = 0.356;
+    mesh.renderOrder = 3;
+    mesh.visible = false;
+    return mesh;
   }
 
   createDiceMesh(skin = 'white') {

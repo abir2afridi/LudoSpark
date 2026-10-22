@@ -1195,3 +1195,26 @@ body, html {
   80% { opacity: 1; transform: translateY(-12px) scale(1.0); }
   100% { opacity: 0; transform: translateY(-24px) scale(0.9); }
 }
+
+/* ---- Pawn skin picker in store ---- */
+.skin-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border-radius: 10px;
+  border: 1.5px solid #475569;
+  background: #1E293B;
+  color: #E2E8F0;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.skin-btn.equipped {
+  border-color: #FBBF24;
+  background: #334155;
+  color: #FBBF24;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
+}
+.skin-btn:active {
+  transform: scale(0.96);
+}

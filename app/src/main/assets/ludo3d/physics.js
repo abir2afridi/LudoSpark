@@ -14,6 +14,7 @@ class DicePhysics {
     this.rollDuration = 1200; // ms
     this.trayCenter = { x: 0, y: 0.6, z: 0 };
     this.lastImpactTime = 0;
+    this.isHeld = false;
 
     this.initPhysics();
   }
@@ -44,8 +45,9 @@ class DicePhysics {
     floorBody.position.set(0, 0.4, 0);
     this.world.addBody(floorBody);
 
-    // Invisible tray containment walls to keep the dice within camera focus
-    const wallSize = 4.2;
+    // Wide invisible containment walls so dice thrown from the board corners
+    // by the 3D players can travel across the whole board.
+    const wallSize = 11.4;
     const wallHeight = 5.0;
     const addWall = (x, z, rotY) => {
       const wall = new CANNON.Body({ mass: 0, material: boardMaterial });
@@ -54,10 +56,10 @@ class DicePhysics {
       if (rotY) wall.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotY);
       this.world.addBody(wall);
     };
-    addWall(0, 4.5, 0);
-    addWall(0, -4.5, 0);
-    addWall(4.5, 0, Math.PI / 2);
-    addWall(-4.5, 0, Math.PI / 2);
+    addWall(0, 11.4, 0);
+    addWall(0, -11.4, 0);
+    addWall(11.4, 0, Math.PI / 2);
+    addWall(-11.4, 0, Math.PI / 2);
 
     // Dice rigid body (1.1x1.1x1.1)
     const halfExtents = new CANNON.Vec3(0.55, 0.55, 0.55);
@@ -97,6 +99,19 @@ class DicePhysics {
       this.diceMesh.position.copy(this.diceBody.position);
       this.diceMesh.quaternion.copy(this.diceBody.quaternion);
     }
+  }
+
+  /**
+   * Park the dice in a player's hand. Called every frame while waiting to roll,
+   * so the dice follows the character's hand pose.
+   */
+  holdAt(x, y, z) {
+    this.isHeld = true;
+    this.isRolling = false;
+    this.diceBody.position.set(x, y, z);
+    this.diceBody.velocity.set(0, 0, 0);
+    this.diceBody.angularVelocity.set(0, 0, 0);
+    this.syncMeshWithPhysics();
   }
 
   /**
@@ -143,26 +158,50 @@ class DicePhysics {
   }
 
   /**
-   * Roll the dice. If fromAngle (radians) is given, the dice is tossed
-   * from that board direction toward the center (as if thrown by that player).
+   * Roll the dice.
+   * - fromPos: throw origin (the 3D player's hand). The dice flies from there
+   *   toward the board center with a high spin.
+   * - fromAngle: fallback toss direction from a board corner.
    */
-  roll(targetValue, onComplete, fromAngle = null) {
+  roll(targetValue, onComplete, fromAngle = null, fromPos = null) {
     if (this.isRolling) return;
     this.isRolling = true;
+    this.isHeld = false;
     this.targetFace = targetValue;
     this.onRollComplete = onComplete;
     this.rollStartTime = performance.now();
+    this.rollDuration = 1200;
 
     if (window.soundEngine) window.soundEngine.init();
 
     // Start toss
     let startX = (Math.random() - 0.5) * 1.5;
+    let startY = 4.2 + Math.random() * 1.5;
     let startZ = (Math.random() - 0.5) * 1.5;
     let vx = (Math.random() - 0.5) * 6;
     let vz = (Math.random() - 0.5) * 6;
-    const vy = 3 + Math.random() * 4;
+    let vy = 3 + Math.random() * 4;
 
-    if (fromAngle !== null && fromAngle !== undefined) {
+    if (fromPos) {
+      // Thrown straight from the active player's 3D character hand
+      startX = fromPos.x;
+      startY = fromPos.y;
+      startZ = fromPos.z;
+
+      const targetX = (Math.random() - 0.5) * 2.5;
+      const targetZ = (Math.random() - 0.5) * 2.5;
+      const dx = targetX - startX;
+      const dz = targetZ - startZ;
+      const dist = Math.hypot(dx, dz) || 1;
+      const speed = Math.min(14, Math.max(8, dist * 1.6));
+
+      vx = (dx / dist) * speed;
+      vz = (dz / dist) * speed;
+      vy = 2.2 + Math.random() * 1.6;
+
+      // Longer flight time for the longer distance from hand to board
+      this.rollDuration = Math.max(1400, Math.min(2100, dist * 130));
+    } else if (fromAngle !== null && fromAngle !== undefined) {
       // Toss from the active player's side toward board center
       const r = 2.8 + Math.random() * 0.6;
       startX = Math.cos(fromAngle) * r;
@@ -172,7 +211,7 @@ class DicePhysics {
       vz = -Math.sin(fromAngle) * speed;
     }
 
-    this.diceBody.position.set(startX, 4.2 + Math.random() * 1.5, startZ);
+    this.diceBody.position.set(startX, startY, startZ);
     this.diceBody.velocity.set(vx, vy, vz);
 
     // Initial spin (high angular velocity)
@@ -190,6 +229,12 @@ class DicePhysics {
 
   update(delta) {
     if (!this.world) return;
+
+    // While held in a player's hand the dice is kinematic — no simulation
+    if (this.isHeld) {
+      this.syncMeshWithPhysics();
+      return;
+    }
 
     // Step physics
     const clampedDelta = Math.min(delta, 0.05);
@@ -226,7 +271,11 @@ class DicePhysics {
           this.isRolling = false;
           this.diceBody.velocity.set(0, 0, 0);
           this.diceBody.angularVelocity.set(0, 0, 0);
-          this.diceBody.position.y = 0.95; // rest on tray surface
+
+          // Keep the dice resting on the board (never drift off the play area)
+          const restX = Math.max(-8.4, Math.min(8.4, this.diceBody.position.x));
+          const restZ = Math.max(-8.4, Math.min(8.4, this.diceBody.position.z));
+          this.diceBody.position.set(restX, 0.95, restZ);
           this.diceBody.quaternion.set(
             this.targetQuat.x,
             this.targetQuat.y,

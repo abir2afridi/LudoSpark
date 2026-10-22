@@ -7,9 +7,10 @@
   <link rel="stylesheet" href="style.css">
   <script src="three.min.js"></script>
   <script src="cannon.min.js"></script>
-  <script src="audio.js"></script>
-  <script src="physics.js"></script>
-  <script src="board.js"></script>
+<script src="audio.js"></script>
+<script src="physics.js"></script>
+<script src="characters.js"></script>
+<script src="board.js"></script>
   <script src="game.js"></script>
 </head>
 <body>
@@ -425,6 +426,14 @@
           <div><b>💎 500 Gems</b></div>
           <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.addGems(500)">Free Claim</button>
         </div>
+        <div style="background:#0F172A; padding:10px; border-radius:12px; border:1px solid #38BDF8;">
+          <b>♟ Pawn Skins</b>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="skin-btn" id="skin-classic">♟ Classic Pawns</button>
+            <button class="skin-btn" id="skin-human">🧍 3D Human Pawns</button>
+          </div>
+          <p id="skin-equipped-label" style="font-size:11px; color:#94A3B8; margin-top:6px;">Equipped: Classic Pawns</p>
+        </div>
       </div>
       <button id="btn-close-shop" class="modal-btn" style="background:#475569;">Close</button>
     </div>
@@ -678,6 +687,26 @@
       const playClick = () => {
         if (window.soundEngine) window.soundEngine.playButtonClick();
       };
+
+      // Pawn skin store (persisted and applied live)
+      const updateSkinUI = () => {
+        const skin = game.pawnSkin || 'classic';
+        document.getElementById('skin-classic').classList.toggle('equipped', skin === 'classic');
+        document.getElementById('skin-human').classList.toggle('equipped', skin === 'human');
+        document.getElementById('skin-equipped-label').innerText =
+          'Equipped: ' + (skin === 'human' ? '3D Human Pawns' : 'Classic Pawns');
+      };
+      document.getElementById('skin-classic').onclick = () => {
+        playClick();
+        game.setPawnSkin('classic');
+        updateSkinUI();
+      };
+      document.getElementById('skin-human').onclick = () => {
+        playClick();
+        game.setPawnSkin('human');
+        updateSkinUI();
+      };
+      updateSkinUI();
 
       // Show/Hide Main Menu vs Game Screen
       const showMainMenu = () => {
