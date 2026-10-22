@@ -213,6 +213,12 @@
               </div>
             </div>
           </div>
+          <div class="side-reward-card card-daily-checkin" id="menu-btn-daily" title="Daily Check-in">
+            <div class="daily-checkin-circle">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="11" x2="21" y2="11"/><path d="M8 15h2M14 15h2"/></svg>
+            </div>
+            <div class="spin-status-label" id="daily-status-text">Daily</div>
+          </div>
           <div class="side-reward-card card-spin-wheel" id="menu-btn-spin">
             <div class="spin-wheel-circle">
               <div class="wheel-spinner">
@@ -279,14 +285,14 @@
             <b>🇧🇩 Bangladesh Ludo Arena</b>
             <p style="font-size:11px; color:#38BDF8; margin-top:2px;">142 Players Online • Live Audio</p>
           </div>
-          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="alert('🎙️ Joined Bangladesh Ludo Arena Audio Room!')">Join</button>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="showToast('Joined Bangladesh Ludo Arena Audio Room!', 'success')">Join</button>
         </div>
         <div style="background:#0F172A; padding:12px; border-radius:14px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <b>🌐 Global Champions Club</b>
             <p style="font-size:11px; color:#38BDF8; margin-top:2px;">89 Players Online • Live Audio</p>
           </div>
-          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="alert('🎙️ Joined Global Champions Club!')">Join</button>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="showToast('Joined Global Champions Club!', 'success')">Join</button>
         </div>
       </div>
     </div>
@@ -341,7 +347,7 @@
         <b style="color:#FBBF24;">🔑 Private Table Room Code:</b>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
           <b style="font-size:18px; color:#38BDF8; letter-spacing:2px;">482901</b>
-          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#3B82F6;" onclick="alert('📋 Room Code 482901 copied to clipboard!')">Copy Code</button>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#3B82F6;" onclick="copyRoomCode('482901')">Copy Code</button>
         </div>
       </div>
 

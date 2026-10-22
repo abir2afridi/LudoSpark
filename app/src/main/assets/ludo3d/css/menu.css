@@ -703,6 +703,27 @@
   color: #FBBF24;
 }
 
+.card-daily-checkin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-color: #8B5CF6;
+}
+
+.daily-checkin-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #8B5CF6 0%, #5B21B6 100%);
+  border: 2px solid #DDD6FE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.45);
+}
+
 .card-spin-wheel {
   display: flex;
   flex-direction: column;

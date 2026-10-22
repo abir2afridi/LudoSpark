@@ -19,8 +19,13 @@
   box-shadow: none !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
+  gap: 12px;
   overflow-y: auto !important;
+}
+
+#modal-menu-settings #btn-setting-exit {
+  margin-top: auto;
 }
 
 .settings-page-header {

@@ -55,3 +55,59 @@ body, html {
   height: 100%;
 }
 
+/* Non-blocking feedback toast */
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  z-index: 200;
+  max-width: calc(100% - 32px);
+  padding: 11px 18px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: #F8FAFC;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  white-space: pre-line;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.app-toast::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #38BDF8;
+  vertical-align: 1px;
+}
+
+.app-toast[data-tone="success"]::before {
+  background: #34D399;
+}
+
+.app-toast[data-tone="error"]::before {
+  background: #F87171;
+}
+
+.app-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.app-toast[data-tone="success"] {
+  border-color: rgba(52, 211, 153, 0.75);
+}
+
+.app-toast[data-tone="error"] {
+  border-color: rgba(248, 113, 113, 0.8);
+}
+

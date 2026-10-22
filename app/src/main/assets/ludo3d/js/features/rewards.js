@@ -40,14 +40,14 @@
     bind('menu-btn-free-chest', function () {
       App.ui.playClick();
       App.wallet.addCoins(500);
-      alert('🧰 Free Daily Chest Opened!\n+500 Coins added!');
+      App.ui.toast('Free chest opened: +500 Coins', 'success');
     });
 
     bind('menu-btn-ad-reward', function () {
       App.ui.playClick();
       App.wallet.addCoins(1200);
       App.wallet.addGems(10);
-      alert('🎬 Video Ad Watched!\n+1,200 Coins & +10 Gems added!');
+      App.ui.toast('Ad reward: +1,200 Coins & +10 Gems', 'success', 3200);
     });
 
     bind('menu-btn-help', function () {
@@ -59,7 +59,7 @@
       App.ui.playClick();
       App.wallet.addCoins(1000);
       App.setDisplay(dom.mailModal, 'none');
-      alert('🎁 Mail Rewards Claimed!');
+      App.ui.toast('Mail rewards claimed: +1,000 Coins', 'success');
     });
 
     bind('btn-close-mail', function () {

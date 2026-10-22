@@ -47,6 +47,26 @@
       App.setDisplay(App.dom.navInfoModal, 'none');
     });
 
+    window.copyRoomCode = function (code) {
+      const value = String(code);
+      const done = function () {
+        App.ui.toast('Room code ' + value + ' copied to clipboard.', 'success');
+      };
+      const fallbackCopy = function () {
+        const area = document.createElement('textarea');
+        area.value = value;
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy'); done(); } catch (err) { /* ignore */ }
+        document.body.removeChild(area);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(done).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+    };
+
     App.nav = { openPage: openPage, openInfo: openInfo };
     window.openNavInfo = openInfo;
   });

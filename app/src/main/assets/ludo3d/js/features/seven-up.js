@@ -50,7 +50,7 @@
 
     bind('btn-roll-7up', function () {
       if (App.wallet.coins < bet) {
-        alert('Not enough coins! Claim free coins in store.');
+        App.ui.toast('Not enough coins. Claim free coins in the store.', 'error');
         return;
       }
       App.ui.playClick();
@@ -80,9 +80,9 @@
         if (won) {
           const winAmount = bet * multiplier;
           App.wallet.addCoins(winAmount);
-          alert('🎉 YOU WON ' + winAmount.toLocaleString() + ' COINS!\nDice Total: ' + sum);
+          App.ui.toast('You won ' + winAmount.toLocaleString() + ' coins! Total: ' + sum, 'success', 3200);
         } else {
-          alert('❌ Better Luck Next Time!\nDice Total: ' + sum);
+          App.ui.toast('No win this time. Dice total: ' + sum, 'error');
         }
       }, 300);
     });

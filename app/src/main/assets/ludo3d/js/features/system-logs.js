@@ -77,7 +77,7 @@
       copyBtn.onclick = function () {
         App.ui.playClick();
         const text = window.SysLogs ? window.SysLogs.formatAll() : '';
-        const done = function () { alert('📄 Logs copied to clipboard!'); };
+        const done = function () { App.ui.toast('Logs copied to clipboard.', 'success'); };
         const fallbackCopy = function () {
           const area = document.createElement('textarea');
           area.value = text;

@@ -110,8 +110,29 @@
     window.addGems = wallet.addGems;
 
     let diceInputLockUntil = 0;
+    let toastEl = null;
+    let toastTimer = null;
     const playClick = function () {
       if (window.soundEngine) window.soundEngine.playButtonClick();
+    };
+    const showToast = function (message, tone, duration) {
+      if (!toastEl) {
+        toastEl = document.createElement('div');
+        toastEl.id = 'app-toast';
+        toastEl.className = 'app-toast';
+        toastEl.setAttribute('role', 'status');
+        toastEl.setAttribute('aria-live', 'polite');
+        document.body.appendChild(toastEl);
+      }
+      toastEl.textContent = message;
+      toastEl.setAttribute('data-tone', tone || 'info');
+      toastEl.classList.remove('is-visible');
+      void toastEl.offsetWidth;
+      toastEl.classList.add('is-visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () {
+        toastEl.classList.remove('is-visible');
+      }, duration || 2800);
     };
     const showMainMenu = function () {
       App.setDisplay(App.dom.mainMenuEl, 'flex');
@@ -133,6 +154,7 @@
 
     App.ui = {
       playClick: playClick,
+      toast: showToast,
       showMainMenu: showMainMenu,
       startGameScreen: startGameScreen,
       openPauseMenu: openPauseMenu,
@@ -144,6 +166,7 @@
       }
     };
     window.openPauseMenu = openPauseMenu;
+    window.showToast = showToast;
 
     App.setup = {
       players: 4,

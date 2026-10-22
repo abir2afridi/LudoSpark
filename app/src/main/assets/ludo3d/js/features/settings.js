@@ -55,6 +55,26 @@
       };
     }
 
+    const difficulties = ['easy', 'normal', 'hard'];
+    const cycleDifficulty = function () {
+      const current = difficulties.indexOf(game.difficulty);
+      const next = difficulties[(current + 1) % difficulties.length];
+      game.difficulty = next;
+      App.setup.difficulty = next;
+      try { localStorage.setItem('ludoSpark.difficulty', next); } catch (err) { /* ignore */ }
+      if (App.menu && App.menu.setDifficulty) App.menu.setDifficulty(next);
+      syncLabels();
+      App.ui.toast('AI Difficulty: ' + next.charAt(0).toUpperCase() + next.slice(1));
+    };
+
+    const settingsDifficulty = App.byId('btn-setting-difficulty');
+    if (settingsDifficulty) {
+      settingsDifficulty.onclick = function () {
+        App.ui.playClick();
+        cycleDifficulty();
+      };
+    }
+
     const sfxSlider = App.byId('slider-sfx-vol');
     if (sfxSlider && window.soundEngine) {
       sfxSlider.value = window.soundEngine.sfxVolume;
@@ -107,7 +127,8 @@
     App.settings = {
       syncLabels: syncLabels,
       setSoundEnabled: setSoundEnabled,
-      applyCameraPreset: applyCameraPreset
+      applyCameraPreset: applyCameraPreset,
+      cycleDifficulty: cycleDifficulty
     };
   });
 })();
