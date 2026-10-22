@@ -271,7 +271,7 @@ class LudoBoardBuilder {
       ctx.fillText(num, x + 8, y + 8);
     }
 
-    // 2. Ladders
+    // 2. Realistic 3D Wooden Ladders with Gold Nails
     const ladders = [
       [4, 14], [9, 31], [20, 38], [28, 84], [40, 59], [63, 81], [71, 91]
     ];
@@ -284,66 +284,153 @@ class LudoBoardBuilder {
       const dx = p2.x - p1.x;
       const dy = p2.y - p1.y;
       const len = Math.hypot(dx, dy);
-      const nx = -dy / len * 16;
-      const ny = dx / len * 16;
+      const nx = -dy / len * 18;
+      const ny = dx / len * 18;
 
-      ctx.strokeStyle = '#FBBF24';
-      ctx.lineWidth = 12;
+      // Outer drop shadow for 3D depth
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.lineWidth = 14;
       ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(p1.x + nx + 6, p1.y + ny + 6); ctx.lineTo(p2.x + nx + 6, p2.y + ny + 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p1.x - nx + 6, p1.y - ny + 6); ctx.lineTo(p2.x - nx + 6, p2.y - ny + 6); ctx.stroke();
 
+      // Mahogany Wooden Side Rails
+      ctx.strokeStyle = '#78350F';
+      ctx.lineWidth = 14;
       ctx.beginPath(); ctx.moveTo(p1.x + nx, p1.y + ny); ctx.lineTo(p2.x + nx, p2.y + ny); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(p1.x - nx, p1.y - ny); ctx.lineTo(p2.x - nx, p2.y - ny); ctx.stroke();
 
-      const steps = 8;
-      ctx.strokeStyle = '#FEF3C7';
+      ctx.strokeStyle = '#B45309';
       ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(p1.x + nx, p1.y + ny); ctx.lineTo(p2.x + nx, p2.y + ny); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p1.x - nx, p1.y - ny); ctx.lineTo(p2.x - nx, p2.y - ny); ctx.stroke();
+
+      // Wooden Rungs with Gold Nails
+      const steps = 9;
       for (let i = 1; i < steps; i++) {
         const t = i / steps;
         const rx = p1.x + dx * t;
         const ry = p1.y + dy * t;
-        ctx.beginPath();
-        ctx.moveTo(rx + nx, ry + ny);
-        ctx.lineTo(rx - nx, ry - ny);
-        ctx.stroke();
+
+        ctx.strokeStyle = '#78350F';
+        ctx.lineWidth = 10;
+        ctx.beginPath(); ctx.moveTo(rx + nx, ry + ny); ctx.lineTo(rx - nx, ry - ny); ctx.stroke();
+
+        ctx.strokeStyle = '#FEF3C7';
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(rx + nx, ry + ny); ctx.lineTo(rx - nx, ry - ny); ctx.stroke();
+
+        // Gold Nails
+        ctx.fillStyle = '#F59E0B';
+        ctx.beginPath(); ctx.arc(rx + nx * 0.8, ry + ny * 0.8, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(rx - nx * 0.8, ry - ny * 0.8, 3, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     });
 
-    // 3. Snakes
+    // 3. Realistic Colorful Cobra & Python Snakes
     const snakes = [
-      [17, 7], [54, 34], [62, 19], [64, 60], [87, 24], [93, 73], [99, 78]
+      { head: 99, tail: 78, base: '#DC2626', stripe: '#7F1D1D', highlight: '#FCA5A5' }, // Cobra Red
+      { head: 93, tail: 73, base: '#059669', stripe: '#064E3B', highlight: '#6EE7B7' }, // Emerald Cobra
+      { head: 87, tail: 24, base: '#D97706', stripe: '#78350F', highlight: '#FDE047' }, // Golden Python
+      { head: 64, tail: 60, base: '#7C3AED', stripe: '#4C1D95', highlight: '#C4B5FD' }, // Cyber Purple Viper
+      { head: 62, tail: 19, base: '#0284C7', stripe: '#075985', highlight: '#7DD3FC' }, // Sapphire Viper
+      { head: 54, tail: 34, base: '#E11D48', stripe: '#881337', highlight: '#FDA4AF' }, // Coral Red Snake
+      { head: 17, tail: 7,  base: '#16A34A', stripe: '#14532D', highlight: '#86EFAC' }  // Forest Green Snake
     ];
 
-    snakes.forEach(([head, tail]) => {
+    snakes.forEach(({ head, tail, base, stripe, highlight }) => {
       const pHead = getCellCenter(head);
       const pTail = getCellCenter(tail);
 
       ctx.save();
+      const dx = pTail.x - pHead.x;
+      const dy = pTail.y - pHead.y;
+      const dist = Math.hypot(dx, dy);
+
+      // S-curve control points for winding serpentine body
+      const angle = Math.atan2(dy, dx);
+      const perpX = -Math.sin(angle) * (dist * 0.25);
+      const perpY = Math.cos(angle) * (dist * 0.25);
+
+      const cp1x = pHead.x + dx * 0.33 + perpX;
+      const cp1y = pHead.y + dy * 0.33 + perpY;
+      const cp2x = pHead.x + dx * 0.66 - perpX;
+      const cp2y = pHead.y + dy * 0.66 - perpY;
+
+      // 3D Drop Shadow
       ctx.beginPath();
-      ctx.moveTo(pHead.x, pHead.y);
-
-      const midX = (pHead.x + pTail.x) / 2 + (head % 2 === 0 ? 50 : -50);
-      const midY = (pHead.y + pTail.y) / 2;
-
-      ctx.quadraticCurveTo(midX, midY, pTail.x, pTail.y);
-      ctx.strokeStyle = '#10B981';
-      ctx.lineWidth = 20;
+      ctx.moveTo(pHead.x + 8, pHead.y + 8);
+      ctx.bezierCurveTo(cp1x + 8, cp1y + 8, cp2x + 8, cp2y + 8, pTail.x + 8, pTail.y + 8);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.lineWidth = 32;
       ctx.lineCap = 'round';
       ctx.stroke();
 
+      // Main Snake Body Base
       ctx.beginPath();
-      ctx.arc(pHead.x, pHead.y, 20, 0, Math.PI * 2);
-      ctx.fillStyle = '#10B981';
+      ctx.moveTo(pHead.x, pHead.y);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pTail.x, pTail.y);
+      ctx.strokeStyle = base;
+      ctx.lineWidth = 28;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Warning Scale Stripes
+      ctx.beginPath();
+      ctx.moveTo(pHead.x, pHead.y);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pTail.x, pTail.y);
+      ctx.strokeStyle = stripe;
+      ctx.lineWidth = 18;
+      ctx.setLineDash([18, 18]);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Spine Center Highlight
+      ctx.beginPath();
+      ctx.moveTo(pHead.x, pHead.y);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, pTail.x, pTail.y);
+      ctx.strokeStyle = highlight;
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Triangular Cobra Hood & Head
+      const headAngle = Math.atan2(cp1y - pHead.y, cp1x - pHead.x);
+      ctx.translate(pHead.x, pHead.y);
+      ctx.rotate(headAngle);
+
+      ctx.fillStyle = base;
+      ctx.beginPath();
+      ctx.moveTo(26, 0);
+      ctx.quadraticCurveTo(-6, -26, -18, -12);
+      ctx.lineTo(-18, 12);
+      ctx.quadraticCurveTo(-6, 26, 26, 0);
       ctx.fill();
       ctx.strokeStyle = '#FEF3C7';
       ctx.lineWidth = 3;
       ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(pHead.x, pHead.y);
-      ctx.lineTo(pHead.x + 10, pHead.y - 10);
+      // Glowing Yellow Eyes
+      ctx.fillStyle = '#F59E0B';
+      ctx.beginPath(); ctx.arc(8, -10, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(8, 10, 5, 0, Math.PI * 2); ctx.fill();
+
+      // Slit pupils
+      ctx.fillStyle = '#0F172A';
+      ctx.fillRect(7, -13, 2, 6);
+      ctx.fillRect(7, 7, 2, 6);
+
+      // Forked Red Tongue
       ctx.strokeStyle = '#EF4444';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(26, 0);
+      ctx.lineTo(38, 0);
+      ctx.lineTo(44, -7);
+      ctx.moveTo(38, 0);
+      ctx.lineTo(44, 7);
       ctx.stroke();
 
       ctx.restore();

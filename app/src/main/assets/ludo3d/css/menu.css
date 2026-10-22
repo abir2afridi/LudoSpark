@@ -358,37 +358,38 @@
 }
 
 .logo-text-king {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
-  color: #FBBF24;
-  letter-spacing: 4px;
-  text-shadow: 0 2px 4px #000, 0 0 10px rgba(251, 191, 36, 0.6);
-  margin-bottom: -4px;
+  color: #38BDF8;
+  letter-spacing: 6px;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 2px 4px #000;
+  margin-bottom: -2px;
   z-index: 4;
 }
 
-.logo-letters-row {
+.spark-letters-row {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   z-index: 4;
 }
 
-.ludo-letter {
-  font-size: 36px;
+.spark-letters-row .ludo-letter {
+  font-size: 34px;
   font-weight: 900;
   font-family: Impact, "Arial Black", sans-serif;
-  padding: 2px 10px;
+  padding: 2px 8px;
   border-radius: 12px;
   color: #FFFFFF;
   text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 5px 0 #0F172A;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.6);
   transform: perspective(300px) rotateX(10deg);
 }
 
-.letter-l { background: linear-gradient(180deg, #38BDF8 0%, #0284C7 100%); border: 2.5px solid #E0F2FE; }
-.letter-u { background: linear-gradient(180deg, #F43F5E 0%, #BE123C 100%); border: 2.5px solid #FFE4E6; }
-.letter-d { background: linear-gradient(180deg, #22C55E 0%, #15803D 100%); border: 2.5px solid #DCFCE7; }
-.letter-o { background: linear-gradient(180deg, #FACC15 0%, #CA8A04 100%); border: 2.5px solid #FEF9C3; }
+.letter-l { background: linear-gradient(180deg, #F59E0B 0%, #B45309 100%); border: 2.5px solid #FEF3C7; }
+.letter-u { background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%); border: 2.5px solid #93C5FD; }
+.letter-d { background: linear-gradient(180deg, #EF4444 0%, #B91C1C 100%); border: 2.5px solid #FCA5A5; }
+.letter-o { background: linear-gradient(180deg, #10B981 0%, #047857 100%); border: 2.5px solid #A7F3D0; }
+.letter-k { background: linear-gradient(180deg, #8B5CF6 0%, #6D28D9 100%); border: 2.5px solid #DDD6FE; }
 
 /* 3D Pawns & Board Hero Center Graphic */
 .hero-3d-graphic {

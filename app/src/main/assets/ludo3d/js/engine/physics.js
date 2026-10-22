@@ -170,7 +170,13 @@ class DicePhysics {
    * - fromAngle: fallback toss direction from a board corner.
    */
   roll(targetValue, onComplete, fromAngle = null, fromPos = null) {
-    if (this.isRolling) return;
+    if (this.isRolling) {
+      // SAFETY: আগের roll কখনো settle করেনি (isRolling আটকে ছিল)। যদি এখানে
+      // শুধু return করি, নতুন roll-এর callback বসবে না এবং game চিরতরে
+      // ROLLING-এ জমে থাকত। তাই আগেরটা বাতিল করে নতুনটা চালাই।
+      this.isRolling = false;
+      this.onRollComplete = null;
+    }
     this.isRolling = true;
     this.isHeld = false;
     this.hasImpacted = false;

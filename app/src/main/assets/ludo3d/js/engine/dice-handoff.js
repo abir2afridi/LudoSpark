@@ -93,6 +93,14 @@ class DiceHandoffSystem {
       if (onDone) onDone();
       return;
     }
+    // ⚠️ Physics roll এখনো চলাকালীন হলে handoff চালাবে না — holdAt প্রতি
+    // ফ্রেমে isRolling=false দিয়ে settle হত্যা করে ও roll-এর callback
+    // চিরতরে হারিয়ে দিত (game জমে যেত)। রোল শেষ হওয়া পর্যন্ত অপেক্ষা
+    // করতে চাইলে caller নিজে দেখবে — এখানে সরাসরি বাদ দিই।
+    if (g.physics.isRolling) {
+      if (onDone) onDone();
+      return;
+    }
 
     const from = g.diceMesh.position.clone();   // board-এর বর্তমান অবস্থান
     const to = this._handPos(playerId);
@@ -119,6 +127,17 @@ class DiceHandoffSystem {
       if (onDone) onDone();
       return;
     }
+    // Physics roll চলাকালীন handoff শুরু করলে holdAt সেই roll মাঝপথে
+    // হত্যা করে দেবে (callback হারিয়ে game জমে যায়) — তাই এমন মুহূর্তে
+    // animation বাদ, সরাসরি handoff ধরে নিই (dice আগের হাতেই ধরা থাকলেও
+    // চলবে, animate loop নতুন holder সেট করবে)।
+    if (g.physics.isRolling) {
+      if (onDone) onDone();
+      return;
+    }
+    // আগের handoff চলাকালীন নতুন passTurn এলে সেটাকে বাতিল করে নতুনটা চালাই —
+    // দুটো chain একসাথে চললে পুরোনো onDone হারিয়ে যেতে পারে (game stuck)
+    this.cancel();
 
     const fromHand = this._handPos(fromPlayerId);
     const toHand = this._handPos(toPlayerId);
@@ -191,12 +210,21 @@ class DiceHandoffSystem {
     g.physics.holdAt(x, y, z);
 
     // উড়ার সময় dice আবর্তন — mesh নয়, BODY quaternion ঘোরাতে হবে,
-    // কারণ পরের ফ্রেমে holdAt আবার body থেকে mesh টেনে নেয়
+    // কারণ পরের ফ্রেমে holdAt আবার body থেকে mesh টেনে নেয়।
+    // ⚠️⚠️ CRITICAL: এই cannon build-এ `q.mult(spin, q)` (target = নিজেই)
+    // চালালে quaternion NaN হয়ে যায়! তাহলে পরের ফ্রেমে world.step
+    // (boxBox/clipAgainstHull) প্রতিবার THROW করে → animate() মরে যায় →
+    // handoff আটকে থাকে → dice click করলেও কিছুই কাজ করে না। তাই
+    // সবসময় আলাদা temp quaternion-এ লিখে তারপর কপি + NaN guard।
     if (f.tumble) {
       const body = g.physics.diceBody;
       const spin = new CANNON.Quaternion();
       spin.setFromAxisAngle(new CANNON.Vec3(0.55, 1, 0.35).normalize(), delta * 7.5);
-      body.quaternion.mult(spin, body.quaternion);
+      const out = new CANNON.Quaternion();
+      body.quaternion.mult(spin, out); // non-aliased — safe
+      if (isFinite(out.x) && isFinite(out.y) && isFinite(out.z) && isFinite(out.w)) {
+        body.quaternion.set(out.x, out.y, out.z, out.w);
+      }
     }
 
     // মৃদু trail (dice-এর আগের real-roll-এর মতোই particle system ব্যবহার করে)

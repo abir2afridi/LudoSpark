@@ -639,6 +639,13 @@ class LudoGame {
       if (fromRetry) this.scheduleAction(() => this.handleRoll(true), 250);
       return;
     }
+    // "No moves"/3-sixes এর পর passTurn ডাকা আছে (৯০০ms পর) — ওই উইন্ডোতে
+    // আবার roll করলে দ্বিতীয় roll চালু হয়ে passTurn তাকে মাঝপথে হত্যা করবে
+    // → dice callback হারিয়ে গিয়ে game জমে থাকত। তাই এই উইন্ডোতে tap = ignore।
+    if (this._turnEndPending) {
+      if (fromRetry) this.scheduleAction(() => this.handleRoll(true), 250);
+      return;
+    }
     this.state = 'ROLLING';
     this.clearHighlights();
 
@@ -1184,11 +1191,21 @@ class LudoGame {
       // তাই প্রথমে dice ওর হাতে উড়ে ফিরবে (retrieve), তারপর সে আবার
       // board-এ throw করবে (throw physics.js-এ)। handoff শেষ না হওয়া
       // পর্যন্ত handleRoll busy guard দিয়ে অপেক্ষা করবে।
+      // ⚠️ Safety: কোনো কারণে retrieve শুরু না হলে তবু holder বসবে,
+      // নাহলে dice কোথাও না থেকে চিরতরে অদৃশ্য হয়ে যেত।
       this.diceHolder = -1;
       if (this.diceHandoff) {
-        this.diceHandoff.retrieveToPlayer(this.activePlayerIndex, () => {
+        try {
+          this.diceHandoff.retrieveToPlayer(this.activePlayerIndex, () => {
+            this.diceHolder = this.activePlayerIndex;
+          });
+          if (!this.diceHandoff.isBusy()) this.diceHolder = this.activePlayerIndex;
+        } catch (e) {
           this.diceHolder = this.activePlayerIndex;
-        });
+          if (window.SysLogs) window.SysLogs.push('game', 'Retrieve error: ' + (e && e.message));
+        }
+      } else {
+        this.diceHolder = this.activePlayerIndex;
       }
       if (this.playerConfigs[this.activePlayerIndex].isAI) {
         this.scheduleAction(() => this.handleRoll(true), 900);
@@ -1226,13 +1243,24 @@ class LudoGame {
     // catch করে হাতে ধরে — এরপর তার নিজের turn-এ board-এ throw করবে।
     // পুরো animation শেষ হলেই AI turn schedule হবে, যাতে আগে ছুড়ে না দিয়ে
     // AI dice না নিয়ে roll করে ফেলে।
+    // ⚠️ Safety: handoff যদি যেকোনো কারণে শুরু না হয়/ব্যর্থ হয়, তবুও
+    // holder ও AI schedule চালু থাকবে — নাহলে game সম্পূর্ণ stuck হয়ে যেত।
     this.diceHolder = -1;
+    let handoffStarted = false;
     if (this.diceHandoff && this.characters) {
-      this.diceHandoff.passToNextPlayer(prevPlayer, nextPlayer, () => {
-        this.diceHolder = nextPlayer;
-        this.scheduleAITurn();
-      });
-    } else {
+      try {
+        this.diceHandoff.passToNextPlayer(prevPlayer, nextPlayer, () => {
+          this.diceHolder = nextPlayer;
+          this.scheduleAITurn();
+        });
+        handoffStarted = this.diceHandoff.isBusy();
+      } catch (e) {
+        handoffStarted = false;
+        if (window.SysLogs) window.SysLogs.push('game', 'Handoff error: ' + (e && e.message));
+      }
+    }
+    if (!handoffStarted) {
+      this.diceHolder = nextPlayer;
       this.scheduleAITurn();
     }
   }
@@ -1695,14 +1723,42 @@ class LudoGame {
     const delta = this.clock.getDelta();
 
     // Physics step & dice trail emission
+    // ⚠️ try/catch: physics কোনো এক ফ্রেমেও throw করলে camera/timer/
+    // characters/handoff সব বাদ যাবে ও পুরো game মারা যাবে — তাই এক ফ্রেমের
+    // ভুল থেকে পুরো loop রক্ষা। সমস্যা হলে log-এ যাবে (প্রথমবার)।
     if (this.physics) {
-      this.physics.update(delta);
+      try {
+        this.physics.update(delta);
+      } catch (e) {
+        if (!this._physicsErrLogged) {
+          this._physicsErrLogged = true;
+          if (window.SysLogs) window.SysLogs.push('game', 'Physics update error: ' + (e && e.message));
+        }
+      }
       if (this.physics.isRolling && this.diceMesh && Math.random() < 0.75) {
         this.spawnDiceTrailParticle(this.diceMesh.position);
       }
     }
     // Dice handoff arc flights (board↔hand retrieve + player→player pass)
     if (this.diceHandoff) this.diceHandoff.update(delta);
+
+    // ---- ROLL WATCHDOG: state=ROLLING থাকলেও physics থেমে থাকলে
+    // (callback কোথাও হারিয়ে গেলে) জবরদখ্তে roll শেষ দেখাও, নাহলে game
+    // চিরতরে ROLLING-এ জমে থাকত। windup/flight চলাকালীন watchdog থামা।
+    if (this.state === 'ROLLING' && this.physics) {
+      if (!this.physics.isRolling && !this.physics.isHeld) {
+        this._rollWatchdog = (this._rollWatchdog || 0) + delta;
+        if (this._rollWatchdog > 3.0) {
+          this._rollWatchdog = 0;
+          if (window.SysLogs) window.SysLogs.push('game', 'Roll watchdog fired');
+          this.onDiceRollComplete(this.currentRoll || 1);
+        }
+      } else {
+        this._rollWatchdog = 0;
+      }
+    } else {
+      this._rollWatchdog = 0;
+    }
 
     // Camera trauma / impact shake
     if (this.cameraShake > 0.005) {
