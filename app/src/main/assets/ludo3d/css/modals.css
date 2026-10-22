@@ -1,0 +1,209 @@
+﻿/* Modals & Full-Screen Section Pages */
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(2, 8, 28, 0.82);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  pointer-events: auto;
+}
+
+/* Full-Screen Dedicated Section Pages (Settings, Profile, Mail, Shop, System Logs) */
+.modal-overlay.fullscreen-page {
+  padding: 0 !important;
+  background: radial-gradient(circle at 50% 30%, #0D3280 0%, #06184D 55%, #020B2A 100%) !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
+.modal-overlay.fullscreen-page .modal-card {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 16px 20px 24px 20px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  overflow-y: auto !important;
+}
+
+.fullscreen-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid rgba(56, 189, 248, 0.3);
+}
+
+.fullscreen-back-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #FEF3C7;
+  background: linear-gradient(180deg, #F59E0B 0%, #D97706 55%, #B45309 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.fullscreen-back-btn:active {
+  transform: scale(0.90);
+}
+
+/* High-End AAA Modal Card Layout */
+.modal-card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(6, 17, 56, 0.98) 100%);
+  border: 2.5px solid #38BDF8;
+  border-radius: 24px;
+  padding: 22px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.25), 0 16px 40px rgba(0, 0, 0, 0.8);
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.modal-title {
+  font-size: 19px;
+  font-weight: 900;
+  text-align: center;
+  color: #FBBF24;
+  text-shadow: 0 2px 4px #000;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: #CBD5E1;
+  line-height: 1.5;
+}
+
+/* AAA 3D Bevel Dialog Buttons */
+.modal-btn {
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+  color: #FFFFFF;
+  border: 1.5px solid #93C5FD;
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s, background 0.15s;
+  box-shadow: 0 4px 0 #1E3A8A, 0 6px 14px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.modal-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #1E3A8A, 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.modal-btn.btn-green {
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  border-color: #A7F3D0;
+  box-shadow: 0 4px 0 #047857, 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.modal-btn.btn-green:active {
+  box-shadow: 0 1px 0 #047857, 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.modal-btn.btn-blue {
+  background: linear-gradient(180deg, #0284C7 0%, #0369A1 100%);
+  border-color: #BAE6FD;
+  box-shadow: 0 4px 0 #075985, 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.modal-btn.btn-blue:active {
+  box-shadow: 0 1px 0 #075985, 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.modal-btn.btn-purple {
+  background: linear-gradient(180deg, #8B5CF6 0%, #6D28D9 100%);
+  border-color: #DDD6FE;
+  box-shadow: 0 4px 0 #5B21B6, 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.modal-btn.btn-purple:active {
+  box-shadow: 0 1px 0 #5B21B6, 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.modal-btn.btn-red {
+  background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+  border-color: #FCA5A5;
+  box-shadow: 0 4px 0 #991B1B, 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.modal-btn.btn-red:active {
+  box-shadow: 0 1px 0 #991B1B, 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.modal-btn.btn-slate {
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 0 #1E293B, 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.modal-btn.btn-slate:active {
+  box-shadow: 0 1px 0 #1E293B, 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Wheel Canvas for Lucky Spin Modal */
+#spin-wheel-canvas {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 6px solid #FBBF24;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+  transition: transform 4s cubic-bezier(0.15, 0.9, 0.2, 1.0);
+}
+
+/* Victory Trophy Golden Aura */
+.winner-trophy-aura {
+  position: relative;
+  display: inline-block;
+}
+
+.winner-trophy-aura::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 130px;
+  height: 130px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.6) 0%, rgba(251, 191, 36, 0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulseTrophy 1.5s infinite alternate;
+}
+
+@keyframes pulseTrophy {
+  0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+}

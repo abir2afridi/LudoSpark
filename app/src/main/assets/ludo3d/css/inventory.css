@@ -1,0 +1,152 @@
+﻿/* Page Headers & Filter Category Bars */
+.page-hero-banner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1.5px solid #38BDF8;
+  border-radius: 18px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.category-filter-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.cat-filter-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  color: #CBD5E1;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.cat-filter-btn.active {
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+  border-color: #FBBF24;
+  color: #FEF3C7;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+}
+
+/* 3D Item Card Grid (Inventory & Store) */
+.items-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.item-card-3d {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 2px solid rgba(56, 189, 248, 0.3);
+  border-radius: 16px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.item-card-3d.equipped {
+  border-color: #FBBF24;
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.6), 0 6px 20px rgba(0,0,0,0.5);
+}
+
+.rarity-tag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.rarity-common { background: #475569; color: #F8FAFC; }
+.rarity-rare { background: #2563EB; color: #FFFFFF; }
+.rarity-epic { background: #7C3AED; color: #FFFFFF; }
+.rarity-legendary { background: linear-gradient(180deg, #F59E0B 0%, #B45309 100%); color: #FEF3C7; border: 1px solid #FEF3C7; }
+
+.item-preview-box {
+  width: 64px;
+  height: 64px;
+  margin: 14px 0 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+  border-radius: 12px;
+}
+
+.item-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-bottom: 2px;
+  text-align: center;
+}
+
+.item-desc {
+  font-size: 10px;
+  color: #94A3B8;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.equip-btn {
+  width: 100%;
+  padding: 6px;
+  border-radius: 10px;
+  border: none;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.equip-btn.btn-equip {
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+  color: #FFFFFF;
+}
+
+.equip-btn.btn-active {
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  border: 1px solid #A7F3D0;
+}
+
+/* ==========================================================================
+   MAIN MENU OVERLAY (EXACT SCREENSHOT DESIGN)
+   ========================================================================== */
+.main-menu-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: radial-gradient(circle at 50% 30%, #0D3280 0%, #06184D 55%, #020B2A 100%);
+  color: #FFFFFF;
+  overflow: hidden;
+  touch-action: manipulation;
+  transition: opacity 0.3s ease, background 0.4s ease;
+}
+

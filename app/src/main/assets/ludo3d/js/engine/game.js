@@ -1313,10 +1313,18 @@ class LudoGame {
   saveGame() {
     try {
       if (typeof localStorage === 'undefined') return;
-      if (this.state === 'GAME_OVER') {
+      if (this.state === 'GAME_OVER' || !this.tokens || this.tokens.length === 0) {
         this.clearSave();
         return;
       }
+
+      // Do NOT save if no turns or moves have actually been made yet (all tokens at step 0)
+      const hasMoves = this.tokens.some(t => t.step > 0);
+      if (!hasMoves) {
+        this.clearSave();
+        return;
+      }
+
       const data = {
         v: 1,
         numPlayers: this.numPlayers,
@@ -1340,6 +1348,14 @@ class LudoGame {
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (!data || !Array.isArray(data.tokenSteps) || data.tokenSteps.length !== 16) return null;
+
+      // Ensure that at least ONE token has actually moved (step > 0)
+      const hasMoves = data.tokenSteps.some(s => s > 0);
+      if (!hasMoves) {
+        this.clearSave();
+        return null;
+      }
+
       return data;
     } catch (e) {
       return null;

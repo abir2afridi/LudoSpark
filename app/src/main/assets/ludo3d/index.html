@@ -3,91 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <script>
-    // Early error capture — feeds the in-app System Logs page
-    window.SysLogs = (function () {
-      var KEY = 'ludoSpark.systemLogs';
-      var MAX = 400;
-      var cache = [];
-      try { cache = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { cache = []; }
-
-      var persist = function () {
-        try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) { /* ignore */ }
-      };
-
-      var push = function (type, message, stack) {
-        var entry = {
-          t: new Date().toISOString(),
-          type: String(type || 'info'),
-          message: String(message || ''),
-          stack: stack ? String(stack).slice(0, 2000) : ''
-        };
-        cache.push(entry);
-        if (cache.length > MAX) cache = cache.slice(-MAX);
-        persist();
-        try {
-          if (window.AndroidBridge && window.AndroidBridge.logJsError) {
-            window.AndroidBridge.logJsError(entry.type + ': ' + entry.message);
-          }
-        } catch (e) { /* ignore */ }
-      };
-
-      window.addEventListener('error', function (e) {
-        push('error', e.message + ' @ ' + (e.filename || '?') + ':' + e.lineno + ':' + e.colno,
-          e.error && e.error.stack);
-      });
-      window.addEventListener('unhandledrejection', function (e) {
-        var r = e.reason;
-        push('promise', (r && r.message) || r, r && r.stack);
-      });
-
-      var origError = console.error.bind(console);
-      console.error = function () {
-        push('console.error', Array.prototype.map.call(arguments, String).join(' '));
-        origError.apply(null, arguments);
-      };
-      var origWarn = console.warn.bind(console);
-      console.warn = function () {
-        push('console.warn', Array.prototype.map.call(arguments, String).join(' '));
-        origWarn.apply(null, arguments);
-      };
-
-      return {
-        push: push,
-        get: function () { return cache.slice().reverse(); },
-        clear: function () { cache = []; persist(); },
-        native: function () {
-          try {
-            if (window.AndroidBridge && window.AndroidBridge.getCrashLogs) {
-              return window.AndroidBridge.getCrashLogs();
-            }
-          } catch (e) { /* ignore */ }
-          return '';
-        },
-        formatAll: function () {
-          var lines = this.get().map(function (l) {
-            return '[' + l.t + '] ' + l.type.toUpperCase() + ': ' + l.message +
-              (l.stack ? '\n' + l.stack : '');
-          });
-          var nativeLog = this.native();
-          if (nativeLog) lines.unshift('=== ANDROID LOG ===\n' + nativeLog);
-          return lines.join('\n\n') || 'No logs.';
-        }
-      };
-    })();
-  </script>
+  <script src="js/core/system-logs-boot.js"></script>
   <title>Ludo Spark</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <script src="three.min.js"></script>
-  <script src="cannon.min.js"></script>
-  <script src="audio.js"></script>
-  <script src="physics.js"></script>
-  <script src="characters.js"></script>
-  <script src="board.js"></script>
-  <script src="game.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/menu.css">
+  <link rel="stylesheet" href="css/inventory.css">
+  <link rel="stylesheet" href="css/game.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/settings.css">
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/vendor/cannon.min.js"></script>
+  <script src="js/engine/audio.js"></script>
+  <script src="js/engine/physics.js"></script>
+  <script src="js/engine/characters.js"></script>
+  <script src="js/engine/board.js"></script>
+  <script src="js/engine/game.js"></script>
+  <script src="js/features/dice-3d.js"></script>
+  <script src="js/core/app-core.js"></script>
+  <script src="js/features/settings.js"></script>
+  <script src="js/features/system-logs.js"></script>
+  <script src="js/features/menu.js"></script>
+  <script src="js/features/seven-up.js"></script>
+  <script src="js/features/daily-streak.js"></script>
+  <script src="js/features/tournament.js"></script>
+  <script src="js/features/profile.js"></script>
+  <script src="js/features/quests.js"></script>
+  <script src="js/features/emoji.js"></script>
+  <script src="js/features/rewards.js"></script>
+  <script src="js/features/spin-wheel.js"></script>
+  <script src="js/features/navigation.js"></script>
+  <script src="js/features/inventory.js"></script>
+  <script src="js/features/pause-menu.js"></script>
+  <script src="js/features/post-game.js"></script>
+  <script src="js/features/save-resume.js"></script>
+  <script src="js/features/dice.js"></script>
+  <script src="js/features/hud.js"></script>
 </head>
 <body>
   <!-- Starry Space Background -->
@@ -105,7 +58,7 @@
       <!-- Left: Profile Avatar + Level Star + Settings + Mail -->
       <div class="menu-left-profile">
         <div class="profile-avatar-container" id="menu-btn-profile">
-          <img src="avatar1.jpg" alt="Profile" class="profile-avatar-img">
+          <img src="assets/avatars/avatar1.jpg" alt="Profile" class="profile-avatar-img">
           <div class="profile-level-badge">
             <span class="star-icon">★</span>
             <span class="level-num">1</span>
@@ -484,76 +437,82 @@
     <!-- Center Toast Prompt -->
     <div id="center-toast" class="center-toast">Your Turn: Roll the Dice!</div>
 
-    <!-- 4 Corner Player Avatars with SVG Countdown Timer Rings & Speech Bubbles -->
+    <!-- 4 Corner Player Cards with Dedicated Chat Buttons & Speech Bubbles -->
     <!-- Top-Left: Player 2 (Red) -->
     <div class="player-corner corner-top-left" id="corner-p2">
-      <div class="avatar-box red-border" id="avatar-p2">
-        <svg class="timer-ring-svg" id="timer-ring-1" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-1" cx="37" cy="37" r="32" />
-        </svg>
-        <img src="avatar2.jpg" alt="Player 2">
-        <div class="player-tag">Player 2</div>
-        <div class="timer-sec-badge" id="timer-badge-1">15</div>
+      <div class="avatar-card-wrapper">
+        <div class="avatar-circle-frame red-frame" id="avatar-p2">
+          <img src="assets/avatars/avatar2.jpg" class="avatar-img" alt="Player 2">
+          <svg class="timer-ring-svg" id="timer-ring-1" viewBox="0 0 74 74">
+            <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+            <circle class="timer-ring-fill" id="timer-fill-1" cx="37" cy="37" r="32" />
+          </svg>
+          <div class="timer-sec-badge" id="timer-badge-1">15</div>
+        </div>
+        <div class="player-name-badge" id="name-p2">Player 2 · 0%</div>
       </div>
+      <button class="player-chat-trigger-btn" onclick="window.openPlayerChat(1)" title="Chat">💬</button>
       <div class="player-speech-bubble" id="bubble-p2">Thinking...</div>
     </div>
 
     <!-- Top-Right: Player 3 (Green) -->
     <div class="player-corner corner-top-right" id="corner-p3">
-      <div class="avatar-box green-border" id="avatar-p3">
-        <svg class="timer-ring-svg" id="timer-ring-2" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-2" cx="37" cy="37" r="32" />
-        </svg>
-        <img src="avatar3.jpg" alt="Player 3">
-        <div class="player-tag">Player 3</div>
-        <div class="timer-sec-badge" id="timer-badge-2">15</div>
+      <div class="avatar-card-wrapper">
+        <div class="avatar-circle-frame green-frame" id="avatar-p3">
+          <img src="assets/avatars/avatar3.jpg" class="avatar-img" alt="Player 3">
+          <svg class="timer-ring-svg" id="timer-ring-2" viewBox="0 0 74 74">
+            <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+            <circle class="timer-ring-fill" id="timer-fill-2" cx="37" cy="37" r="32" />
+          </svg>
+          <div class="timer-sec-badge" id="timer-badge-2">15</div>
+        </div>
+        <div class="player-name-badge" id="name-p3">Player 3 · 0%</div>
       </div>
+      <button class="player-chat-trigger-btn" onclick="window.openPlayerChat(2)" title="Chat">💬</button>
       <div class="player-speech-bubble" id="bubble-p3">Thinking...</div>
     </div>
 
     <!-- Bottom-Left: Player 1 (Blue - Human) -->
     <div class="player-corner corner-bottom-left" id="corner-p1">
-      <div class="avatar-box blue-border active-turn" id="avatar-p1">
-        <svg class="timer-ring-svg" id="timer-ring-0" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-0" cx="37" cy="37" r="32" />
-        </svg>
-        <img src="avatar1.jpg" alt="Player 1">
-        <div class="player-tag">Player 1</div>
-        <div class="timer-sec-badge" id="timer-badge-0">15</div>
+      <div class="avatar-card-wrapper">
+        <div class="avatar-circle-frame blue-frame active-turn" id="avatar-p1">
+          <img src="assets/avatars/avatar1.jpg" class="avatar-img" alt="Player 1">
+          <svg class="timer-ring-svg" id="timer-ring-0" viewBox="0 0 74 74">
+            <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+            <circle class="timer-ring-fill" id="timer-fill-0" cx="37" cy="37" r="32" />
+          </svg>
+          <div class="timer-sec-badge" id="timer-badge-0">15</div>
+        </div>
+        <div class="player-name-badge" id="name-p1">Player 1 · 0%</div>
       </div>
+      <button class="player-chat-trigger-btn" onclick="window.openPlayerChat(0)" title="Chat">💬</button>
       <div class="player-speech-bubble" id="bubble-p1">Your Turn: Tap Dice</div>
 
-      <!-- Standalone Interactive Dice Slot (Moves dynamically next to Active Player Avatar) -->
+      <!-- Standalone Interactive Dice Slot -->
       <div class="dice-slot" id="dice-slot">
-        <div class="dice-content" id="dice-display"></div>
         <div class="pointing-hand" id="pointing-hand">👆</div>
       </div>
     </div>
 
     <!-- Bottom-Right: Player 4 (Yellow) -->
     <div class="player-corner corner-bottom-right" id="corner-p4">
-      <div class="avatar-box yellow-border" id="avatar-p4">
-        <svg class="timer-ring-svg" id="timer-ring-3" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-3" cx="37" cy="37" r="32" />
-        </svg>
-        <img src="avatar4.jpg" alt="Player 4">
-        <div class="player-tag">Player 4</div>
-        <div class="timer-sec-badge" id="timer-badge-3">15</div>
+      <div class="avatar-card-wrapper">
+        <div class="avatar-circle-frame yellow-frame" id="avatar-p4">
+          <img src="assets/avatars/avatar4.jpg" class="avatar-img" alt="Player 4">
+          <svg class="timer-ring-svg" id="timer-ring-3" viewBox="0 0 74 74">
+            <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
+            <circle class="timer-ring-fill" id="timer-fill-3" cx="37" cy="37" r="32" />
+          </svg>
+          <div class="timer-sec-badge" id="timer-badge-3">15</div>
+        </div>
+        <div class="player-name-badge" id="name-p4">Player 4 · 0%</div>
       </div>
+      <button class="player-chat-trigger-btn" onclick="window.openPlayerChat(3)" title="Chat">💬</button>
       <div class="player-speech-bubble" id="bubble-p4">Thinking...</div>
     </div>
 
-    <div style="position:absolute; bottom:88px; right:16px; pointer-events:auto; z-index:25;">
-      <button id="btn-emoji-toggle" class="icon-btn" style="width:46px; height:46px; background:linear-gradient(180deg, #F59E0B 0%, #B45309 100%); border:2px solid #FEF3C7; box-shadow:0 6px 16px rgba(0,0,0,0.5);">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="#FEF3C7"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-6.2 3.5c.8 1.2 2 1.8 3.2 1.8s2.4-.6 3.2-1.8.8-1.5-.2-1.5h-6c-1 0-.8.9-.2 1.5z"/></svg>
-      </button>
-    </div>
-
-    <div id="emoji-picker-panel" style="position:absolute; bottom:142px; right:16px; background:rgba(15,23,42,0.95); backdrop-filter:blur(10px); border:2px solid #38BDF8; border-radius:16px; padding:10px; display:none; flex-direction:column; gap:8px; pointer-events:auto; z-index:30; box-shadow:0 8px 24px rgba(0,0,0,0.6);">
+    <!-- Emoji & Voice Popup Panel -->
+    <div id="emoji-picker-panel" style="position:absolute; bottom:110px; right:16px; background:rgba(15,23,42,0.95); backdrop-filter:blur(10px); border:2px solid #38BDF8; border-radius:16px; padding:10px; display:none; flex-direction:column; gap:8px; pointer-events:auto; z-index:40; box-shadow:0 8px 24px rgba(0,0,0,0.6);">
       <div style="display:flex; gap:8px; font-size:22px;">
         <span class="emoji-opt" id="emoji-1" style="cursor:pointer;">😂</span>
         <span class="emoji-opt" id="emoji-2" style="cursor:pointer;">😡</span>
@@ -768,42 +727,48 @@
     </div>
   </div>
 
-  <!-- Mail Inbox Modal -->
-  <div id="modal-mail" class="modal-overlay">
+  <!-- Mail Inbox Full-Screen Page -->
+  <div id="modal-mail" class="modal-overlay fullscreen-page">
     <div class="modal-card">
-      <div class="modal-ribbon-header">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        <h2 class="modal-ribbon-title">MAIL INBOX</h2>
+      <div class="fullscreen-page-header">
+        <button id="btn-close-mail" class="fullscreen-back-btn">←</button>
+        <div class="modal-ribbon-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <h2 class="modal-ribbon-title">MAIL & INBOX</h2>
+        </div>
+        <span style="width:44px;"></span>
       </div>
-      <div class="modal-desc">
-        <div style="background:#0F172A; padding:10px; border-radius:12px; margin-bottom:8px; border:1px solid #38BDF8;">
-          <b style="color:#FBBF24;">🎁 Daily Reward</b>
-          <p style="font-size:12px; color:#94A3B8; margin-top:2px;">Welcome to Ludo Spark! Claim your bonus 1,000 coins.</p>
+      <div class="modal-desc" style="flex:1;">
+        <div style="background:#0F172A; padding:14px; border-radius:16px; margin-bottom:10px; border:1px solid #38BDF8; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+          <b style="color:#FBBF24; font-size:15px;">🎁 Welcome Daily Bonus</b>
+          <p style="font-size:13px; color:#CBD5E1; margin-top:4px;">Welcome to Ludo Spark! Claim your starter bonus of 1,000 Coins & 10 Gems.</p>
         </div>
       </div>
-      <button id="btn-claim-mail" class="modal-btn" style="background:#10B981;">Claim All Rewards</button>
-      <button id="btn-close-mail" class="modal-btn" style="background:#475569;">Close</button>
+      <button id="btn-claim-mail" class="modal-btn" style="background:#10B981; font-size:16px;">Claim All Rewards</button>
     </div>
   </div>
 
-  <!-- Shop Modal -->
-  <div id="modal-shop" class="modal-overlay">
+  <!-- Shop Reward Store Full-Screen Page -->
+  <div id="modal-shop" class="modal-overlay fullscreen-page">
     <div class="modal-card">
-      <div class="modal-ribbon-header">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        <h2 class="modal-ribbon-title">REWARD STORE</h2>
-      </div>
-      <div class="modal-desc" style="display:flex; flex-direction:column; gap:8px;">
-        <div style="background:#0F172A; padding:10px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #38BDF8;">
-          <div><b>🪙 10,000 Coins</b></div>
-          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.addCoins(10000)">Free Claim</button>
+      <div class="fullscreen-page-header">
+        <button id="btn-close-shop" class="fullscreen-back-btn">←</button>
+        <div class="modal-ribbon-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <h2 class="modal-ribbon-title">REWARD STORE</h2>
         </div>
-        <div style="background:#0F172A; padding:10px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #38BDF8;">
-          <div><b>💎 500 Gems</b></div>
-          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.addGems(500)">Free Claim</button>
+        <span style="width:44px;"></span>
+      </div>
+      <div class="modal-desc" style="flex:1; display:flex; flex-direction:column; gap:10px;">
+        <div style="background:#0F172A; padding:14px; border-radius:16px; display:flex; justify-content:space-between; align-items:center; border:1px solid #38BDF8; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+          <div><b style="font-size:15px; color:#FBBF24;">🪙 10,000 Coins Pack</b><p style="font-size:11px; color:#94A3B8; margin-top:2px;">Free daily coin pack boost</p></div>
+          <button class="modal-btn" style="padding:8px 16px; font-size:13px; background:#10B981;" onclick="window.addCoins(10000)">Free Claim</button>
+        </div>
+        <div style="background:#0F172A; padding:14px; border-radius:16px; display:flex; justify-content:space-between; align-items:center; border:1px solid #38BDF8; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+          <div><b style="font-size:15px; color:#38BDF8;">💎 500 Gems Pack</b><p style="font-size:11px; color:#94A3B8; margin-top:2px;">Free gem pack boost</p></div>
+          <button class="modal-btn" style="padding:8px 16px; font-size:13px; background:#10B981;" onclick="window.addGems(500)">Free Claim</button>
         </div>
       </div>
-      <button id="btn-close-shop" class="modal-btn" style="background:#475569;">Close</button>
     </div>
   </div>
 
@@ -841,41 +806,43 @@
     </div>
   </div>
 
-  <!-- Player Profile Modal -->
-  <div id="modal-profile" class="modal-overlay">
+  <!-- Player Profile Full-Screen Page -->
+  <div id="modal-profile" class="modal-overlay fullscreen-page">
     <div class="modal-card" style="text-align:center;">
-      <div class="modal-ribbon-header">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="#FEF3C7"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-        <h2 class="modal-ribbon-title">PLAYER PROFILE</h2>
+      <div class="fullscreen-page-header">
+        <button id="btn-close-profile" class="fullscreen-back-btn">←</button>
+        <div class="modal-ribbon-header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="#FEF3C7"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <h2 class="modal-ribbon-title">PLAYER PROFILE</h2>
+        </div>
+        <span style="width:44px;"></span>
       </div>
 
-      <div style="display:flex; flex-direction:column; align-items:center; margin:6px 0;">
-        <div style="width:68px; height:68px; border-radius:50%; border:3px solid #FBBF24; overflow:hidden; position:relative; box-shadow:0 0 12px rgba(251,191,36,0.6);">
-          <img id="profile-modal-img" src="avatar1.jpg" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
+      <div style="display:flex; flex-direction:column; align-items:center; margin:12px 0;">
+        <div style="width:84px; height:84px; border-radius:50%; border:3.5px solid #FBBF24; overflow:hidden; position:relative; box-shadow:0 0 20px rgba(251,191,36,0.6);">
+          <img id="profile-modal-img" src="assets/avatars/avatar1.jpg" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
         </div>
-        <b style="font-size:15px; margin-top:4px; color:#FBBF24;" id="profile-name-text">Player 1</b>
-        <span style="font-size:11px; color:#94A3B8;" id="profile-level-text">Level 1 Pro Player</span>
+        <b style="font-size:18px; margin-top:8px; color:#FBBF24;" id="profile-name-text">Player 1</b>
+        <span style="font-size:12px; color:#94A3B8; margin-top:2px;" id="profile-level-text">Level 1 Pro Player</span>
       </div>
 
-      <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; margin-bottom:6px;">
-        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:4px;">
-          <span>XP Progress</span>
-          <span id="profile-xp-text">350 / 500 XP</span>
+      <div style="background:#0F172A; padding:12px 14px; border-radius:16px; border:1px solid #38BDF8; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:#FEF3C7; margin-bottom:6px;">
+          <span>XP Progress Level 1</span>
+          <span id="profile-xp-text" style="color:#38BDF8;">350 / 500 XP</span>
         </div>
-        <div style="width:100%; height:8px; background:#1E293B; border-radius:4px; overflow:hidden;">
+        <div style="width:100%; height:10px; background:#1E293B; border-radius:5px; overflow:hidden;">
           <div id="profile-xp-bar" style="width:70%; height:100%; background:linear-gradient(90deg, #3B82F6, #38BDF8);"></div>
         </div>
       </div>
 
-      <b style="font-size:11px; color:#FEF3C7; text-align:left;">Choose Avatar:</b>
-      <div style="display:flex; gap:10px; justify-content:center; margin:4px 0;">
-        <img class="avatar-select-option" id="select-avatar-1" src="avatar1.jpg" alt="Avatar 1" style="width:44px; height:44px; border-radius:50%; border:2px solid #3B82F6; cursor:pointer;">
-        <img class="avatar-select-option" id="select-avatar-2" src="avatar2.jpg" alt="Avatar 2" style="width:44px; height:44px; border-radius:50%; border:2px solid #1E293B; cursor:pointer;">
-        <img class="avatar-select-option" id="select-avatar-3" src="avatar3.jpg" alt="Avatar 3" style="width:44px; height:44px; border-radius:50%; border:2px solid #1E293B; cursor:pointer;">
-        <img class="avatar-select-option" id="select-avatar-4" src="avatar4.jpg" alt="Avatar 4" style="width:44px; height:44px; border-radius:50%; border:2px solid #1E293B; cursor:pointer;">
+      <b style="font-size:13px; color:#FEF3C7; text-align:left; display:block; margin-bottom:6px;">Choose Avatar:</b>
+      <div style="display:flex; gap:12px; justify-content:center; margin-bottom:12px;">
+        <img class="avatar-select-option" id="select-avatar-1" src="assets/avatars/avatar1.jpg" alt="Avatar 1" style="width:52px; height:52px; border-radius:50%; border:2.5px solid #3B82F6; cursor:pointer;">
+        <img class="avatar-select-option" id="select-avatar-2" src="assets/avatars/avatar2.jpg" alt="Avatar 2" style="width:52px; height:52px; border-radius:50%; border:2.5px solid #1E293B; cursor:pointer;">
+        <img class="avatar-select-option" id="select-avatar-3" src="assets/avatars/avatar3.jpg" alt="Avatar 3" style="width:52px; height:52px; border-radius:50%; border:2.5px solid #1E293B; cursor:pointer;">
+        <img class="avatar-select-option" id="select-avatar-4" src="assets/avatars/avatar4.jpg" alt="Avatar 4" style="width:52px; height:52px; border-radius:50%; border:2.5px solid #1E293B; cursor:pointer;">
       </div>
-
-      <button id="btn-close-profile" class="modal-btn" style="background:#475569; margin-top:4px;">Close</button>
     </div>
   </div>
 
@@ -913,25 +880,27 @@
         <svg viewBox="0 0 24 24" width="20" height="20" fill="#FEF3C7"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
         <h2 class="modal-ribbon-title">GAME PAUSED</h2>
       </div>
-      <p class="modal-desc">Choose an action:</p>
-      <button id="btn-pause-resume" class="modal-btn btn-green">▶ Resume</button>
-      <button id="btn-pause-mainmenu" class="modal-btn btn-gold">Main Menu</button>
-      <button id="btn-pause-newgame" class="modal-btn btn-blue">New Game</button>
-      <button id="btn-pause-rules" class="modal-btn btn-purple">How to Play</button>
-      <button id="btn-pause-quit" class="modal-btn btn-red">Quit Game</button>
+      <p class="modal-desc">Match paused. Select an option below:</p>
+      <button id="btn-pause-resume" class="modal-btn btn-green">▶ Resume Match</button>
+      <button id="btn-pause-restart" class="modal-btn btn-blue">🔄 Restart Match</button>
+      <button id="btn-pause-rules" class="modal-btn btn-purple">📖 How to Play</button>
+      <button id="btn-pause-settings" class="modal-btn" style="background:#0EA5E9; color:#FFFFFF;">⚙️ Audio & Camera Settings</button>
+      <button id="btn-pause-abort" class="modal-btn btn-red">✖ Abort Match & Main Menu</button>
     </div>
   </div>
 
   <!-- Resume Saved Game Dialog -->
   <div id="modal-resume" class="modal-overlay">
-    <div class="modal-card" style="text-align:center;">
+    <div class="modal-card" style="text-align:center; position:relative;">
+      <button id="btn-close-resume-top" style="position:absolute; top:12px; right:12px; background:transparent; border:none; color:#CBD5E1; font-size:20px; font-weight:900; cursor:pointer;" title="Discard & Close">✖</button>
       <div class="modal-ribbon-header">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         <h2 class="modal-ribbon-title">RESUME MATCH</h2>
       </div>
-      <p class="modal-desc">A saved game was found. Continue where you left off?</p>
+      <p class="modal-desc">An active saved match was found. Continue where you left off?</p>
       <button id="btn-resume-yes" class="modal-btn btn-green" style="margin-top:10px;">▶ Resume Match</button>
-      <button id="btn-resume-no" class="modal-btn btn-slate">Start New Game</button>
+      <button id="btn-resume-no" class="modal-btn btn-slate">🔄 Start New Game</button>
+      <button id="btn-resume-discard" class="modal-btn" style="background:#EF4444; color:#FFFFFF;">✖ Discard & Main Menu</button>
     </div>
   </div>
 
@@ -972,923 +941,5 @@
     </div>
   </div>
 
-  <!-- Script setup -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const game = new LudoGame();
-      window.ludoGame = game;
-
-      const diceUnicode = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-
-      // 3D dice icon rendered as SVG (idle + rolled face)
-      const DICE_PIPS = {
-        1: [[20, 19]],
-        2: [[13, 12], [27, 26]],
-        3: [[13, 12], [20, 19], [27, 26]],
-        4: [[13, 12], [27, 12], [13, 26], [27, 26]],
-        5: [[13, 12], [27, 12], [20, 19], [13, 26], [27, 26]],
-        6: [[13, 11], [27, 11], [13, 19], [27, 19], [13, 27], [27, 27]]
-      };
-      const renderDiceIcon = (value) => {
-        const v = DICE_PIPS[value] ? value : 6;
-        const dots = DICE_PIPS[v]
-          .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.7" fill="#0F172A"/>`)
-          .join('');
-        diceDisplay.innerHTML =
-          '<svg width="42" height="42" viewBox="0 0 40 40" aria-hidden="true">' +
-            '<defs>' +
-              '<linearGradient id="diceFaceGrad" x1="0" y1="0" x2="1" y2="1">' +
-                '<stop offset="0%" stop-color="#FFFFFF"/>' +
-                '<stop offset="100%" stop-color="#CBD5E1"/>' +
-              '</linearGradient>' +
-            '</defs>' +
-            '<rect x="6" y="7" width="30" height="30" rx="7" fill="#64748B"/>' +
-            '<rect x="4" y="4" width="30" height="30" rx="7" fill="url(#diceFaceGrad)" stroke="#94A3B8" stroke-width="1.2"/>' +
-            dots +
-          '</svg>';
-      };
-
-      // UI Element references
-      const mainMenuEl = document.getElementById('main-menu');
-      const uiOverlayEl = document.getElementById('ui-overlay');
-      const toastEl = document.getElementById('center-toast');
-      const diceSlot = document.getElementById('dice-slot');
-      const diceDisplay = document.getElementById('dice-display');
-      const diceLabel = document.getElementById('dice-label');
-      const tokenSelectorBar = document.getElementById('token-selector-bar');
-      renderDiceIcon(6);
-
-      const soundBtn = document.getElementById('btn-sound');
-      const cameraBtn = document.getElementById('btn-camera');
-      const rulesModal = document.getElementById('modal-rules');
-      const modeSetupModal = document.getElementById('modal-mode-setup');
-      const winnerModal = document.getElementById('modal-winner');
-      const pauseModal = document.getElementById('modal-pause');
-      const resumeModal = document.getElementById('modal-resume');
-      const settingsModal = document.getElementById('modal-menu-settings');
-      const spinModal = document.getElementById('modal-spin-wheel');
-      const mailModal = document.getElementById('modal-mail');
-      const shopModal = document.getElementById('modal-shop');
-      const navInfoModal = document.getElementById('modal-nav-info');
-
-      // Resources state
-      let currentCoins = parseInt(localStorage.getItem('ludoSpark.coins') || '2550');
-      let currentGems = parseInt(localStorage.getItem('ludoSpark.gems') || '50');
-
-      const updateResourceUI = () => {
-        document.getElementById('menu-coin-count').innerText = currentCoins.toLocaleString();
-        document.getElementById('menu-diamond-count').innerText = currentGems.toLocaleString();
-        localStorage.setItem('ludoSpark.coins', currentCoins);
-        localStorage.setItem('ludoSpark.gems', currentGems);
-      };
-      updateResourceUI();
-
-      // Restore persisted sound preference + sync setting labels
-      try {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('ludoSpark.sound') === '0') {
-          window.soundEngine.enabled = false;
-        }
-      } catch (e) { /* ignore */ }
-      const syncSettingsLabels = () => {
-        const setLabel = (id, text) => {
-          const el = document.getElementById(id);
-          if (el) el.innerText = text;
-        };
-        setLabel('setting-sound-label', window.soundEngine.enabled ? 'On' : 'Off');
-        setLabel('setting-camera-label', game.currentPreset === 'top' ? 'Top-Down' : '3D View');
-        const diff = (game.difficulty || 'normal');
-        setLabel('setting-diff-label', diff.charAt(0).toUpperCase() + diff.slice(1));
-        if (soundBtn) soundBtn.innerText = window.soundEngine.enabled ? '🔊' : '🔇';
-        if (cameraBtn) cameraBtn.innerText = game.currentPreset === 'top' ? '📷' : '🗺';
-      };
-      syncSettingsLabels();
-
-      const setSoundEnabled = (on) => {
-        window.soundEngine.enabled = on;
-        try { localStorage.setItem('ludoSpark.sound', on ? '1' : '0'); } catch (e) {}
-        syncSettingsLabels();
-      };
-      const applyCameraPreset = (next) => {
-        game.setCameraPreset(next);
-        try { localStorage.setItem('ludoSpark.camera', next); } catch (e) {}
-        syncSettingsLabels();
-      };
-
-      window.addCoins = (amt) => {
-        currentCoins += amt;
-        updateResourceUI();
-        if (window.soundEngine) window.soundEngine.playTokenHome();
-      };
-      window.addGems = (amt) => {
-        currentGems += amt;
-        updateResourceUI();
-        if (window.soundEngine) window.soundEngine.playTokenHome();
-      };
-
-      // Sound click helper
-      const playClick = () => {
-        if (window.soundEngine) window.soundEngine.playButtonClick();
-      };
-
-      // Show/Hide Main Menu vs Game Screen
-      const showMainMenu = () => {
-        mainMenuEl.style.display = 'flex';
-        uiOverlayEl.style.display = 'none';
-        pauseModal.style.display = 'none';
-        winnerModal.style.display = 'none';
-      };
-      let diceInputLockUntil = 0;
-      const startGameScreen = () => {
-        mainMenuEl.style.display = 'none';
-        uiOverlayEl.style.display = 'flex';
-        // Prevent the Start Match tap from accidentally landing on the dice dock
-        diceInputLockUntil = performance.now() + 700;
-      };
-
-      // Hardware/back-button hook (called from Android MainActivity)
-      window.openPauseMenu = () => {
-        if (game.state === 'GAME_OVER') return;
-        if (uiOverlayEl.style.display !== 'none') {
-          pauseModal.style.display = 'flex';
-        }
-      };
-
-      let selectedPlayers = 4;
-      let isVsBot = true;
-      let selectedDifficulty = game.difficulty || 'normal';
-
-      // Setup setup buttons
-      const setPCount = (cnt) => {
-        selectedPlayers = cnt;
-        ['opt-2p', 'opt-3p', 'opt-4p'].forEach((id, idx) => {
-          const btn = document.getElementById(id);
-          if (btn) btn.style.background = (idx + 2 === cnt) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      document.getElementById('opt-2p').onclick = () => { playClick(); setPCount(2); };
-      document.getElementById('opt-3p').onclick = () => { playClick(); setPCount(3); };
-      document.getElementById('opt-4p').onclick = () => { playClick(); setPCount(4); };
-
-      document.getElementById('opt-vs-bot').onclick = () => {
-        playClick();
-        isVsBot = true;
-        document.getElementById('opt-vs-bot').style.background = '#3B82F6';
-        document.getElementById('opt-pass-play').style.background = '#1E293B';
-      };
-      document.getElementById('opt-pass-play').onclick = () => {
-        playClick();
-        isVsBot = false;
-        document.getElementById('opt-pass-play').style.background = '#3B82F6';
-        document.getElementById('opt-vs-bot').style.background = '#1E293B';
-      };
-
-      const setDifficulty = (level) => {
-        selectedDifficulty = level;
-        [['opt-easy', 'easy'], ['opt-normal', 'normal'], ['opt-hard', 'hard']].forEach(([id, val]) => {
-          const btn = document.getElementById(id);
-          if (btn) btn.style.background = (val === level) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      document.getElementById('opt-easy').onclick = () => { playClick(); setDifficulty('easy'); };
-      document.getElementById('opt-normal').onclick = () => { playClick(); setDifficulty('normal'); };
-      document.getElementById('opt-hard').onclick = () => { playClick(); setDifficulty('hard'); };
-
-      // ---- Mode Card Clicks ----
-      const openModeSetup = (titleStr, vsBotDefault = true) => {
-        playClick();
-        document.getElementById('mode-setup-title').innerText = titleStr;
-        isVsBot = vsBotDefault;
-        document.getElementById('opt-vs-bot').style.background = isVsBot ? '#3B82F6' : '#1E293B';
-        document.getElementById('opt-pass-play').style.background = isVsBot ? '#1E293B' : '#3B82F6';
-        modeSetupModal.style.display = 'flex';
-      };
-
-      document.getElementById('mode-btn-online').onclick = () => openModeSetup('🌍 Online Ludo Room', true);
-      document.getElementById('mode-btn-teamup').onclick = () => openModeSetup('⚔️ Team Up 2v2 Match', true);
-      document.getElementById('mode-btn-friends').onclick = () => openModeSetup('❤️ Friends Private Table', false);
-      document.getElementById('mode-btn-computer').onclick = () => openModeSetup('📱 Vs Computer', true);
-      document.getElementById('mode-btn-passplay').onclick = () => openModeSetup('🧑‍🤝‍🧑 Pass & Play', false);
-
-      // ---- 7 Up 7 Down Mini Game ----
-      const game7UpDownModal = document.getElementById('modal-game-7updown');
-      document.getElementById('mode-btn-7game').onclick = () => { playClick(); game7UpDownModal.style.display = 'flex'; };
-      document.getElementById('btn-close-7up').onclick = () => { playClick(); game7UpDownModal.style.display = 'none'; };
-
-      let selected7Category = 'down';
-      let selected7Bet = 100;
-
-      const set7Category = (cat) => {
-        selected7Category = cat;
-        [['bet-cat-down', 'down'], ['bet-cat-7', '7'], ['bet-cat-up', 'up']].forEach(([id, val]) => {
-          const btn = document.getElementById(id);
-          if (btn) btn.style.background = (val === cat) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      document.getElementById('bet-cat-down').onclick = () => { playClick(); set7Category('down'); };
-      document.getElementById('bet-cat-7').onclick = () => { playClick(); set7Category('7'); };
-      document.getElementById('bet-cat-up').onclick = () => { playClick(); set7Category('up'); };
-
-      const set7Bet = (amt) => {
-        selected7Bet = amt;
-        [['bet-amt-100', 100], ['bet-amt-500', 500], ['bet-amt-1000', 1000]].forEach(([id, val]) => {
-          const btn = document.getElementById(id);
-          if (btn) btn.style.background = (val === amt) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      document.getElementById('bet-amt-100').onclick = () => { playClick(); set7Bet(100); };
-      document.getElementById('bet-amt-500').onclick = () => { playClick(); set7Bet(500); };
-      document.getElementById('bet-amt-1000').onclick = () => { playClick(); set7Bet(1000); };
-
-      document.getElementById('btn-roll-7up').onclick = () => {
-        if (currentCoins < selected7Bet) {
-          alert('Not enough coins! Claim free coins in store.');
-          return;
-        }
-        playClick();
-        if (window.soundEngine) window.soundEngine.playDiceTumble();
-
-        currentCoins -= selected7Bet;
-        updateResourceUI();
-
-        const d1 = Math.floor(Math.random() * 6) + 1;
-        const d2 = Math.floor(Math.random() * 6) + 1;
-        const sum = d1 + d2;
-
-        document.getElementById('7up-dice1').innerText = diceUnicode[d1];
-        document.getElementById('7up-dice2').innerText = diceUnicode[d2];
-        document.getElementById('7up-result-text').innerText = `Total Sum: ${sum}`;
-
-        let won = false;
-        let winMultiplier = 2;
-        if (selected7Category === 'down' && sum < 7) { won = true; winMultiplier = 2; }
-        else if (selected7Category === '7' && sum === 7) { won = true; winMultiplier = 5; }
-        else if (selected7Category === 'up' && sum > 7) { won = true; winMultiplier = 2; }
-
-        setTimeout(() => {
-          if (won) {
-            const winAmt = selected7Bet * winMultiplier;
-            window.addCoins(winAmt);
-            alert(`🎉 YOU WON ${winAmt.toLocaleString()} COINS!\nDice Total: ${sum}`);
-          } else {
-            alert(`❌ Better Luck Next Time!\nDice Total: ${sum}`);
-          }
-        }, 300);
-      };
-
-      // ---- 7-Day Daily Check-In Streak ----
-      const dailyCalendarModal = document.getElementById('modal-daily-calendar');
-      const streakRewards = [500, 1000, 1500, 50, 3000, 5000, 10000];
-      let currentStreakDay = parseInt(localStorage.getItem('ludoSpark.streakDay') || '1');
-      let lastClaimDate = localStorage.getItem('ludoSpark.lastClaimDate') || '';
-
-      const todayStr = new Date().toDateString();
-      if (lastClaimDate !== todayStr) {
-        setTimeout(() => {
-          if (dailyCalendarModal) dailyCalendarModal.style.display = 'flex';
-        }, 800);
-      }
-
-      document.getElementById('btn-close-streak').onclick = () => { playClick(); dailyCalendarModal.style.display = 'none'; };
-      document.getElementById('btn-claim-streak').onclick = () => {
-        playClick();
-        const rewardAmt = streakRewards[(currentStreakDay - 1) % 7];
-        if (currentStreakDay === 4) {
-          window.addGems(rewardAmt);
-        } else {
-          window.addCoins(rewardAmt);
-        }
-        localStorage.setItem('ludoSpark.lastClaimDate', todayStr);
-        localStorage.setItem('ludoSpark.streakDay', (currentStreakDay % 7) + 1);
-        dailyCalendarModal.style.display = 'none';
-        alert(`🎁 Day ${currentStreakDay} Daily Streak Reward Claimed!`);
-      };
-
-      // ---- 8-Player Knockout Tournament ----
-      const tourneyModal = document.getElementById('modal-tournament-bracket');
-      document.getElementById('mode-btn-tournament').onclick = () => { playClick(); tourneyModal.style.display = 'flex'; };
-      document.getElementById('btn-close-tourney').onclick = () => { playClick(); tourneyModal.style.display = 'none'; };
-
-      document.getElementById('btn-start-tourney-match').onclick = () => {
-        playClick();
-        tourneyModal.style.display = 'none';
-        game.newGame(4, 3, 'normal');
-        startGameScreen();
-      };
-
-      document.getElementById('mode-btn-snake').onclick = () => {
-        playClick();
-        game.newSnakeLadderGame(selectedPlayers, isVsBot ? selectedPlayers - 1 : 0);
-        startGameScreen();
-      };
-
-      document.getElementById('btn-start-game').onclick = () => {
-        playClick();
-        const botCount = isVsBot ? selectedPlayers - 1 : 0;
-        game.newGame(selectedPlayers, botCount, selectedDifficulty);
-        modeSetupModal.style.display = 'none';
-        startGameScreen();
-      };
-      document.getElementById('btn-cancel-game').onclick = () => {
-        playClick();
-        modeSetupModal.style.display = 'none';
-      };
-
-      // ---- Profile & Avatar Selection ----
-      const profileModal = document.getElementById('modal-profile');
-      let currentAvatar = localStorage.getItem('ludoSpark.avatar') || 'avatar1.jpg';
-
-      const setAvatar = (src) => {
-        currentAvatar = src;
-        try { localStorage.setItem('ludoSpark.avatar', src); } catch (e) {}
-        document.querySelector('.profile-avatar-img').src = src;
-        document.getElementById('profile-modal-img').src = src;
-        const p1Img = document.querySelector('#avatar-p1 img');
-        if (p1Img) p1Img.src = src;
-
-        ['1', '2', '3', '4'].forEach(id => {
-          const el = document.getElementById(`select-avatar-${id}`);
-          if (el) el.style.borderColor = (el.getAttribute('src') === src) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      setAvatar(currentAvatar);
-
-      document.getElementById('menu-btn-profile').onclick = () => { playClick(); profileModal.style.display = 'flex'; };
-      document.getElementById('btn-close-profile').onclick = () => { playClick(); profileModal.style.display = 'none'; };
-
-      ['1', '2', '3', '4'].forEach(id => {
-        const el = document.getElementById(`select-avatar-${id}`);
-        if (el) el.onclick = () => {
-          playClick();
-          setAvatar(el.getAttribute('src'));
-        };
-      });
-
-      // ---- Daily Quests ----
-      window.claimQuest = (id, coins) => {
-        playClick();
-        window.addCoins(coins);
-        const btn = document.getElementById(`btn-claim-quest${id}`);
-        if (btn) {
-          btn.innerText = 'Claimed ✓';
-          btn.style.background = '#475569';
-          btn.disabled = true;
-        }
-        const prog = document.getElementById(`quest${id}-progress`);
-        if (prog) prog.innerText = 'Completed!';
-      };
-
-      // ---- In-Game Emoji & Voice Dialogs ----
-      const emojiToggleBtn = document.getElementById('btn-emoji-toggle');
-      const emojiPanel = document.getElementById('emoji-picker-panel');
-
-      if (emojiToggleBtn) {
-        emojiToggleBtn.onclick = () => {
-          playClick();
-          emojiPanel.style.display = (emojiPanel.style.display === 'flex') ? 'none' : 'flex';
-        };
-      }
-
-      const triggerBubble = (textStr) => {
-        playClick();
-        emojiPanel.style.display = 'none';
-        const p1Bubble = document.getElementById('bubble-p1');
-        if (p1Bubble) {
-          p1Bubble.innerText = textStr;
-          p1Bubble.classList.add('active');
-          setTimeout(() => {
-            if (game && game.activePlayerIndex !== 0) {
-              p1Bubble.classList.remove('active');
-            }
-          }, 2400);
-        }
-      };
-
-      ['1', '2', '3', '4', '5', '6'].forEach(i => {
-        const el = document.getElementById(`emoji-${i}`);
-        if (el) el.onclick = () => triggerBubble(el.innerText);
-      });
-      ['1', '2', '3'].forEach(i => {
-        const el = document.getElementById(`voice-msg-${i}`);
-        if (el) el.onclick = () => triggerBubble(el.innerText);
-      });
-
-      // Header / Side Reward Clicks
-      document.getElementById('menu-btn-settings').onclick = () => { playClick(); settingsModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-mail').onclick = () => { playClick(); mailModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-shop').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-coins').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-diamonds').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-free-chest').onclick = () => {
-        playClick();
-        window.addCoins(500);
-        alert('🧰 Free Daily Chest Opened!\n+500 Coins added!');
-      };
-      document.getElementById('menu-btn-ad-reward').onclick = () => {
-        playClick();
-        window.addCoins(1200);
-        window.addGems(10);
-        alert('🎬 Video Ad Watched!\n+1,200 Coins & +10 Gems added!');
-      };
-      document.getElementById('menu-btn-help').onclick = () => { playClick(); rulesModal.style.display = 'flex'; };
-
-      // ---- Lucky Spin Wheel ----
-      document.getElementById('menu-btn-spin').onclick = () => {
-        playClick();
-        spinModal.style.display = 'flex';
-        drawWheel();
-      };
-      document.getElementById('btn-close-spin').onclick = () => { playClick(); spinModal.style.display = 'none'; };
-
-      const wheelCanvas = document.getElementById('spin-wheel-canvas');
-      const wheelPrizes = ['500 🪙', '1,000 🪙', '2,500 🪙', '5,000 🪙', '100 💎', '1,200 🪙'];
-      const wheelColors = ['#F59E0B', '#3B82F6', '#10B981', '#EC4899', '#8B5CF6', '#EF4444'];
-      let wheelAngle = 0;
-      let isSpinning = false;
-
-      function drawWheel() {
-        if (!wheelCanvas) return;
-        const ctx = wheelCanvas.getContext('2d');
-        const numPrizes = wheelPrizes.length;
-        const arc = (Math.PI * 2) / numPrizes;
-
-        ctx.clearRect(0, 0, 220, 220);
-        for (let i = 0; i < numPrizes; i++) {
-          const angle = wheelAngle + i * arc;
-          ctx.beginPath();
-          ctx.fillStyle = wheelColors[i];
-          ctx.moveTo(110, 110);
-          ctx.arc(110, 110, 105, angle, angle + arc);
-          ctx.lineTo(110, 110);
-          ctx.fill();
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = '#FEF3C7';
-          ctx.stroke();
-
-          ctx.save();
-          ctx.translate(110, 110);
-          ctx.rotate(angle + arc / 2);
-          ctx.textAlign = "right";
-          ctx.fillStyle = "#FFFFFF";
-          ctx.font = "bold 13px sans-serif";
-          ctx.fillText(wheelPrizes[i], 92, 4);
-          ctx.restore();
-        }
-      }
-
-      document.getElementById('btn-do-spin').onclick = () => {
-        if (isSpinning) return;
-        playClick();
-        isSpinning = true;
-        const extraRot = Math.PI * 2 * (4 + Math.floor(Math.random() * 4));
-        const randomTarget = Math.random() * Math.PI * 2;
-        const totalRot = wheelAngle + extraRot + randomTarget;
-
-        wheelCanvas.style.transform = `rotate(${totalRot}rad)`;
-        setTimeout(() => {
-          isSpinning = false;
-          window.addCoins(2500);
-          alert('🎉 Congratulations!\nYou won 2,500 Coins from the Spin Wheel!');
-          spinModal.style.display = 'none';
-        }, 4100);
-      };
-
-      // Settings page
-      document.getElementById('btn-setting-close').onclick = () => { playClick(); settingsModal.style.display = 'none'; };
-      document.getElementById('btn-setting-camera').onclick = () => {
-        playClick();
-        const next = game.currentPreset === 'top' ? 'fit3d' : 'top';
-        game.setCameraPreset(next);
-        document.getElementById('setting-camera-label').innerText = next === 'top' ? 'Top-Down' : '3D View';
-      };
-
-      // ---- Volume Sliders (SFX & BGM) ----
-      const sfxSlider = document.getElementById('slider-sfx-vol');
-      const bgmSlider = document.getElementById('slider-bgm-vol');
-
-      if (sfxSlider && window.soundEngine) {
-        sfxSlider.value = window.soundEngine.sfxVolume;
-        document.getElementById('label-sfx-vol').innerText = `${Math.round(window.soundEngine.sfxVolume * 100)}%`;
-        sfxSlider.oninput = (e) => {
-          const val = parseFloat(e.target.value);
-          window.soundEngine.setSFXVolume(val);
-          document.getElementById('label-sfx-vol').innerText = `${Math.round(val * 100)}%`;
-        };
-      }
-
-      if (bgmSlider && window.soundEngine) {
-        bgmSlider.value = window.soundEngine.bgmVolume;
-        document.getElementById('label-bgm-vol').innerText = `${Math.round(window.soundEngine.bgmVolume * 100)}%`;
-        bgmSlider.oninput = (e) => {
-          const val = parseFloat(e.target.value);
-          window.soundEngine.setBGMVolume(val);
-          document.getElementById('label-bgm-vol').innerText = `${Math.round(val * 100)}%`;
-        };
-      }
-      document.getElementById('btn-setting-exit').onclick = () => {
-        playClick();
-        if (window.AndroidBridge && window.AndroidBridge.exitApp) {
-          window.AndroidBridge.exitApp();
-        }
-      };
-
-      // ---- System Logs page (debugging) ----
-      const systemLogsPage = document.getElementById('system-logs-page');
-      const systemLogsList = document.getElementById('system-logs-list');
-
-      const escapeLogHtml = (s) => String(s)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-      const renderSystemLogs = () => {
-        const entries = (window.SysLogs && window.SysLogs.get()) || [];
-        const native = (window.SysLogs && window.SysLogs.native()) || '';
-        let html = '';
-        if (native) {
-          html += '<div class="log-entry error"><div class="log-meta">ANDROID / APK</div><div class="log-msg">' +
-            escapeLogHtml(native) + '</div></div>';
-        }
-        entries.forEach((l) => {
-          const cls = (l.type.indexOf('error') >= 0 || l.type === 'promise') ? 'error'
-            : (l.type === 'console.warn' ? 'warn' : 'info');
-          html += '<div class="log-entry ' + cls + '">' +
-            '<div class="log-meta">' + escapeLogHtml(l.t) + ' · ' + escapeLogHtml(l.type) + '</div>' +
-            '<div class="log-msg">' + escapeLogHtml(l.message) + '</div>' +
-            (l.stack ? '<pre>' + escapeLogHtml(l.stack) + '</pre>' : '') +
-            '</div>';
-        });
-        systemLogsList.innerHTML = html || '<p class="log-empty">No errors logged yet 🎉</p>';
-      };
-
-      document.getElementById('btn-open-system-logs').onclick = () => {
-        playClick();
-        renderSystemLogs();
-        systemLogsPage.style.display = 'flex';
-      };
-      document.getElementById('btn-close-system-logs').onclick = () => { playClick(); systemLogsPage.style.display = 'none'; };
-      document.getElementById('btn-logs-close-bottom').onclick = () => { playClick(); systemLogsPage.style.display = 'none'; };
-
-      document.getElementById('btn-clear-logs').onclick = () => {
-        playClick();
-        if (window.SysLogs) window.SysLogs.clear();
-        try {
-          if (window.AndroidBridge && window.AndroidBridge.clearCrashLogs) {
-            window.AndroidBridge.clearCrashLogs();
-          }
-        } catch (e) { /* ignore */ }
-        renderSystemLogs();
-      };
-
-      document.getElementById('btn-copy-logs').onclick = () => {
-        playClick();
-        const text = window.SysLogs ? window.SysLogs.formatAll() : '';
-        const done = () => alert('📄 Logs copied to clipboard!');
-        const fallbackCopy = () => {
-          const ta = document.createElement('textarea');
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          try { document.execCommand('copy'); done(); } catch (e) { /* ignore */ }
-          document.body.removeChild(ta);
-        };
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
-        } else {
-          fallbackCopy();
-        }
-      };
-
-      if (window.SysLogs) window.SysLogs.push('info', 'App UI initialized');
-
-      // ---- Full-Screen Multi-Page Navigation ----
-      const navTabs = ['home', 'event', 'adda', 'inventory', 'social'];
-      const openPage = (pageName) => {
-        navTabs.forEach(t => {
-          const pageEl = document.getElementById(`page-${t}`);
-          const tabBtn = document.getElementById(`nav-tab-${t}`);
-          if (pageEl) pageEl.classList.toggle('active', t === pageName);
-          if (tabBtn) tabBtn.classList.toggle('active', t === pageName);
-        });
-      };
-
-      document.getElementById('nav-tab-home').onclick = () => { playClick(); openPage('home'); };
-      document.getElementById('nav-tab-event').onclick = () => { playClick(); openPage('event'); };
-      document.getElementById('nav-tab-adda').onclick = () => { playClick(); openPage('adda'); };
-      document.getElementById('nav-tab-inventory').onclick = () => { playClick(); openPage('inventory'); renderInventoryGrid('pawns'); };
-      document.getElementById('nav-tab-social').onclick = () => { playClick(); openPage('social'); };
-
-      // ---- Professional AAA Inventory & Wardrobe Studio Renderer ----
-      let currentInvCategory = 'pawns';
-      const inventoryData = {
-        pawns: [
-          { id: 'classic', title: 'Classic Royal', desc: 'Standard 3D Pawns', rarity: 'common', type: 'pawn' },
-          { id: 'human', title: '3D Human Walkers', desc: 'Walking Characters', rarity: 'rare', type: 'pawn' },
-          { id: 'knight', title: 'Golden Knights', desc: 'Armor Shield Pawns', rarity: 'epic', type: 'pawn' },
-          { id: 'cyber', title: 'Cyber Mecha', desc: 'Glowing Futuristic Pawns', rarity: 'legendary', type: 'pawn' }
-        ],
-        dice: [
-          { id: 'white', title: 'White Ivory', desc: 'Clean Glossy Die', rarity: 'common', type: 'dice' },
-          { id: 'gold', title: 'Royal Gold', desc: 'Metallic Gold Die', rarity: 'rare', type: 'dice' },
-          { id: 'neon', title: 'Cyber Neon', desc: 'Cyan Glowing Die', rarity: 'epic', type: 'dice' },
-          { id: 'ruby', title: 'Ruby Jewel', desc: 'Translucent Red Die', rarity: 'epic', type: 'dice' },
-          { id: 'emerald', title: 'Emerald Jade', desc: 'Jade Green Die', rarity: 'legendary', type: 'dice' }
-        ],
-        boards: [
-          { id: 'classic', title: 'Classic Royal', desc: 'Vibrant Blue Board', rarity: 'common', type: 'board' },
-          { id: 'wood', title: 'Mahogany Wood', desc: 'Rich Polished Wood', rarity: 'rare', type: 'board' },
-          { id: 'cyber', title: 'Cyberpunk Neon', desc: 'Futuristic Grid', rarity: 'epic', type: 'board' },
-          { id: 'galaxy', title: 'Galaxy Deep', desc: 'Cosmic Starry Board', rarity: 'legendary', type: 'board' }
-        ],
-        bg: [
-          { id: 'blue', title: 'Space Blue', desc: 'Deep Cosmic Blue', rarity: 'common', type: 'bg' },
-          { id: 'sunset', title: 'Sunset Gold', desc: 'Warm Golden Glow', rarity: 'rare', type: 'bg' },
-          { id: 'cyber', title: 'Cyberpunk City', desc: 'Purple Neon City', rarity: 'epic', type: 'bg' },
-          { id: 'emerald', title: 'Emerald Forest', desc: 'Emerald Night', rarity: 'legendary', type: 'bg' }
-        ]
-      };
-
-      const renderInventoryGrid = (categoryName) => {
-        currentInvCategory = categoryName;
-        ['pawns', 'dice', 'boards', 'bg'].forEach(c => {
-          const btn = document.getElementById(`filter-${c}`);
-          if (btn) btn.classList.toggle('active', c === categoryName);
-        });
-
-        const gridEl = document.getElementById('inventory-items-grid');
-        if (!gridEl) return;
-
-        const items = inventoryData[categoryName] || [];
-        let html = '';
-
-        items.forEach(item => {
-          let isEquipped = false;
-          if (item.type === 'pawn') isEquipped = (game.pawnSkin === item.id);
-          else if (item.type === 'dice') isEquipped = (game.diceSkin === item.id);
-          else if (item.type === 'board') isEquipped = (game.boardTheme === item.id);
-          else if (item.type === 'bg') isEquipped = (localStorage.getItem('ludoSpark.menuBg') || 'blue') === item.id;
-
-          const equippedClass = isEquipped ? 'item-card-3d equipped' : 'item-card-3d';
-          const btnText = isEquipped ? 'EQUIPPED ✓' : 'EQUIP';
-          const btnClass = isEquipped ? 'equip-btn btn-active' : 'equip-btn btn-equip';
-
-          html += `<div class="${equippedClass}">
-            <span class="rarity-tag rarity-${item.rarity}">${item.rarity}</span>
-            <div class="item-preview-box">✨</div>
-            <div class="item-title">${item.title}</div>
-            <div class="item-desc">${item.desc}</div>
-            <button class="${btnClass}" onclick="window.handleEquipItem('${item.type}', '${item.id}')">${btnText}</button>
-          </div>`;
-        });
-
-        gridEl.innerHTML = html;
-      };
-
-      window.handleEquipItem = (type, id) => {
-        playClick();
-        if (type === 'pawn') game.setPawnSkin(id);
-        else if (type === 'dice') game.setDiceSkin(id);
-        else if (type === 'board') game.setBoardTheme(id);
-        else if (type === 'bg') {
-          localStorage.setItem('ludoSpark.menuBg', id);
-          mainMenuEl.classList.remove('menu-bg-sunset', 'menu-bg-cyber', 'menu-bg-emerald');
-          if (id !== 'blue') mainMenuEl.classList.add(`menu-bg-${id}`);
-        }
-        renderInventoryGrid(currentInvCategory);
-      };
-
-      document.getElementById('filter-pawns').onclick = () => { playClick(); renderInventoryGrid('pawns'); };
-      document.getElementById('filter-dice').onclick = () => { playClick(); renderInventoryGrid('dice'); };
-      document.getElementById('filter-boards').onclick = () => { playClick(); renderInventoryGrid('boards'); };
-      document.getElementById('filter-bg').onclick = () => { playClick(); renderInventoryGrid('bg'); };
-
-      // Start BGM
-      window.soundEngine.startBGM();
-
-      // Mail / Shop
-      document.getElementById('btn-claim-mail').onclick = () => {
-        playClick();
-        window.addCoins(1000);
-        mailModal.style.display = 'none';
-        alert('🎁 Mail Rewards Claimed!');
-      };
-      document.getElementById('btn-close-mail').onclick = () => { playClick(); mailModal.style.display = 'none'; };
-      document.getElementById('btn-close-shop').onclick = () => { playClick(); shopModal.style.display = 'none'; };
-
-      const openNavInfo = (title, desc, icon = '✨') => {
-        playClick();
-        document.getElementById('nav-info-title').innerText = title;
-        document.getElementById('nav-info-desc').innerText = desc;
-        document.getElementById('nav-info-icon').innerText = icon;
-        navInfoModal.style.display = 'flex';
-      };
-
-      document.getElementById('btn-close-nav-info').onclick = () => { playClick(); navInfoModal.style.display = 'none'; };
-
-      // ---- In-Game Pause / Home buttons ----
-      document.getElementById('btn-back-header').onclick = () => {
-        playClick();
-        pauseModal.style.display = 'flex';
-      };
-      document.getElementById('btn-pause-mainmenu').onclick = () => {
-        playClick();
-        game.saveGame();
-        showMainMenu();
-      };
-      document.getElementById('btn-pause-resume').onclick = () => { playClick(); pauseModal.style.display = 'none'; };
-      document.getElementById('btn-pause-newgame').onclick = () => { playClick(); pauseModal.style.display = 'none'; modeSetupModal.style.display = 'flex'; };
-      document.getElementById('btn-pause-rules').onclick = () => { playClick(); pauseModal.style.display = 'none'; rulesModal.style.display = 'flex'; };
-      document.getElementById('btn-pause-quit').onclick = () => {
-        playClick();
-        game.saveGame();
-        if (window.AndroidBridge && window.AndroidBridge.exitApp) {
-          window.AndroidBridge.exitApp();
-        } else {
-          showMainMenu();
-        }
-      };
-
-      document.getElementById('btn-winner-mainmenu').onclick = () => {
-        playClick();
-        showMainMenu();
-      };
-
-      document.getElementById('btn-close-rules').onclick = () => { playClick(); rulesModal.style.display = 'none'; };
-
-      // Avatar box corner references
-      const avatarBoxes = [
-        document.getElementById('avatar-p1'),
-        document.getElementById('avatar-p2'),
-        document.getElementById('avatar-p3'),
-        document.getElementById('avatar-p4')
-      ];
-      const cornerEls = [
-        document.getElementById('corner-p1'),
-        document.getElementById('corner-p2'),
-        document.getElementById('corner-p3'),
-        document.getElementById('corner-p4')
-      ];
-
-      // ---- 15s SVG Circular Countdown Timer Ring Update ----
-      const pointingHand = document.getElementById('pointing-hand');
-
-      window.onTimerUpdate = (activePlayerId, remainingSec, totalSec) => {
-        const secInt = Math.ceil(remainingSec);
-        const maxOffset = 201; // Circumference of r=32 circle
-        const ratio = Math.max(0, Math.min(1, remainingSec / totalSec));
-        const offset = maxOffset * (1 - ratio);
-
-        [0, 1, 2, 3].forEach(idx => {
-          const ringSvg = document.getElementById(`timer-ring-${idx}`);
-          const ringFill = document.getElementById(`timer-fill-${idx}`);
-          const badge = document.getElementById(`timer-badge-${idx}`);
-
-          if (idx === activePlayerId && game.timerActive) {
-            if (ringSvg) ringSvg.style.display = 'block';
-            if (badge) {
-              badge.style.display = 'flex';
-              badge.innerText = secInt;
-            }
-
-            if (ringFill) {
-              ringFill.style.strokeDashoffset = offset;
-              ringFill.classList.toggle('warning', secInt <= 5);
-            }
-            if (badge) {
-              badge.classList.toggle('warning', secInt <= 5);
-            }
-          } else {
-            if (ringSvg) ringSvg.style.display = 'none';
-            if (badge) badge.style.display = 'none';
-          }
-        });
-      };
-
-      // ---- Handle Game State updates ----
-      window.onGameStateChanged = (data) => {
-        const { activePlayer, state, currentRoll, history, isGameOver } = data;
-        const progress = data.playerProgress || [];
-        const numPlayers = data.numPlayers || 4;
-
-        cornerEls.forEach((el, idx) => {
-          if (el) el.style.display = (idx < numPlayers) ? '' : 'none';
-        });
-
-        // 1. Move interactive dice slot dynamically into ACTIVE player's corner
-        const activeCorner = cornerEls[activePlayer.id];
-        if (activeCorner && diceSlot && diceSlot.parentElement !== activeCorner) {
-          activeCorner.appendChild(diceSlot);
-        }
-
-        avatarBoxes.forEach((box, idx) => {
-          if (box) {
-            box.classList.toggle('active-turn', idx === activePlayer.id);
-            const tag = box.querySelector('.player-tag');
-            if (tag && progress[idx] !== undefined) {
-              tag.innerText = `Player ${idx + 1} · ${progress[idx]}%`;
-            }
-          }
-        });
-
-        // Pointer Finger Guide for Human Turn
-        if (pointingHand) {
-          pointingHand.style.display = (state === 'WAIT_ROLL' && activePlayer.id === 0) ? 'block' : 'none';
-        }
-
-        if (state === 'ROLLING') {
-          diceSlot.classList.add('rolling');
-          renderDiceIcon(currentRoll);
-        } else {
-          diceSlot.classList.remove('rolling');
-          renderDiceIcon(currentRoll >= 1 && currentRoll <= 6 ? currentRoll : 6);
-        }
-
-        // 2. Speech bubble attached to active player's avatar
-        let promptMsg = '';
-        if (state === 'WAIT_ROLL') {
-          promptMsg = activePlayer.isAI ? 'Thinking...' : 'Your Turn: Tap Dice!';
-        } else if (state === 'ROLLING') {
-          promptMsg = 'Rolling dice...';
-        } else if (state === 'WAIT_SELECT') {
-          promptMsg = activePlayer.isAI ? `Rolled ${currentRoll}!` : `Rolled ${currentRoll}! Tap token on board`;
-        } else if (state === 'MOVING') {
-          promptMsg = 'Moving token...';
-        }
-
-        [0, 1, 2, 3].forEach(pIdx => {
-          const bubble = document.getElementById(`bubble-p${pIdx + 1}`);
-          if (bubble) {
-            if (pIdx === activePlayer.id) {
-              bubble.innerText = promptMsg;
-              bubble.classList.add('active');
-            } else {
-              bubble.classList.remove('active');
-            }
-          }
-        });
-
-        if (state === 'GAME_OVER') {
-          const winnerName = data.finishedPlayers[0] || 'Champion';
-          document.getElementById('winner-title').innerText = `${winnerName} Wins!`;
-          document.getElementById('winner-desc').innerText = `Congratulations on winning the match!`;
-          winnerModal.style.display = 'flex';
-          window.addCoins(3000);
-        }
-      };
-
-      // Initialize HUD with current state (dice blink, labels)
-      game.notifyUI();
-
-      // Tapping the Dice Dock triggers roll
-      const tryRoll = () => {
-        if (performance.now() < diceInputLockUntil) return;
-        if (game.state === 'WAIT_ROLL' && !game.playerConfigs[game.activePlayerIndex].isAI) {
-          game.handleRoll();
-        }
-      };
-      diceSlot.addEventListener('pointerdown', (e) => {
-        if (e.cancelable) e.preventDefault();
-        tryRoll();
-      }, { passive: false });
-      diceSlot.addEventListener('click', tryRoll);
-
-      // In-game header buttons
-      soundBtn.onclick = () => {
-        playClick();
-        setSoundEnabled(!window.soundEngine.enabled);
-      };
-      cameraBtn.onclick = () => {
-        playClick();
-        applyCameraPreset(game.currentPreset === 'top' ? 'fit3d' : 'top');
-      };
-      document.getElementById('btn-restart').onclick = () => {
-        playClick();
-        modeSetupModal.style.display = 'flex';
-      };
-
-      // Winner: play again with same configuration
-      document.getElementById('btn-play-again').onclick = () => {
-        playClick();
-        winnerModal.style.display = 'none';
-        const botCount = game.playerConfigs.filter(c => c.isAI).length;
-        game.newGame(game.numPlayers, botCount, game.difficulty);
-        startGameScreen();
-      };
-
-      // Resume saved match if present
-      const savedGame = game.loadSave();
-      if (savedGame) {
-        resumeModal.style.display = 'flex';
-      }
-      document.getElementById('btn-resume-yes').onclick = () => {
-        playClick();
-        resumeModal.style.display = 'none';
-        game.restoreGame(savedGame);
-        startGameScreen();
-      };
-      document.getElementById('btn-resume-no').onclick = () => {
-        playClick();
-        resumeModal.style.display = 'none';
-        game.clearSave();
-      };
-    });
-  </script>
-</body>
+  <!-- Script setup --></body>
 </html>

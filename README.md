@@ -46,17 +46,55 @@ Open in Android Studio (Hedgehog or newer); requires device/emulator with API 24
 
 ## Project layout
 
+UI is split one file per feature so bugs can be traced without reading a 900-line inline script.
+
 ```
 app/src/main/assets/ludo3d/
-  index.html   # Main menu, HUD, modals, UI glue
-  game.js      # Game engine (rules, AI, save/resume, camera, dice toss)
-  board.js     # Procedural board texture + 3D meshes + pawn skins
-  characters.js# 3D humanoid players & shared humanoid factory
-  physics.js   # Dice rigid-body physics
-  audio.js     # Procedural sound synth
-  style.css    # Menu + HUD styling
+  index.html                  # Markup only + script/style manifest
+  css/
+    base.css                  # Reset, star field, canvas host
+    menu.css                  # Main menu, hero, mode cards, footer nav
+    inventory.css             # Inventory / store cards and filters
+    game.css                  # HUD, player cards, timer, dice slot
+    modals.css                # Shared modal styles, spin wheel, victory
+    settings.css              # Settings + System Logs pages
+  js/
+    core/
+      app-core.js             # Namespace, shared state, wallet, boot order
+      system-logs-boot.js     # Early error capture (loads first)
+    engine/
+      game.js                 # Rules, turns, AI, save/resume, camera
+      board.js                # Board texture, board/table meshes, pawns
+      characters.js           # 3D humanoid players & animations
+      physics.js              # Dice rigid-body physics
+      audio.js                # Procedural sound synth
+    features/
+      settings.js             # Sound, camera, volume, exit
+      system-logs.js          # In-app log viewer
+      menu.js                 # Player count, difficulty, mode setup
+      dice.js                 # Dice fallback, dock placement, roll input
+      dice-3d.js              # 3D WebGL dice renderer
+      hud.js                  # Turn timer, progress, game-state HUD
+      emoji.js                # Per-player chat / emoji bubbles
+      seven-up.js             # 7 Up 7 Down mini game
+      daily-streak.js         # 7-day check-in
+      tournament.js           # Knockout bracket entry
+      profile.js              # Avatar picker
+      quests.js               # Daily quest claims
+      rewards.js              # Header, mail, shop, free chest
+      spin-wheel.js           # Lucky spin wheel
+      navigation.js           # Bottom pages + info popup
+      inventory.js            # Pawn / dice / board / background equip
+      pause-menu.js           # Pause + rules + quit
+      post-game.js            # Play-again flow
+      save-resume.js          # Saved match prompt
+    vendor/
+      three.min.js
+      cannon.min.js
+  assets/avatars/             # Player avatar images
 app/src/main/java/com/example/
-  MainActivity.kt   # Compose WebView shell, immersive mode, JS bridge
+  MainActivity.kt             # Compose WebView shell, immersive mode, JS bridge
+  CrashLogger.kt              # Native crash log used by System Logs
 ```
 
 ## License
