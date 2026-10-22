@@ -706,7 +706,14 @@ class LudoCharacters {
         const A = (anim.kind === 'pass') ? 0.48 : 1.0;
 
         // Release exactly once, even if a long frame skips past the release window.
-        if (!anim.released && anim.t >= wD) {
+        // ⚠️⚠️ WALL BUG FIX: release এখন forward-swing এর ৪৫% মাঝে,
+        // windup-এর শেষে নয়। windup শেষে হাত পেছনে থাকে (player podium-এর
+        // পেছনে, physics.js-র containment wall ±11.4 এর বাইরে z≈12.3) →
+        // dice ভেতরে যাওয়ার আগেই অদৃশ্য wall-ে আঘাত খেত। Forward-swing এর
+        // মাঝে release হলে হাত board-এর দিকে এগিয়ে থাকে। এর বাড়তি সুরক্ষা:
+        // dice-board-throw.js `_safeSpawn()` wall-এর ভিতরে spawn বলে নিশ্চিত করে।
+        const releaseAt = wD + rD * 0.45;
+        if (!anim.released && anim.t >= releaseAt) {
           anim.released = true;
           if (anim.onRelease) anim.onRelease();
         }

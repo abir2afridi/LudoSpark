@@ -112,6 +112,9 @@ class LudoGame {
     // animate() যেন dice হাতে টেনে না আনে (instant snap এড়াতে)
     this._turnEndPending = false;
     this.diceHandoff = null;
+    // Board throw system (dice-board-throw.js) — handoff থেকে আলাদা
+    // mechanism: character দিয়ে board-এ real physics throw
+    this.boardThrow = null;
     this.pendingSkinApply = false;
     this._tmpVec = new THREE.Vector3();
 
@@ -376,6 +379,8 @@ class LudoGame {
     // Dice handoff system — board↔hand retrieval + player→player pass
     // (board-এর দিকে throw physics.js-এই থাকে, শুধু হাতে ফেরানো ও দেওয়া এখানে)
     this.diceHandoff = new DiceHandoffSystem(this);
+    // Board throw system — handoff থেকে আলাদা mechanism (dice-board-throw.js)
+    this.boardThrow = new DiceBoardThrowSystem(this);
     if (this.diceMesh) this.scene.remove(this.diceMesh);
     this.diceMesh = this.builder.createDiceMesh(this.diceSkin);
     this.scene.add(this.diceMesh);
@@ -664,33 +669,15 @@ class LudoGame {
 
     this.notifyUI();
 
-    // The dice is held in the active player's 3D character hand.
-    // On click, the character winds up and throws it onto the board.
-    const tossAngles = [
-      3 * Math.PI / 4,   // Player 1: bottom-left
-      -3 * Math.PI / 4,  // Player 2: top-left
-      -Math.PI / 4,      // Player 3: top-right
-      Math.PI / 4        // Player 4: bottom-right
-    ];
+    // ---- BOARD THROW MECHANISM (dice-board-throw.js) ----
+    // কোন character ছুড়বে, spawn কোথায় (wall-এর ভিতরে নিশ্চিত), physics
+    // কোন trajectory-তে — সব ওই file-এ। এখান থেকে শুধু delegate করা হয়।
+    // (handoff/retrieve mechanism আছে dice-handoff.js-এ — মিশাবে না)
     const playerId = this.activePlayerIndex;
-
-    const launch = () => {
-      let handPos = null;
-      if (this.characters) {
-        const hand = this.characters.getHandWorldPosition(playerId, this._tmpVec);
-        if (hand) handPos = hand.clone();
-      }
-      this.diceHolder = -1;
-      this.physics.roll(rollValue, (finalValue) => {
-        this.onDiceRollComplete(finalValue);
-      }, tossAngles[playerId], handPos);
-    };
-
-    if (this.characters) {
-      this.characters.startThrow(playerId, launch);
-    } else {
-      launch();
-    }
+    if (!this.boardThrow) this.boardThrow = new DiceBoardThrowSystem(this);
+    this.boardThrow.throwToBoard(playerId, rollValue, (finalValue) => {
+      this.onDiceRollComplete(finalValue);
+    });
   }
 
   onDiceRollComplete(roll) {
