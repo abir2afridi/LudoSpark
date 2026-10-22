@@ -82,15 +82,31 @@
 .rarity-legendary { background: linear-gradient(180deg, #F59E0B 0%, #B45309 100%); color: #FEF3C7; border: 1px solid #FEF3C7; }
 
 .item-preview-box {
-  width: 64px;
-  height: 64px;
+  width: 84px;
+  height: 84px;
   margin: 14px 0 6px 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
-  border-radius: 12px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, rgba(15, 23, 42, 0.1) 64%, transparent 72%);
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.item-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+  user-select: none;
+}
+
+.item-preview-fallback {
+  font-size: 34px;
+  line-height: 1;
 }
 
 .item-title {

@@ -40,6 +40,8 @@ import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
 
+  private var gameWebView: WebView? = null
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
@@ -57,9 +59,31 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       MyApplicationTheme {
-        LudoMainScreen()
+        LudoMainScreen(onWebViewReady = { gameWebView = it })
       }
     }
+  }
+
+  override fun onResume() {
+    super.onResume()
+    gameWebView?.evaluateJavascript(
+      "if(window.onAppForeground){window.onAppForeground();}",
+      null
+    )
+  }
+
+  override fun onPause() {
+    gameWebView?.evaluateJavascript(
+      "if(window.onAppBackground){window.onAppBackground();}",
+      null
+    )
+    super.onPause()
+  }
+
+  override fun onDestroy() {
+    gameWebView?.destroy()
+    gameWebView = null
+    super.onDestroy()
   }
 
   override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -124,11 +148,22 @@ class AndroidWebAppInterface(
   fun clearCrashLogs() {
     CrashLogger.clear(context)
   }
+
+  @JavascriptInterface
+  fun getDeviceInfo(): String = LogExporter.deviceInfo(context)
+
+  @JavascriptInterface
+  fun saveLogsMarkdown(content: String, fileName: String): String =
+    LogExporter.saveMarkdown(context, content, fileName)
+
+  @JavascriptInterface
+  fun shareLogsMarkdown(content: String, fileName: String): String =
+    LogExporter.shareMarkdown(context, content, fileName)
 }
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun LudoMainScreen() {
+fun LudoMainScreen(onWebViewReady: (WebView) -> Unit = {}) {
   val context = LocalContext.current
   var webViewInstance by remember { mutableStateOf<WebView?>(null) }
 
@@ -174,7 +209,9 @@ fun LudoMainScreen() {
             webChromeClient = object : WebChromeClient() {
               override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
                 val msg = consoleMessage ?: return false
-                if (msg.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
+                if (msg.messageLevel() == ConsoleMessage.MessageLevel.ERROR ||
+                  msg.messageLevel() == ConsoleMessage.MessageLevel.WARNING
+                ) {
                   CrashLogger.log(
                     ctx,
                     "WEBVIEW",
@@ -195,6 +232,7 @@ fun LudoMainScreen() {
 
             loadUrl("file:///android_asset/ludo3d/index.html")
             webViewInstance = this
+            onWebViewReady(this)
           }
         },
         modifier = Modifier

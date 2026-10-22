@@ -325,6 +325,14 @@
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
           THEMES
         </button>
+        <button class="cat-filter-btn" id="filter-blink">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          MOVE FX
+        </button>
+        <button class="cat-filter-btn" id="filter-pedestal">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          PEDESTAL
+        </button>
       </div>
 
       <!-- 3D Item Grid -->
@@ -621,11 +629,20 @@
         </div>
         <span style="width:44px;"></span>
       </div>
-      <p class="modal-desc" style="margin-top:-6px;">JS errors, WebView warnings & APK crash logs</p>
+      <p class="modal-desc" style="margin-top:-6px;">Live JS, WebView & APK diagnostics with Markdown export</p>
+      <div id="logs-summary" class="logs-summary"></div>
+      <div class="logs-filter-bar">
+        <button id="log-filter-all" class="log-filter-btn active">All</button>
+        <button id="log-filter-errors" class="log-filter-btn">Issues</button>
+        <button id="log-filter-actions" class="log-filter-btn">Actions</button>
+        <button id="log-filter-game" class="log-filter-btn">Game</button>
+      </div>
       <div id="system-logs-list" class="system-logs-list"></div>
-      <div style="display:flex; gap:8px;">
-        <button id="btn-copy-logs" class="modal-btn" style="flex:1; background:#3B82F6;">Copy</button>
-        <button id="btn-clear-logs" class="modal-btn" style="flex:1; background:#EF4444;">Clear</button>
+      <div class="logs-actions">
+        <button id="btn-copy-logs" class="modal-btn" style="background:#3B82F6;">Copy</button>
+        <button id="btn-save-logs" class="modal-btn" style="background:#10B981;">Save .md</button>
+        <button id="btn-share-logs" class="modal-btn" style="background:#8B5CF6;">Share</button>
+        <button id="btn-clear-logs" class="modal-btn" style="background:#EF4444;">Clear</button>
       </div>
       <button id="btn-logs-close-bottom" class="modal-btn" style="background:#475569;">Close</button>
     </div>

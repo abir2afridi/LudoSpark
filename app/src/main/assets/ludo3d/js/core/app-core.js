@@ -51,9 +51,6 @@
 
     if (App.dice && App.dice.renderIcon) App.dice.renderIcon(6);
     App.game.notifyUI();
-    if (window.soundEngine && window.soundEngine.startBGM) {
-      window.soundEngine.startBGM();
-    }
   };
 
   window.addEventListener('DOMContentLoaded', function () {
@@ -135,16 +132,38 @@
       }, duration || 2800);
     };
     const showMainMenu = function () {
+      game.stopRunning();
       App.setDisplay(App.dom.mainMenuEl, 'flex');
       App.setDisplay(App.dom.uiOverlayEl, 'none');
       App.setDisplay(App.dom.pauseModal, 'none');
       App.setDisplay(App.dom.winnerModal, 'none');
+      if (window.SysLogs) window.SysLogs.push('lifecycle', 'Main menu shown');
     };
     const startGameScreen = function () {
       App.setDisplay(App.dom.mainMenuEl, 'none');
       App.setDisplay(App.dom.uiOverlayEl, 'flex');
       diceInputLockUntil = performance.now() + 700;
+      game.startRunning();
+      if (window.SysLogs) {
+        window.SysLogs.push('game', 'Match started: mode=' + game.gameMode +
+          ', players=' + game.numPlayers + ', difficulty=' + game.difficulty);
+      }
     };
+    const onAppBackground = function () {
+      if (window.SysLogs) window.SysLogs.push('lifecycle', 'App moved to background');
+      game.pauseForBackground();
+      if (window.soundEngine && window.soundEngine.stopBGM) window.soundEngine.stopBGM();
+    };
+    const onAppForeground = function () {
+      if (window.SysLogs) window.SysLogs.push('lifecycle', 'App returned to foreground');
+      game.resumeFromBackground();
+    };
+    window.onAppBackground = onAppBackground;
+    window.onAppForeground = onAppForeground;
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) onAppBackground();
+      else onAppForeground();
+    });
     const openPauseMenu = function () {
       if (game.state === 'GAME_OVER') return;
       if (App.dom.uiOverlayEl.style.display !== 'none') {

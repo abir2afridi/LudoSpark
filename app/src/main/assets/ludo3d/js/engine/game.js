@@ -24,6 +24,11 @@ class LudoGame {
     this.boardTheme = (ls && ls.getItem('ludoSpark.boardTheme')) || 'classic';
     this.pawnSkin = (ls && ls.getItem('ludoSpark.pawnSkin')) || 'classic';
 
+    // Move-highlight (cell blink) style + color, and player pedestal style
+    this.blinkStyle = (ls && ls.getItem('ludoSpark.blinkStyle')) || 'circle';
+    this.blinkColor = (ls && ls.getItem('ludoSpark.blinkColor')) || 'auto';
+    this.pedestalStyle = (ls && ls.getItem('ludoSpark.pedestalStyle')) || 'circle';
+
     // Game Configuration
     // Game Configuration (matches screenshot: P1 Blue BL, P2 Red TL, P3 Green TR, P4 Yellow BR)
     this.playerConfigs = [
@@ -39,6 +44,12 @@ class LudoGame {
     this.tokens = [];
     this.activePlayerIndex = 0; // Player 1 (Human) starts
     this.state = 'WAIT_ROLL';
+    this.gameActive = false;
+    this.backgroundPaused = false;
+    this._loopRunning = false;
+    this._animationFrame = 0;
+    this._aiTimer = null;
+    this._matchId = 0;
     this.currentRoll = 0;
     this.consecutiveSixes = 0;
     this.movableTokens = [];
@@ -108,6 +119,100 @@ class LudoGame {
     this.initTouch();
     this.fitBoardToScreen();
     this.notifyUI();
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  startRunning() {
+    if (this.gameActive) return;
+    this.gameActive = true;
+    this.backgroundPaused = false;
+    this._timerPlayer = -1;
+    this.startLoop();
+    if (window.soundEngine && window.soundEngine.startBGM) {
+      window.soundEngine.init();
+      window.soundEngine.startBGM();
+    }
+    this.notifyUI();
+    this.scheduleAITurn();
+  }
+
+  stopRunning() {
+    this.gameActive = false;
+    this.backgroundPaused = false;
+    this.timerActive = false;
+    this._timerPlayer = -1;
+    this.stopLoop();
+    if (this._aiTimer) {
+      clearTimeout(this._aiTimer);
+      this._aiTimer = null;
+    }
+    if (window.soundEngine && window.soundEngine.stopBGM) {
+      window.soundEngine.stopBGM();
+    }
+    this.clearVictoryCelebration();
+  }
+
+  startLoop() {
+    if (this._loopRunning) return;
+    this._loopRunning = true;
+    this.clock.getDelta();
+    this.animate();
+  }
+
+  stopLoop() {
+    this._loopRunning = false;
+    if (this._animationFrame) {
+      cancelAnimationFrame(this._animationFrame);
+      this._animationFrame = 0;
+    }
+  }
+
+  pauseForBackground() {
+    if (!this.gameActive || this.backgroundPaused) return;
+    this.backgroundPaused = true;
+    this.timerActive = false;
+    this.stopLoop();
+    if (window.soundEngine && window.soundEngine.stopBGM) {
+      window.soundEngine.stopBGM();
+    }
+  }
+
+  resumeFromBackground() {
+    if (!this.gameActive || !this.backgroundPaused) return;
+    this.backgroundPaused = false;
+    this.startLoop();
+    this.notifyUI();
+    if (window.soundEngine && window.soundEngine.startBGM) {
+      window.soundEngine.init();
+      window.soundEngine.startBGM();
+    }
+    this.scheduleAITurn();
+  }
+
+  scheduleAction(fn, delay) {
+    if (!this.gameActive) return;
+    const matchId = this._matchId;
+    if (this._aiTimer) clearTimeout(this._aiTimer);
+    this._aiTimer = setTimeout(() => {
+      this._aiTimer = null;
+      if (!this.gameActive || matchId !== this._matchId) return;
+      fn();
+    }, delay);
+  }
+
+  scheduleAITurn() {
+    if (!this.gameActive) return;
+    const cfg = this.playerConfigs[this.activePlayerIndex];
+    if (!cfg || !cfg.isAI) return;
+    if (this.state === 'WAIT_ROLL') {
+      this.scheduleAction(() => this.handleRoll(), 800);
+    } else if (this.state === 'WAIT_SELECT' && this.movableTokens.length > 0) {
+      this.scheduleAction(() => {
+        if (this.state !== 'WAIT_SELECT') return;
+        const best = this.chooseAIBestToken(this.movableTokens, this.currentRoll);
+        this.handleTokenSelect(best);
+      }, 700);
+    }
   }
 
   generateTrackCells() {
@@ -191,9 +296,8 @@ class LudoGame {
     // Resize listener
     window.addEventListener('resize', () => this.onResize());
 
-    // Loop
+    // The render loop starts only while a match is active.
     this.animate = this.animate.bind(this);
-    requestAnimationFrame(this.animate);
   }
 
   /**
@@ -284,6 +388,42 @@ class LudoGame {
       if (this.boardGroup) this.scene.remove(this.boardGroup);
       this.boardGroup = this.builder.buildBoard(this.scene, theme);
     }
+  }
+
+  setBlinkStyle(style) {
+    this.blinkStyle = style;
+    try { localStorage.setItem('ludoSpark.blinkStyle', style); } catch (e) { }
+    if (window.SysLogs) window.SysLogs.push('inventory', 'Move blink style: ' + style);
+  }
+
+  setBlinkColor(color) {
+    this.blinkColor = color;
+    try { localStorage.setItem('ludoSpark.blinkColor', color); } catch (e) { }
+    if (window.SysLogs) window.SysLogs.push('inventory', 'Move blink color: ' + color);
+  }
+
+  setPedestalStyle(style) {
+    this.pedestalStyle = style;
+    try { localStorage.setItem('ludoSpark.pedestalStyle', style); } catch (e) { }
+    if (this.characters) this.characters.setPedestalStyle(style);
+  }
+
+  /**
+   * Resolve the move-highlight color for the current blinkColor preset.
+   * Returns { hex, rainbow } — rainbow=true means animate hue over time.
+   */
+  resolveBlinkColor(playerColorHex) {
+    const preset = this.blinkColor;
+    if (preset === 'rainbow') return { hex: 0xffffff, rainbow: true };
+    const map = {
+      cyan: 0x22D3EE,
+      magenta: 0xE879F9,
+      gold: 0xFBBF24,
+      emerald: 0x34D399,
+      blue: 0x60A5FA
+    };
+    if (map[preset] !== undefined) return { hex: map[preset], rainbow: false };
+    return { hex: playerColorHex, rainbow: false }; // 'auto' → team color
   }
 
   initTokens() {
@@ -474,13 +614,17 @@ class LudoGame {
   }
 
   handleRoll() {
-    if (this.state !== 'WAIT_ROLL') return;
+    if (!this.gameActive || this.state !== 'WAIT_ROLL') return;
     this.state = 'ROLLING';
     this.clearHighlights();
 
     // Fair dice roll 1..6
     const rollValue = Math.floor(Math.random() * 6) + 1;
     this.currentRoll = rollValue;
+    if (window.SysLogs) {
+      window.SysLogs.push('game', this.playerConfigs[this.activePlayerIndex].name +
+        ' rolled ' + rollValue + ' (state=' + this.state + ')');
+    }
 
     if (window.soundEngine) window.soundEngine.init();
     if (window.AndroidBridge && window.AndroidBridge.vibrate) {
@@ -519,6 +663,7 @@ class LudoGame {
   }
 
   onDiceRollComplete(roll) {
+    if (!this.gameActive) return;
     this.currentRoll = roll;
 
     // Check consecutive sixes
@@ -530,7 +675,7 @@ class LudoGame {
         this.addHistory(`Rolled 3 consecutive 6s! Turn passed.`);
         this.consecutiveSixes = 0;
         this.state = 'WAIT_ROLL';
-        setTimeout(() => this.passTurn(), 900);
+        this.scheduleAction(() => this.passTurn(), 900);
         this.notifyUI();
         this.saveGame();
         return;
@@ -545,7 +690,7 @@ class LudoGame {
     if (this.movableTokens.length === 0) {
       this.addHistory(`Rolled a ${roll}. No moves available.`);
       this.state = 'WAIT_ROLL';
-      setTimeout(() => this.passTurn(), 900);
+      this.scheduleAction(() => this.passTurn(), 900);
     } else if (this.movableTokens.length === 1 && this.playerConfigs[this.activePlayerIndex].isAI) {
       this.state = 'MOVING';
       this.handleTokenSelect(this.movableTokens[0]);
@@ -553,7 +698,8 @@ class LudoGame {
       this.state = 'WAIT_SELECT';
       this.highlightMovableTokens();
       if (this.playerConfigs[this.activePlayerIndex].isAI) {
-        setTimeout(() => {
+        this.scheduleAction(() => {
+          if (this.state !== 'WAIT_SELECT') return;
           const best = this.chooseAIBestToken(this.movableTokens, roll);
           this.handleTokenSelect(best);
         }, 700);
@@ -676,6 +822,7 @@ class LudoGame {
   }
 
   handleTokenSelect(token) {
+    if (!this.gameActive) return;
     if (this.state !== 'WAIT_SELECT' && this.state !== 'MOVING') return;
     this.state = 'MOVING';
     this.clearHighlights();
@@ -701,13 +848,15 @@ class LudoGame {
     let waypointIdx = 0;
 
     // Create vibrant cell highlights for each step along the path
+    const blinkResolved = this.resolveBlinkColor(new THREE.Color(cfg.color).getHex());
     waypoints.forEach((wp, idx) => {
-      const hl = this.builder.createCellHighlight(cfg.color);
+      const hl = this.builder.createCellHighlight(blinkResolved.hex, this.blinkStyle);
       hl.position.set(wp.x, 0.356, wp.z);
       hl.visible = true;
       hl.userData.stepIndex = idx;
       hl.userData.totalSteps = waypoints.length;
       hl.userData.getCurrentStep = () => waypointIdx;
+      hl.userData.rainbow = blinkResolved.rainbow;
       this.scene.add(hl);
       this.moveHighlights.push(hl);
     });
@@ -745,6 +894,10 @@ class LudoGame {
     };
 
     const stepHop = () => {
+      if (!this.gameActive) {
+        token.isMoving = false;
+        return;
+      }
       if (waypointIdx >= waypoints.length) {
         finishMove();
         return;
@@ -902,6 +1055,9 @@ class LudoGame {
         this.updateTokenPosition(token, false);
         this.finishedPlayers.push(token.player);
         this.state = 'GAME_OVER';
+        if (window.SysLogs) {
+          window.SysLogs.push('game', 'Game over. Winner: ' + this.playerConfigs[token.player].name);
+        }
         if (window.soundEngine) window.soundEngine.playVictory();
         this.spawnConfetti({ x: 0, y: 5, z: 0 }, 150);
         this.spawnVictoryCelebration(token.player);
@@ -939,6 +1095,9 @@ class LudoGame {
 
         if (this.finishedPlayers.length >= this.numPlayers - 1) {
           this.state = 'GAME_OVER';
+          if (window.SysLogs) {
+            window.SysLogs.push('game', 'Game over. Winner: ' + this.playerConfigs[this.finishedPlayers[0]].name);
+          }
           this.spawnVictoryCelebration(this.finishedPlayers[0]);
           this.notifyUI();
           this.saveGame(); // clears save on GAME_OVER
@@ -988,7 +1147,7 @@ class LudoGame {
       this.notifyUI();
       this.saveGame();
       if (this.playerConfigs[this.activePlayerIndex].isAI) {
-        setTimeout(() => this.handleRoll(), 900);
+        this.scheduleAction(() => this.handleRoll(), 900);
       }
     } else {
       this.passTurn();
@@ -996,6 +1155,7 @@ class LudoGame {
   }
 
   passTurn() {
+    if (!this.gameActive) return;
     this.timerActive = false;
     this._timerPlayer = -1;
     let nextPlayer = (this.activePlayerIndex + 1) % this.numPlayers;
@@ -1013,9 +1173,7 @@ class LudoGame {
     this.notifyUI();
     this.saveGame();
 
-    if (this.playerConfigs[this.activePlayerIndex].isAI && this.state === 'WAIT_ROLL') {
-      setTimeout(() => this.handleRoll(), 800);
-    }
+    this.scheduleAITurn();
   }
 
   spawnConfetti(center, count = 60) {
@@ -1123,6 +1281,10 @@ class LudoGame {
     const apexY = 4.2;
 
     const flyStep = () => {
+      if (!this.gameActive) {
+        opp.isMoving = false;
+        return;
+      }
       const elapsed = performance.now() - startTime;
       const t = Math.min(1.0, elapsed / duration);
 
@@ -1189,7 +1351,7 @@ class LudoGame {
     }
 
     // Turn Timer state management
-    if (this.state === 'WAIT_ROLL' || this.state === 'WAIT_SELECT') {
+    if (this.gameActive && (this.state === 'WAIT_ROLL' || this.state === 'WAIT_SELECT')) {
       if (!this.timerActive || this._timerPlayer !== this.activePlayerIndex) {
         this.timerActive = true;
         this.turnTimeRemaining = this.turnTimeLimit;
@@ -1231,6 +1393,9 @@ class LudoGame {
   }
 
   newGame(numPlayers = 4, botCount = 3, difficulty = this.difficulty) {
+    this._matchId++;
+    this.timerActive = false;
+    this._timerPlayer = -1;
     this.gameMode = 'LUDO';
     this.numPlayers = numPlayers;
     this.difficulty = difficulty;
@@ -1262,6 +1427,9 @@ class LudoGame {
   }
 
   newSnakeLadderGame(numPlayers = 2, botCount = 1) {
+    this._matchId++;
+    this.timerActive = false;
+    this._timerPlayer = -1;
     this.gameMode = 'SNAKE';
     this.numPlayers = numPlayers;
     this.pendingSkinApply = false;
@@ -1338,7 +1506,9 @@ class LudoGame {
         tokenSteps: this.tokens.map(t => t.step)
       };
       localStorage.setItem('ludoSparkSave', JSON.stringify(data));
-    } catch (e) { /* storage unavailable — ignore */ }
+    } catch (e) {
+      if (window.SysLogs) window.SysLogs.push('storage', 'Could not save game: ' + (e && e.message || e), e && e.stack);
+    }
   }
 
   loadSave() {
@@ -1358,6 +1528,7 @@ class LudoGame {
 
       return data;
     } catch (e) {
+      if (window.SysLogs) window.SysLogs.push('storage', 'Could not load saved game: ' + (e && e.message || e), e && e.stack);
       return null;
     }
   }
@@ -1365,12 +1536,17 @@ class LudoGame {
   clearSave() {
     try {
       if (typeof localStorage !== 'undefined') localStorage.removeItem('ludoSparkSave');
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      if (window.SysLogs) window.SysLogs.push('storage', 'Could not clear saved game: ' + (e && e.message || e), e && e.stack);
+    }
   }
 
   restoreGame(data) {
     if (!data) return false;
     try {
+      this._matchId++;
+      this.timerActive = false;
+      this._timerPlayer = -1;
       this.numPlayers = data.numPlayers || 4;
       this.playerConfigs.forEach((c, i) => { c.isAI = !!(data.isAI && data.isAI[i]); });
       this.difficulty = data.difficulty || 'normal';
@@ -1407,11 +1583,9 @@ class LudoGame {
       this.addHistory('Game resumed!');
       this.notifyUI();
 
-      if (this.playerConfigs[this.activePlayerIndex].isAI && this.state === 'WAIT_ROLL') {
-        setTimeout(() => this.handleRoll(), 800);
-      }
       return true;
     } catch (e) {
+      if (window.SysLogs) window.SysLogs.push('storage', 'Could not restore saved game: ' + (e && e.message || e), e && e.stack);
       return false;
     }
   }
@@ -1442,7 +1616,8 @@ class LudoGame {
   }
 
   animate() {
-    requestAnimationFrame(this.animate);
+    if (!this._loopRunning) return;
+    this._animationFrame = requestAnimationFrame(this.animate);
     const delta = this.clock.getDelta();
 
     // Physics step & dice trail emission
@@ -1523,6 +1698,14 @@ class LudoGame {
         const stepIdx = hl.userData.stepIndex !== undefined ? hl.userData.stepIndex : 0;
         const coreMat = hl.userData.coreMat || hl.material;
         const haloMat = hl.userData.haloMat;
+
+        // Rainbow preset: cycle hue over time per highlight
+        if (hl.userData.rainbow) {
+          const hue = (blinkTime * 0.18 + stepIdx * 0.13) % 1;
+          const col = new THREE.Color().setHSL(hue, 0.9, 0.6);
+          if (coreMat) coreMat.color.copy(col);
+          if (haloMat) haloMat.color.copy(col);
+        }
 
         if (stepIdx < curIdx) {
           // Already traversed cells: smooth quick fade down

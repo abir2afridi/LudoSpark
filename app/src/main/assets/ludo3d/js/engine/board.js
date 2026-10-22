@@ -963,9 +963,32 @@ class LudoBoardBuilder {
   }
 
   /**
+   * Flat square "frame" (box outline) geometry lying in the XY plane.
+   * Used for the box-frame move-highlight halo and box pedestal rings.
+   */
+  static makeSquareFrameGeometry(outerSize, innerSize) {
+    const shape = new THREE.Shape();
+    const o = outerSize / 2;
+    shape.moveTo(-o, -o);
+    shape.lineTo(o, -o);
+    shape.lineTo(o, o);
+    shape.lineTo(-o, o);
+    shape.lineTo(-o, -o);
+    const hole = new THREE.Path();
+    const h = innerSize / 2;
+    hole.moveTo(-h, -h);
+    hole.lineTo(-h, h);
+    hole.lineTo(h, h);
+    hole.lineTo(h, -h);
+    hole.lineTo(-h, -h);
+    shape.holes.push(hole);
+    return new THREE.ShapeGeometry(shape);
+  }
+
+  /**
    * Transparent colored plane + glowing ring used to blink the cells a pawn walks across.
    */
-  createCellHighlight(colorHex) {
+  createCellHighlight(colorHex, style = 'circle') {
     const group = new THREE.Group();
 
     // Inner bright core
@@ -982,8 +1005,13 @@ class LudoBoardBuilder {
     core.renderOrder = 3;
     group.add(core);
 
-    // Outer soft halo ring for glowing ripple
-    const haloGeometry = new THREE.RingGeometry(0.48, 0.76, 24);
+    // Outer soft halo — round ring (circle) or square frame (box)
+    let haloGeometry;
+    if (style === 'box') {
+      haloGeometry = LudoBoardBuilder.makeSquareFrameGeometry(0.78, 0.5);
+    } else {
+      haloGeometry = new THREE.RingGeometry(0.48, 0.76, 24);
+    }
     const haloMaterial = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
       transparent: true,

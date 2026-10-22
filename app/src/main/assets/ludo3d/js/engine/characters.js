@@ -427,51 +427,12 @@ class LudoCharacters {
       const lookYaw = Math.atan2(-x, -z);
       group.rotation.y = lookYaw;
 
-      // ---- Multi-Tier Glowing Pedestal Platform ----
-      const pedestalGroup = new THREE.Group();
-
-      // Outer tier
-      const pedBase = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.05, 1.15, 0.12, 32),
-        new THREE.MeshStandardMaterial({
-          color: 0x0F172A,
-          roughness: 0.3,
-          metalness: 0.8
-        })
-      );
-      pedBase.position.y = 0.06;
-      pedBase.receiveShadow = true;
-      pedBase.castShadow = true;
-      pedestalGroup.add(pedBase);
-
-      // Pulsing neon emissive ring
-      const ringMat = new THREE.MeshStandardMaterial({
-        color,
-        emissive: color,
-        emissiveIntensity: 0.3,
-        roughness: 0.2,
-        metalness: 0.5
-      });
-      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.08, 32), ringMat);
-      ring.position.y = 0.14;
-      pedestalGroup.add(ring);
-
-      // Inner platform surface
-      const surfaceMat = new THREE.MeshStandardMaterial({
-        color: 0x1E293B,
-        roughness: 0.4,
-        metalness: 0.3
-      });
-      const surface = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.04, 32), surfaceMat);
-      surface.position.y = 0.18;
-      pedestalGroup.add(surface);
-
-      // Team colored star emblem in pedestal center
-      const starGeom = new THREE.CylinderGeometry(0.24, 0.24, 0.015, 5);
-      const starMat = new THREE.MeshBasicMaterial({ color });
-      const star = new THREE.Mesh(starGeom, starMat);
-      star.position.y = 0.205;
-      pedestalGroup.add(star);
+    // ---- Multi-Tier Glowing Pedestal Platform ----
+      let pedestalStyle = 'circle';
+      try { pedestalStyle = localStorage.getItem('ludoSpark.pedestalStyle') || 'circle'; } catch (e) { pedestalStyle = 'circle'; }
+      const pedestal = this.buildPedestal(color, pedestalStyle);
+      const pedestalGroup = pedestal.group;
+      const ringMat = pedestal.ringMat;
 
       group.add(pedestalGroup);
 
@@ -510,6 +471,107 @@ class LudoCharacters {
         activePulse: 0.0
       });
     }
+  }
+
+  /**
+   * Build a pedestal platform in the given style.
+   * style 'circle' (rounded multi-tier cylinder) or 'box' (square frame platform).
+   */
+  buildPedestal(color, style) {
+    const group = new THREE.Group();
+
+    if (style === 'box') {
+      // Outer tier — flat square slab
+      const pedBase = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.12, 2.2),
+        new THREE.MeshStandardMaterial({ color: 0x0F172A, roughness: 0.3, metalness: 0.8 })
+      );
+      pedBase.position.y = 0.06;
+      pedBase.receiveShadow = true;
+      pedBase.castShadow = true;
+      group.add(pedBase);
+
+      // Pulsing neon emissive square frame ring
+      const ringMat = new THREE.MeshStandardMaterial({
+        color, emissive: color, emissiveIntensity: 0.3,
+        roughness: 0.2, metalness: 0.5, side: THREE.DoubleSide
+      });
+      const ring = new THREE.Mesh(LudoBoardBuilder.makeSquareFrameGeometry(1.95, 1.6), ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.14;
+      group.add(ring);
+
+      // Inner platform surface
+      const surfaceMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.4, metalness: 0.3 });
+      const surface = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.04, 1.55), surfaceMat);
+      surface.position.y = 0.18;
+      group.add(surface);
+
+      // Team colored star emblem in pedestal center
+      const starGeom = new THREE.CylinderGeometry(0.24, 0.24, 0.015, 5);
+      const starMat = new THREE.MeshBasicMaterial({ color });
+      const star = new THREE.Mesh(starGeom, starMat);
+      star.position.y = 0.205;
+      group.add(star);
+
+      return { group, ringMat };
+    }
+
+    // Default: rounded multi-tier cylinder pedestal
+    const pedBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.05, 1.15, 0.12, 32),
+      new THREE.MeshStandardMaterial({ color: 0x0F172A, roughness: 0.3, metalness: 0.8 })
+    );
+    pedBase.position.y = 0.06;
+    pedBase.receiveShadow = true;
+    pedBase.castShadow = true;
+    group.add(pedBase);
+
+    const ringMat = new THREE.MeshStandardMaterial({
+      color, emissive: color, emissiveIntensity: 0.3,
+      roughness: 0.2, metalness: 0.5
+    });
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.08, 32), ringMat);
+    ring.position.y = 0.14;
+    group.add(ring);
+
+    const surfaceMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.4, metalness: 0.3 });
+    const surface = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.04, 32), surfaceMat);
+    surface.position.y = 0.18;
+    group.add(surface);
+
+    const starGeom = new THREE.CylinderGeometry(0.24, 0.24, 0.015, 5);
+    const starMat = new THREE.MeshBasicMaterial({ color });
+    const star = new THREE.Mesh(starGeom, starMat);
+    star.position.y = 0.205;
+    group.add(star);
+
+    return { group, ringMat };
+  }
+
+  /**
+   * Swap the pedestal style ('circle' | 'box') for all 4 players live.
+   */
+  setPedestalStyle(style) {
+    try { localStorage.setItem('ludoSpark.pedestalStyle', style); } catch (e) { /* ignore */ }
+    this.chars.forEach((ch, i) => {
+      const color = new THREE.Color(this.playerConfigs[i].color).getHex();
+      const old = ch.pedestal;
+      const pedestal = this.buildPedestal(color, style);
+      ch.group.remove(old);
+      // dispose old pedestal meshes
+      old.traverse(node => {
+        if (node.geometry) node.geometry.dispose();
+        if (node.material) {
+          const mats = Array.isArray(node.material) ? node.material : [node.material];
+          mats.forEach(m => m.dispose());
+        }
+      });
+      ch.group.add(pedestal.group);
+      ch.pedestal = pedestal.group;
+      ch.ringMat = pedestal.ringMat;
+    });
+    if (window.SysLogs) window.SysLogs.push('inventory', 'Pedestal style: ' + style);
   }
 
   triggerEmote(playerId, emoteType, duration = 2.4) {
@@ -596,6 +658,12 @@ class LudoCharacters {
         const rD = anim.releaseDuration;
         const fD = anim.followDuration;
 
+        // Release exactly once, even if a long frame skips past the release window.
+        if (!anim.released && anim.t >= wD) {
+          anim.released = true;
+          if (anim.onRelease) anim.onRelease();
+        }
+
         if (anim.t < wD) {
           // PHASE 1: WIND-UP
           // Lean back, twist torso, pull throwing arm high and back
@@ -639,12 +707,6 @@ class LudoCharacters {
           // Lunge forward
           ch.body.position.z = -0.12 + 0.28 * easeThrow;
           ch.body.position.y = 0.16 + 0.03 * easeThrow;
-
-          // Release the dice midway through the forward sweep
-          if (!anim.released && p >= 0.45) {
-            anim.released = true;
-            if (anim.onRelease) anim.onRelease();
-          }
 
         } else if (anim.t < wD + rD + fD) {
           // PHASE 3: FOLLOW-THROUGH & SETTLE
