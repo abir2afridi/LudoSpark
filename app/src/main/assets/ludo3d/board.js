@@ -437,6 +437,9 @@ class LudoBoardBuilder {
   buildBoard(scene, theme = 'classic', mode = 'LUDO') {
     const group = new THREE.Group();
 
+    // 1. Luxury 3D Dining Tabletop beneath floating board
+    this.buildLuxuryTable(group, theme, mode);
+
     const baseW = this.boardSize + 0.9;
     const baseGeom = new THREE.BoxGeometry(baseW, 0.65, baseW);
     const baseMat = new THREE.MeshStandardMaterial({
@@ -470,8 +473,252 @@ class LudoBoardBuilder {
     this.surfaceMesh.receiveShadow = true;
     group.add(this.surfaceMesh);
 
+    // 2. Add 3D Floating Stars, Glowing Chevrons & Center Gemstones (Ludo mode)
+    if (mode === 'LUDO') {
+      this.create3DStars(group);
+      this.create3DChevrons(group);
+      this.createCenterGemstones(group);
+    }
+
     scene.add(group);
     return group;
+  }
+
+  buildLuxuryTable(group, theme = 'classic', mode = 'LUDO') {
+    // Soft contact drop shadow under board
+    const shadowCanvas = document.createElement('canvas');
+    shadowCanvas.width = 512;
+    shadowCanvas.height = 512;
+    const sctx = shadowCanvas.getContext('2d');
+    const grad = sctx.createRadialGradient(256, 256, 120, 256, 256, 256);
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0.75)');
+    grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.3)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    sctx.fillStyle = grad;
+    sctx.fillRect(0, 0, 512, 512);
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    const shadowMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(this.boardSize + 3.2, this.boardSize + 3.2),
+      new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.82, depthWrite: false })
+    );
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = -0.31;
+    group.add(shadowMesh);
+
+    // Luxury Table Top Slab (Mahogany / Walnut Wood or Dark Marble)
+    let tableColor = 0x2A1509;
+    let tableRoughness = 0.28;
+    let tableMetalness = 0.15;
+
+    if (theme === 'cyber') {
+      tableColor = 0x070B14;
+      tableRoughness = 0.2;
+      tableMetalness = 0.6;
+    } else if (theme === 'wood') {
+      tableColor = 0x3D1E0B;
+    }
+
+    const tableGeom = new THREE.BoxGeometry(28, 1.2, 28);
+    const tableMat = new THREE.MeshStandardMaterial({
+      color: tableColor,
+      roughness: tableRoughness,
+      metalness: tableMetalness
+    });
+    const tableMesh = new THREE.Mesh(tableGeom, tableMat);
+    tableMesh.position.y = -0.92;
+    tableMesh.receiveShadow = true;
+    group.add(tableMesh);
+
+    // Table Beveled Edge Lip
+    const bevelLip = new THREE.Mesh(
+      new THREE.BoxGeometry(28.8, 0.22, 28.8),
+      new THREE.MeshStandardMaterial({
+        color: 0x1A0D06,
+        roughness: 0.2,
+        metalness: 0.3
+      })
+    );
+    bevelLip.position.y = -0.38;
+    bevelLip.receiveShadow = true;
+    group.add(bevelLip);
+
+    // 4 Brass Ornamental Corner Brackets
+    const brassMat = new THREE.MeshStandardMaterial({
+      color: 0xF59E0B,
+      metalness: 0.85,
+      roughness: 0.2
+    });
+    const cornerOffsets = [
+      [-13.8, -13.8], [13.8, -13.8], [-13.8, 13.8], [13.8, 13.8]
+    ];
+    cornerOffsets.forEach(([cx, cz]) => {
+      const cornerBracket = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.25, 2.2), brassMat);
+      cornerBracket.position.set(cx, -0.92, cz);
+      group.add(cornerBracket);
+    });
+  }
+
+  create3DStars(group) {
+    this.floatingStars = [];
+    const starShape = new THREE.Shape();
+    const points = 5;
+    const outerR = 0.38;
+    const innerR = 0.18;
+    for (let i = 0; i < points * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const angle = (i * Math.PI) / points - Math.PI / 2;
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r;
+      if (i === 0) starShape.moveTo(x, y);
+      else starShape.lineTo(x, y);
+    }
+    starShape.closePath();
+
+    const starGeom = new THREE.ExtrudeGeometry(starShape, {
+      depth: 0.10,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.02,
+      bevelThickness: 0.02
+    });
+    starGeom.center();
+
+    const starMat = new THREE.MeshStandardMaterial({
+      color: 0xFBBF24,
+      metalness: 0.9,
+      roughness: 0.15,
+      emissive: 0x92400E,
+      emissiveIntensity: 0.35
+    });
+
+    const safeCoords = [
+      { r: 2, c: 6 },   // Index 8 (Green star)
+      { r: 6, c: 12 },  // Index 21 (Yellow star)
+      { r: 12, c: 8 },  // Index 34 (Blue star)
+      { r: 8, c: 2 }    // Index 47 (Red star)
+    ];
+
+    safeCoords.forEach((coord, i) => {
+      const pos = this.cellToWorld(coord.r, coord.c);
+      const starMesh = new THREE.Mesh(starGeom, starMat);
+      starMesh.rotation.x = -Math.PI / 2;
+      starMesh.position.set(pos.x, 0.58, pos.z);
+      starMesh.castShadow = true;
+      group.add(starMesh);
+
+      // Glowing halo disc under star
+      const haloDisc = new THREE.Mesh(
+        new THREE.RingGeometry(0.15, 0.45, 16),
+        new THREE.MeshBasicMaterial({ color: 0xFDE047, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+      );
+      haloDisc.rotation.x = -Math.PI / 2;
+      haloDisc.position.set(pos.x, 0.36, pos.z);
+      group.add(haloDisc);
+
+      this.floatingStars.push({ mesh: starMesh, basePosY: 0.58, phase: i * 1.5 });
+    });
+  }
+
+  create3DChevrons(group) {
+    this.entryChevrons = [];
+    const chevronConfigs = [
+      { r: 13, c: 6, rot: 0, color: 0x2563EB },           // Blue (North)
+      { r: 6, c: 1, rot: -Math.PI / 2, color: 0xE11D48 }, // Red (East)
+      { r: 1, c: 8, rot: Math.PI, color: 0x16A34A },      // Green (South)
+      { r: 8, c: 13, rot: Math.PI / 2, color: 0xEAB308 }  // Yellow (West)
+    ];
+
+    const chevShape = new THREE.Shape();
+    chevShape.moveTo(0, 0.28);
+    chevShape.lineTo(0.24, -0.16);
+    chevShape.lineTo(0.14, -0.22);
+    chevShape.lineTo(0, 0.05);
+    chevShape.lineTo(-0.14, -0.22);
+    chevShape.lineTo(-0.24, -0.16);
+    chevShape.closePath();
+
+    const chevGeom = new THREE.ExtrudeGeometry(chevShape, {
+      depth: 0.06,
+      bevelEnabled: true,
+      bevelSegments: 1,
+      steps: 1,
+      bevelSize: 0.015,
+      bevelThickness: 0.015
+    });
+    chevGeom.center();
+
+    chevronConfigs.forEach((cfg, i) => {
+      const pos = this.cellToWorld(cfg.r, cfg.c);
+      const chevMat = new THREE.MeshStandardMaterial({
+        color: cfg.color,
+        emissive: cfg.color,
+        emissiveIntensity: 0.5,
+        roughness: 0.2,
+        metalness: 0.6
+      });
+      const mesh = new THREE.Mesh(chevGeom, chevMat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.rotation.z = cfg.rot;
+      mesh.position.set(pos.x, 0.44, pos.z);
+      group.add(mesh);
+      this.entryChevrons.push({ mesh, basePosY: 0.44, phase: i * 1.5 });
+    });
+  }
+
+  createCenterGemstones(group) {
+    const gemConfigs = [
+      { color: 0x2563EB, rot: 0 },
+      { color: 0xE11D48, rot: Math.PI / 2 },
+      { color: 0x16A34A, rot: Math.PI },
+      { color: 0xEAB308, rot: -Math.PI / 2 }
+    ];
+
+    const gemShape = new THREE.Shape();
+    gemShape.moveTo(-1.6, -1.6);
+    gemShape.lineTo(1.6, -1.6);
+    gemShape.lineTo(0, 0);
+    gemShape.closePath();
+
+    const gemGeom = new THREE.ExtrudeGeometry(gemShape, {
+      depth: 0.08,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.04,
+      bevelThickness: 0.04
+    });
+
+    gemConfigs.forEach(cfg => {
+      const gemMat = new THREE.MeshStandardMaterial({
+        color: cfg.color,
+        roughness: 0.08,
+        metalness: 0.35,
+        transparent: true,
+        opacity: 0.82,
+        emissive: cfg.color,
+        emissiveIntensity: 0.15
+      });
+      const gemMesh = new THREE.Mesh(gemGeom, gemMat);
+      gemMesh.rotation.x = -Math.PI / 2;
+      gemMesh.rotation.z = cfg.rot;
+      gemMesh.position.set(0, 0.38, 0);
+      group.add(gemMesh);
+    });
+
+    // Central jewel pinnacle
+    const pinnacleGeom = new THREE.OctahedronGeometry(0.35, 0);
+    const pinnacleMat = new THREE.MeshStandardMaterial({
+      color: 0xFEF08A,
+      emissive: 0xF59E0B,
+      emissiveIntensity: 0.45,
+      roughness: 0.05,
+      metalness: 0.8
+    });
+    const pinnacleMesh = new THREE.Mesh(pinnacleGeom, pinnacleMat);
+    pinnacleMesh.position.set(0, 0.48, 0);
+    group.add(pinnacleMesh);
+    this.centerPinnacle = pinnacleMesh;
   }
 
   createTokenMesh(colorHex, playerId, tokenIndex, skin = 'classic') {
@@ -653,12 +900,14 @@ class LudoBoardBuilder {
     });
     const tokenMat = new THREE.MeshStandardMaterial({
       color: colorHex,
-      roughness: 0.15,
-      metalness: 0.25
+      roughness: 0.2,
+      metalness: 0.3,
+      emissive: colorHex,
+      emissiveIntensity: 0.18
     });
 
-    // Tiered metallic base
-    const base1 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.11, 32), silverMat);
+    // Tiered team-colored base with gold trim
+    const base1 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.11, 32), tokenMat);
     base1.position.y = 0.055;
     base1.castShadow = true;
     pawnGroup.add(base1);

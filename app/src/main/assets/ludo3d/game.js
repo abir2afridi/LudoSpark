@@ -904,6 +904,7 @@ class LudoGame {
         this.state = 'GAME_OVER';
         if (window.soundEngine) window.soundEngine.playVictory();
         this.spawnConfetti({ x: 0, y: 5, z: 0 }, 150);
+        this.spawnVictoryCelebration(token.player);
         this.notifyUI();
         return;
       }
@@ -938,6 +939,7 @@ class LudoGame {
 
         if (this.finishedPlayers.length >= this.numPlayers - 1) {
           this.state = 'GAME_OVER';
+          this.spawnVictoryCelebration(this.finishedPlayers[0]);
           this.notifyUI();
           this.saveGame(); // clears save on GAME_OVER
           return;
@@ -1250,6 +1252,7 @@ class LudoGame {
     this.finishedPlayers = [];
     this.turnHistory = [];
     this.diceHolder = -1;
+    this.clearVictoryCelebration();
     this.clearMoveHighlights();
     this.initTokens();
     this.fitBoardToScreen();
@@ -1262,6 +1265,7 @@ class LudoGame {
     this.gameMode = 'SNAKE';
     this.numPlayers = numPlayers;
     this.pendingSkinApply = false;
+    this.clearVictoryCelebration();
 
     if (this.boardGroup) this.scene.remove(this.boardGroup);
     this.boardGroup = this.builder.buildBoard(this.scene, 'classic', 'SNAKE');
@@ -1531,6 +1535,44 @@ class LudoGame {
       }
     });
 
+    // Animate 3D Floating Safe Stars
+    if (this.builder && this.builder.floatingStars) {
+      const starTime = performance.now() * 0.002;
+      this.builder.floatingStars.forEach(s => {
+        s.mesh.rotation.z += delta * 1.6;
+        s.mesh.position.y = s.basePosY + Math.sin(starTime * 2.5 + s.phase) * 0.05;
+      });
+    }
+
+    // Animate 3D Entry Chevrons
+    if (this.builder && this.builder.entryChevrons) {
+      const chevTime = performance.now() * 0.003;
+      this.builder.entryChevrons.forEach(c => {
+        c.mesh.position.y = c.basePosY + Math.sin(chevTime * 2 + c.phase) * 0.03;
+      });
+    }
+
+    // Rotate Center Jewel Pinnacle
+    if (this.builder && this.builder.centerPinnacle) {
+      this.builder.centerPinnacle.rotation.y += delta * 1.4;
+    }
+
+    // Animate 3D Victory Trophy
+    if (this.victoryTrophy && this.victoryTrophy.active) {
+      if (this.victoryTrophy.scale < this.victoryTrophy.targetScale) {
+        this.victoryTrophy.scale += delta * 2.5;
+        if (this.victoryTrophy.scale > this.victoryTrophy.targetScale) {
+          this.victoryTrophy.scale = this.victoryTrophy.targetScale;
+        }
+        const s = this.victoryTrophy.scale;
+        this.victoryTrophy.group.scale.set(s, s, s);
+      }
+      this.victoryTrophy.group.rotation.y += delta * 0.9;
+      if (this.victoryTrophy.crown) {
+        this.victoryTrophy.crown.rotation.y += delta * 2.0;
+      }
+    }
+
     // Animate Confetti Particles
     for (let i = this.confettiParticles.length - 1; i >= 0; i--) {
       const p = this.confettiParticles[i];
@@ -1554,6 +1596,137 @@ class LudoGame {
     }
 
     this.renderer.render(this.scene, this.camera);
+  }
+
+  spawnVictoryCelebration(winnerPlayerIndex = 0) {
+    this.clearVictoryCelebration();
+
+    const group = new THREE.Group();
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xF59E0B,
+      metalness: 0.92,
+      roughness: 0.12,
+      emissive: 0x78350F,
+      emissiveIntensity: 0.25
+    });
+    const marbleMat = new THREE.MeshStandardMaterial({
+      color: 0x0F172A,
+      metalness: 0.2,
+      roughness: 0.1
+    });
+
+    // 1. Pedestal Base
+    const step1 = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.35, 8), marbleMat);
+    step1.position.y = 0.18;
+    group.add(step1);
+
+    const step2 = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 0.35, 8), goldMat);
+    step2.position.y = 0.52;
+    group.add(step2);
+
+    // 2. Stem Column
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 1.2, 16), goldMat);
+    stem.position.y = 1.3;
+    group.add(stem);
+
+    const stemRing = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 12, 24), goldMat);
+    stemRing.rotation.x = Math.PI / 2;
+    stemRing.position.y = 1.6;
+    group.add(stemRing);
+
+    // 3. Chalice Cup Bowl
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 0.45, 1.6, 24, 1, true), goldMat);
+    bowl.position.y = 2.5;
+    group.add(bowl);
+
+    const bowlBase = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 12), goldMat);
+    bowlBase.position.y = 1.8;
+    group.add(bowlBase);
+
+    const bowlRim = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.12, 12, 32), goldMat);
+    bowlRim.rotation.x = Math.PI / 2;
+    bowlRim.position.y = 3.3;
+    group.add(bowlRim);
+
+    // 4. Two Ornate Handles
+    [-1, 1].forEach(side => {
+      const handle = new THREE.Mesh(new THREE.TorusGeometry(0.65, 0.1, 12, 24, Math.PI * 1.3), goldMat);
+      handle.position.set(side * 1.35, 2.5, 0);
+      handle.rotation.z = side * Math.PI * 0.25;
+      group.add(handle);
+    });
+
+    // 5. Crown Crest Floating Inside Cup
+    const crown = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), goldMat);
+    crown.position.y = 3.6;
+    group.add(crown);
+
+    // Shimmering Light
+    const trophyLight = new THREE.PointLight(0xFDE047, 1.5, 12);
+    trophyLight.position.y = 3.8;
+    group.add(trophyLight);
+
+    group.position.set(0, 1.2, 0);
+    group.scale.set(0.01, 0.01, 0.01);
+    this.scene.add(group);
+
+    this.victoryTrophy = {
+      group,
+      crown,
+      light: trophyLight,
+      scale: 0.01,
+      targetScale: 1.0,
+      active: true
+    };
+
+    // Continuous Victory Coin Fountain
+    this.victoryFountainInterval = setInterval(() => {
+      if (!this.victoryTrophy || !this.victoryTrophy.active) return;
+      this.spawnVictoryCoins(8);
+    }, 280);
+  }
+
+  spawnVictoryCoins(count = 8) {
+    const coinGeom = new THREE.CylinderGeometry(0.24, 0.24, 0.06, 12);
+    const coinMat = new THREE.MeshStandardMaterial({
+      color: 0xFBBF24,
+      metalness: 0.95,
+      roughness: 0.12,
+      emissive: 0x92400E,
+      emissiveIntensity: 0.3
+    });
+
+    for (let i = 0; i < count; i++) {
+      const mesh = new THREE.Mesh(coinGeom, coinMat);
+      mesh.position.set(
+        (Math.random() - 0.5) * 0.8,
+        3.5 + Math.random() * 0.5,
+        (Math.random() - 0.5) * 0.8
+      );
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      this.scene.add(mesh);
+
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.0 + Math.random() * 4.0;
+      this.confettiParticles.push({
+        mesh,
+        vel: new THREE.Vector3(Math.cos(angle) * speed, 5.0 + Math.random() * 4.0, Math.sin(angle) * speed),
+        rotVel: new THREE.Vector3(Math.random() * 12, Math.random() * 12, Math.random() * 12),
+        lifetime: 2.2,
+        age: 0
+      });
+    }
+  }
+
+  clearVictoryCelebration() {
+    if (this.victoryFountainInterval) {
+      clearInterval(this.victoryFountainInterval);
+      this.victoryFountainInterval = null;
+    }
+    if (this.victoryTrophy) {
+      this.scene.remove(this.victoryTrophy.group);
+      this.victoryTrophy = null;
+    }
   }
 }
 

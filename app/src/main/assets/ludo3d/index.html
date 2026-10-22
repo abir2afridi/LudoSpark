@@ -77,6 +77,9 @@
     })();
   </script>
   <title>Ludo Spark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="three.min.js"></script>
   <script src="cannon.min.js"></script>
@@ -174,13 +177,23 @@
 
           <!-- 3D Pawns & Board Hero Center Graphic -->
           <div class="hero-3d-graphic">
-            <div class="pawn pawn-blue">♟</div>
-            <div class="pawn pawn-red">♟</div>
-            <div class="mini-board-preview">
-              <div class="mini-dice">🎲</div>
+            <div class="pawn pawn-blue">
+              <svg viewBox="0 0 32 40" width="34" height="42" fill="none"><path d="M16 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm-4 13h8c-1 3-3 5-4 9 2 0 6 2 7 8H7c1-6 5-8 7-8-1-4-3-6-4-9z" fill="#38BDF8" stroke="#E0F2FE" stroke-width="2"/><ellipse cx="16" cy="36" rx="11" ry="3" fill="#0284C7"/></svg>
             </div>
-            <div class="pawn pawn-green">♟</div>
-            <div class="pawn pawn-yellow">♟</div>
+            <div class="pawn pawn-red">
+              <svg viewBox="0 0 32 40" width="34" height="42" fill="none"><path d="M16 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm-4 13h8c-1 3-3 5-4 9 2 0 6 2 7 8H7c1-6 5-8 7-8-1-4-3-6-4-9z" fill="#F43F5E" stroke="#FFE4E6" stroke-width="2"/><ellipse cx="16" cy="36" rx="11" ry="3" fill="#BE123C"/></svg>
+            </div>
+            <div class="mini-board-preview">
+              <div class="mini-dice">
+                <svg viewBox="0 0 32 32" width="28" height="28" fill="none"><rect x="3" y="3" width="26" height="26" rx="6" fill="#F8FAFC" stroke="#FBBF24" stroke-width="2.5"/><circle cx="10" cy="10" r="2.5" fill="#EF4444"/><circle cx="22" cy="10" r="2.5" fill="#1E293B"/><circle cx="10" cy="22" r="2.5" fill="#1E293B"/><circle cx="22" cy="22" r="2.5" fill="#1E293B"/><circle cx="16" cy="16" r="2.5" fill="#1E293B"/></svg>
+              </div>
+            </div>
+            <div class="pawn pawn-green">
+              <svg viewBox="0 0 32 40" width="34" height="42" fill="none"><path d="M16 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm-4 13h8c-1 3-3 5-4 9 2 0 6 2 7 8H7c1-6 5-8 7-8-1-4-3-6-4-9z" fill="#22C55E" stroke="#DCFCE7" stroke-width="2"/><ellipse cx="16" cy="36" rx="11" ry="3" fill="#15803D"/></svg>
+            </div>
+            <div class="pawn pawn-yellow">
+              <svg viewBox="0 0 32 40" width="34" height="42" fill="none"><path d="M16 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm-4 13h8c-1 3-3 5-4 9 2 0 6 2 7 8H7c1-6 5-8 7-8-1-4-3-6-4-9z" fill="#FACC15" stroke="#FEF9C3" stroke-width="2"/><ellipse cx="16" cy="36" rx="11" ry="3" fill="#CA8A04"/></svg>
+            </div>
           </div>
 
           <button class="help-question-btn" id="menu-btn-help" title="How to Play">?</button>
@@ -236,13 +249,22 @@
           <div class="side-reward-card card-free-ad" id="menu-btn-ad-reward">
             <div class="free-badge-tag">FREE</div>
             <div class="ad-reward-content">
-              <div class="film-ad-box">🎬 x 4 AD</div>
-              <div class="reward-gems-coins">💎🪙 1200</div>
+              <div class="film-ad-box">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+                <span>4x AD</span>
+              </div>
+              <div class="reward-gems-coins">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="#38BDF8"><polygon points="6 3 18 3 22 9 12 21 2 9 6 3"/></svg>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="#F59E0B"><circle cx="12" cy="12" r="9"/></svg>
+                <span>+1,200</span>
+              </div>
             </div>
           </div>
           <div class="side-reward-card card-spin-wheel" id="menu-btn-spin">
             <div class="spin-wheel-circle">
-              <div class="wheel-spinner">🎡</div>
+              <div class="wheel-spinner">
+                <svg viewBox="0 0 32 32" width="28" height="28" fill="none"><circle cx="16" cy="16" r="14" fill="#1E293B" stroke="#FBBF24" stroke-width="2.5"/><path d="M16 2a14 14 0 0 1 14 14H16z" fill="#EF4444"/><path d="M16 16v14A14 14 0 0 1 2 16z" fill="#3B82F6"/><path d="M2 16A14 14 0 0 1 16 2v14z" fill="#10B981"/><path d="M16 16h14a14 14 0 0 1-14 14z" fill="#F59E0B"/><circle cx="16" cy="16" r="4" fill="#FEF3C7" stroke="#78350F" stroke-width="1.5"/></svg>
+              </div>
               <div class="spin-center-text">SPIN</div>
             </div>
             <div class="spin-status-label" id="spin-status-text">Ready!</div>
@@ -254,7 +276,10 @@
     <!-- 2. EVENTS TAB PAGE -->
     <div id="page-event" class="menu-tab-page">
       <div class="page-hero-banner">
-        <b style="color:#FBBF24; font-size:16px;">🏆 SEASON 1: LUDO MASTERS</b>
+        <b style="color:#FBBF24; font-size:16px; display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="#FBBF24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1c1.98-.44 3.55-2.07 3.61-4.06C19.08 11.63 21 9.55 21 7V5c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+          SEASON 1: LUDO MASTERS
+        </b>
         <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Complete daily quests to earn exclusive golden rewards!</p>
       </div>
 
@@ -287,7 +312,10 @@
     <!-- 3. ADDA VOICE LOUNGE TAB PAGE -->
     <div id="page-adda" class="menu-tab-page">
       <div class="page-hero-banner">
-        <b style="color:#FBBF24; font-size:16px;">🎙️ VOICE ADDA CHATROOMS</b>
+        <b style="color:#FBBF24; font-size:16px; display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          VOICE ADDA CHATROOMS
+        </b>
         <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Chat live & send animated emojis with Ludo players!</p>
       </div>
 
@@ -313,16 +341,31 @@
     <!-- 4. INVENTORY & WARDROBE TAB PAGE (PROFESSIONAL AAA GAME UI) -->
     <div id="page-inventory" class="menu-tab-page">
       <div class="page-hero-banner">
-        <b style="color:#FBBF24; font-size:16px;">🎁 INVENTORY & WARDROBE STUDIO</b>
+        <b style="color:#FBBF24; font-size:16px; display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          INVENTORY & WARDROBE STUDIO
+        </b>
         <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Equip 3D Pawns, Custom Dice Sets, and Board Themes</p>
       </div>
 
       <!-- Category Filter Bar -->
       <div class="category-filter-bar">
-        <button class="cat-filter-btn active" id="filter-pawns">♟ PAWNS</button>
-        <button class="cat-filter-btn" id="filter-dice">🎲 DICE SETS</button>
-        <button class="cat-filter-btn" id="filter-boards">🎨 BOARDS</button>
-        <button class="cat-filter-btn" id="filter-bg">🌌 BACKGROUNDS</button>
+        <button class="cat-filter-btn active" id="filter-pawns">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2a4 4 0 0 0-4 4c0 1.5.8 2.8 2 3.5-.8 1.5-2 3-2 5.5h8c0-2.5-1.2-4-2-5.5 1.2-.7 2-2 2-3.5a4 4 0 0 0-4-4zm-5 16h10v2H7z"/></svg>
+          PAWNS
+        </button>
+        <button class="cat-filter-btn" id="filter-dice">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+          DICE SETS
+        </button>
+        <button class="cat-filter-btn" id="filter-boards">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/></svg>
+          BOARDS
+        </button>
+        <button class="cat-filter-btn" id="filter-bg">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          THEMES
+        </button>
       </div>
 
       <!-- 3D Item Grid -->
@@ -334,7 +377,10 @@
     <!-- 5. SOCIAL & FRIENDS TAB PAGE -->
     <div id="page-social" class="menu-tab-page">
       <div class="page-hero-banner">
-        <b style="color:#FBBF24; font-size:16px;">👥 SOCIAL & FRIENDS</b>
+        <b style="color:#FBBF24; font-size:16px; display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          SOCIAL & FRIENDS
+        </b>
         <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Invite friends to private tables & track leaderboard ranking!</p>
       </div>
 
@@ -349,15 +395,24 @@
       <b style="color:#FEF3C7; font-size:13px; margin-bottom:8px;">Weekly Leaderboard Top Champions:</b>
       <div style="display:flex; flex-direction:column; gap:6px;">
         <div style="background:#0F172A; padding:8px 12px; border-radius:12px; border:1px solid #FBBF24; display:flex; justify-content:space-between; align-items:center;">
-          <div>🥇 <b>Master_Raju</b> <span style="font-size:11px; color:#94A3B8;">• Level 24</span></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="background:linear-gradient(180deg,#FDE047,#D97706); color:#1E1B4B; font-weight:900; font-size:11px; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 0 8px #F59E0B;">1</span>
+            <b>Master_Raju</b> <span style="font-size:11px; color:#94A3B8;">• Level 24</span>
+          </div>
           <b style="color:#FBBF24;">145,000 🪙</b>
         </div>
         <div style="background:#0F172A; padding:8px 12px; border-radius:12px; border:1px solid #94A3B8; display:flex; justify-content:space-between; align-items:center;">
-          <div>🥈 <b>Ludo_Queen</b> <span style="font-size:11px; color:#94A3B8;">• Level 19</span></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="background:linear-gradient(180deg,#E2E8F0,#64748B); color:#0F172A; font-weight:900; font-size:11px; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">2</span>
+            <b>Ludo_Queen</b> <span style="font-size:11px; color:#94A3B8;">• Level 19</span>
+          </div>
           <b style="color:#E2E8F0;">98,500 🪙</b>
         </div>
         <div style="background:#0F172A; padding:8px 12px; border-radius:12px; border:1px solid #B45309; display:flex; justify-content:space-between; align-items:center;">
-          <div>🥉 <b>Spark_King</b> <span style="font-size:11px; color:#94A3B8;">• Level 15</span></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="background:linear-gradient(180deg,#FDBA74,#C2410C); color:#FFFFFF; font-weight:900; font-size:11px; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;">3</span>
+            <b>Spark_King</b> <span style="font-size:11px; color:#94A3B8;">• Level 15</span>
+          </div>
           <b style="color:#F59E0B;">72,000 🪙</b>
         </div>
       </div>
@@ -410,11 +465,19 @@
   <div id="ui-overlay" style="display: none;">
     <!-- Top Header -->
     <div class="top-header">
-      <div id="btn-back-header" class="btn-back" title="Menu">←</div>
+      <div id="btn-back-header" class="btn-back" title="Menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </div>
       <div class="top-right-actions">
-        <button id="btn-camera" class="icon-btn" title="Toggle Camera View">📷</button>
-        <button id="btn-sound" class="icon-btn" title="Toggle Sound">🔊</button>
-        <button id="btn-restart" class="icon-btn" title="New Game">🔄</button>
+        <button id="btn-camera" class="icon-btn" title="Toggle Camera View">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <button id="btn-sound" class="icon-btn" title="Toggle Sound">
+          <svg id="sound-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+        <button id="btn-restart" class="icon-btn" title="New Game">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
+        </button>
       </div>
     </div>
 
@@ -461,7 +524,9 @@
     </div>
 
     <div style="position:absolute; bottom:88px; right:16px; pointer-events:auto; z-index:25;">
-      <button id="btn-emoji-toggle" class="icon-btn" style="width:46px; height:46px; font-size:20px; background:linear-gradient(180deg, #F59E0B 0%, #B45309 100%); border:2px solid #FEF3C7; box-shadow:0 4px 12px rgba(0,0,0,0.5);">💬</button>
+      <button id="btn-emoji-toggle" class="icon-btn" style="width:46px; height:46px; background:linear-gradient(180deg, #F59E0B 0%, #B45309 100%); border:2px solid #FEF3C7; box-shadow:0 6px 16px rgba(0,0,0,0.5);">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="#FEF3C7"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-6.2 3.5c.8 1.2 2 1.8 3.2 1.8s2.4-.6 3.2-1.8.8-1.5-.2-1.5h-6c-1 0-.8.9-.2 1.5z"/></svg>
+      </button>
     </div>
 
     <div id="emoji-picker-panel" style="position:absolute; bottom:142px; right:16px; background:rgba(15,23,42,0.95); backdrop-filter:blur(10px); border:2px solid #38BDF8; border-radius:16px; padding:10px; display:none; flex-direction:column; gap:8px; pointer-events:auto; z-index:30; box-shadow:0 8px 24px rgba(0,0,0,0.6);">
@@ -490,7 +555,10 @@
   <!-- Mode Setup Dialog -->
   <div id="modal-mode-setup" class="modal-overlay">
     <div class="modal-card">
-      <h2 class="modal-title" id="mode-setup-title">🎮 Game Setup</h2>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2" fill="#FEF3C7"/><path d="M16 10v4M14 12h4"/></svg>
+        <h2 class="modal-ribbon-title" id="mode-setup-title">GAME SETUP</h2>
+      </div>
       <div class="modal-desc">
         <p style="margin-bottom: 8px;"><b>Number of Players:</b></p>
         <div style="display:flex; gap:10px; margin-bottom:14px;">
@@ -521,30 +589,34 @@
   <div id="modal-menu-settings" class="modal-overlay settings-page">
     <div class="modal-card">
       <div class="settings-page-header">
-        <button id="btn-setting-close" class="settings-back-btn">←</button>
-        <h2 class="modal-title" style="margin:0;">⚙️ Settings</h2>
+        <button id="btn-setting-close" class="settings-back-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FFFFFF" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="modal-ribbon-header" style="margin:0; width:auto; padding:6px 18px;">
+          <h2 class="modal-ribbon-title">SETTINGS</h2>
+        </div>
         <span style="width:44px;"></span>
       </div>
       <p class="modal-desc" style="margin-top:-6px;">Audio, camera, AI & system debugging</p>
 
       <div style="background:#0F172A; padding:12px; border-radius:14px; border:1px solid #38BDF8; margin-bottom:8px;">
         <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:#FEF3C7; margin-bottom:4px;">
-          <span>🔊 Sound Effects (SFX)</span>
+          <span>Sound Effects (SFX)</span>
           <span id="label-sfx-vol">80%</span>
         </div>
         <input type="range" id="slider-sfx-vol" aria-label="Sound Effects Volume" min="0" max="1" step="0.05" value="0.8" style="width:100%; accent-color:#38BDF8; cursor:pointer;">
 
         <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:#FEF3C7; margin:10px 0 4px 0;">
-          <span>🎵 Background Music (BGM)</span>
+          <span>Background Music (BGM)</span>
           <span id="label-bgm-vol">50%</span>
         </div>
         <input type="range" id="slider-bgm-vol" aria-label="Background Music Volume" min="0" max="1" step="0.05" value="0.5" style="width:100%; accent-color:#8B5CF6; cursor:pointer;">
       </div>
 
-      <button id="btn-setting-camera" class="modal-btn" style="background:#0EA5E9;">📷 Camera View: <span id="setting-camera-label">Top-Down</span></button>
-      <button id="btn-setting-difficulty" class="modal-btn" style="background:#EC4899;">🤖 AI Difficulty: <span id="setting-diff-label">Normal</span></button>
-      <button id="btn-open-system-logs" class="modal-btn" style="background:#0F172A; border:1px solid #38BDF8;">📋 System Logs</button>
-      <button id="btn-setting-exit" class="modal-btn" style="background:#EF4444;">✖ Exit App</button>
+      <button id="btn-setting-camera" class="modal-btn" style="background:#0EA5E9;">Camera View: <span id="setting-camera-label">Top-Down</span></button>
+      <button id="btn-setting-difficulty" class="modal-btn" style="background:#EC4899;">AI Difficulty: <span id="setting-diff-label">Normal</span></button>
+      <button id="btn-open-system-logs" class="modal-btn" style="background:#0F172A; border:1px solid #38BDF8;">System Logs</button>
+      <button id="btn-setting-exit" class="modal-btn" style="background:#EF4444;">Exit App</button>
     </div>
   </div>
 
@@ -552,15 +624,19 @@
   <div id="system-logs-page" class="modal-overlay settings-page">
     <div class="modal-card">
       <div class="settings-page-header">
-        <button id="btn-close-system-logs" class="settings-back-btn">←</button>
-        <h2 class="modal-title" style="margin:0;">📋 System Logs</h2>
+        <button id="btn-close-system-logs" class="settings-back-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FFFFFF" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="modal-ribbon-header" style="margin:0; width:auto; padding:6px 18px;">
+          <h2 class="modal-ribbon-title">SYSTEM LOGS</h2>
+        </div>
         <span style="width:44px;"></span>
       </div>
       <p class="modal-desc" style="margin-top:-6px;">JS errors, WebView warnings & APK crash logs</p>
       <div id="system-logs-list" class="system-logs-list"></div>
       <div style="display:flex; gap:8px;">
-        <button id="btn-copy-logs" class="modal-btn" style="flex:1; background:#3B82F6;">📄 Copy</button>
-        <button id="btn-clear-logs" class="modal-btn" style="flex:1; background:#EF4444;">🗑 Clear</button>
+        <button id="btn-copy-logs" class="modal-btn" style="flex:1; background:#3B82F6;">Copy</button>
+        <button id="btn-clear-logs" class="modal-btn" style="flex:1; background:#EF4444;">Clear</button>
       </div>
       <button id="btn-logs-close-bottom" class="modal-btn" style="background:#475569;">Close</button>
     </div>
@@ -569,7 +645,10 @@
   <!-- Lucky Spin Wheel Modal -->
   <div id="modal-spin-wheel" class="modal-overlay">
     <div class="modal-card" style="text-align:center;">
-      <h2 class="modal-title">🎡 Lucky Spin Wheel</h2>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#FEF3C7"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V15a1 1 0 0 0-2 0v4.93A8 8 0 0 1 4.07 13H9a1 1 0 0 0 0-2H4.07A8 8 0 0 1 11 4.07V9a1 1 0 0 0 2 0V4.07A8 8 0 0 1 19.93 11H15a1 1 0 0 0 0 2h4.93A8 8 0 0 1 13 19.93z"/></svg>
+        <h2 class="modal-ribbon-title">LUCKY SPIN WHEEL</h2>
+      </div>
       <p class="modal-desc">Spin the wheel to win free coins!</p>
 
       <div style="position:relative; margin:10px 0;">
@@ -585,7 +664,10 @@
   <!-- Mail Inbox Modal -->
   <div id="modal-mail" class="modal-overlay">
     <div class="modal-card">
-      <h2 class="modal-title">✉️ Mail Inbox</h2>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <h2 class="modal-ribbon-title">MAIL INBOX</h2>
+      </div>
       <div class="modal-desc">
         <div style="background:#0F172A; padding:10px; border-radius:12px; margin-bottom:8px; border:1px solid #38BDF8;">
           <b style="color:#FBBF24;">🎁 Daily Reward</b>
@@ -600,7 +682,10 @@
   <!-- Shop Modal -->
   <div id="modal-shop" class="modal-overlay">
     <div class="modal-card">
-      <h2 class="modal-title">🛒 Coin & Gem Store</h2>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <h2 class="modal-ribbon-title">REWARD STORE</h2>
+      </div>
       <div class="modal-desc" style="display:flex; flex-direction:column; gap:8px;">
         <div style="background:#0F172A; padding:10px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #38BDF8;">
           <div><b>🪙 10,000 Coins</b></div>
@@ -618,7 +703,10 @@
   <!-- 7 Up 7 Down Mini Game Modal -->
   <div id="modal-game-7updown" class="modal-overlay">
     <div class="modal-card" style="text-align:center; max-width:380px;">
-      <h2 class="modal-title">7️⃣ 7 Up 7 Down Mini Game</h2>
+      <div class="modal-ribbon-header">
+        <span style="font-weight:900; color:#FEF3C7; font-size:18px;">7</span>
+        <h2 class="modal-ribbon-title">7 UP 7 DOWN</h2>
+      </div>
       <p class="modal-desc">Bet on the sum of 2 dice rolls!</p>
 
       <div style="display:flex; justify-content:center; gap:12px; margin:10px 0;">
@@ -649,7 +737,10 @@
   <!-- Player Profile Modal -->
   <div id="modal-profile" class="modal-overlay">
     <div class="modal-card" style="text-align:center;">
-      <h2 class="modal-title">👤 Player Profile</h2>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#FEF3C7"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <h2 class="modal-ribbon-title">PLAYER PROFILE</h2>
+      </div>
 
       <div style="display:flex; flex-direction:column; align-items:center; margin:6px 0;">
         <div style="width:68px; height:68px; border-radius:50%; border:3px solid #FBBF24; overflow:hidden; position:relative; box-shadow:0 0 12px rgba(251,191,36,0.6);">
@@ -694,57 +785,83 @@
   <!-- Rules Dialog -->
   <div id="modal-rules" class="modal-overlay">
     <div class="modal-card">
-      <h2 class="modal-title">🏆 How to Play Ludo</h2>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#FEF3C7"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1c1.98-.44 3.55-2.07 3.61-4.06C19.08 11.63 21 9.55 21 7V5c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg>
+        <h2 class="modal-ribbon-title">HOW TO PLAY</h2>
+      </div>
       <div class="modal-desc">
         <p>• <b>Rolling 6:</b> Unlocks a token from base to start track, or gives an extra roll.</p><br>
         <p>• <b>Capturing:</b> Land on an opponent's token to send them back to base and earn a bonus roll!</p><br>
         <p>• <b>Safe Stars:</b> Tokens on Star tiles or colored start squares cannot be captured.</p><br>
         <p>• <b>Home Goal:</b> Travel around 52 track cells and up colored home corridor. First to get all 4 tokens home wins!</p>
       </div>
-      <button id="btn-close-rules" class="modal-btn">Got It!</button>
+      <button id="btn-close-rules" class="modal-btn" style="background:#10B981;">Got It!</button>
     </div>
   </div>
 
   <!-- In-Game Pause Menu -->
   <div id="modal-pause" class="modal-overlay">
     <div class="modal-card" style="text-align:center;">
-      <h2 class="modal-title" style="color:#38BDF8;">⚡ Ludo Spark</h2>
-      <p class="modal-desc">Game Paused</p>
-      <button id="btn-pause-resume" class="modal-btn" style="background:#10B981;">▶ Resume</button>
-      <button id="btn-pause-mainmenu" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900;">🏠 Main Menu</button>
-      <button id="btn-pause-newgame" class="modal-btn" style="background:#3B82F6;">🔄 New Game</button>
-      <button id="btn-pause-rules" class="modal-btn" style="background:#7C3AED;">📖 How to Play</button>
-      <button id="btn-pause-quit" class="modal-btn" style="background:#EF4444;">✖ Quit Game</button>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#FEF3C7"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        <h2 class="modal-ribbon-title">GAME PAUSED</h2>
+      </div>
+      <p class="modal-desc">Choose an action:</p>
+      <button id="btn-pause-resume" class="modal-btn btn-green">▶ Resume</button>
+      <button id="btn-pause-mainmenu" class="modal-btn btn-gold">Main Menu</button>
+      <button id="btn-pause-newgame" class="modal-btn btn-blue">New Game</button>
+      <button id="btn-pause-rules" class="modal-btn btn-purple">How to Play</button>
+      <button id="btn-pause-quit" class="modal-btn btn-red">Quit Game</button>
     </div>
   </div>
 
   <!-- Resume Saved Game Dialog -->
   <div id="modal-resume" class="modal-overlay">
     <div class="modal-card" style="text-align:center;">
-      <div style="font-size: 46px; margin-bottom: 4px;">💾</div>
-      <h2 class="modal-title">Resume Saved Game?</h2>
+      <div class="modal-ribbon-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FEF3C7" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <h2 class="modal-ribbon-title">RESUME MATCH</h2>
+      </div>
       <p class="modal-desc">A saved game was found. Continue where you left off?</p>
-      <button id="btn-resume-yes" class="modal-btn" style="background:#10B981; margin-top:10px;">▶ Resume Match</button>
-      <button id="btn-resume-no" class="modal-btn" style="background:#475569;">Start New Game</button>
+      <button id="btn-resume-yes" class="modal-btn btn-green" style="margin-top:10px;">▶ Resume Match</button>
+      <button id="btn-resume-no" class="modal-btn btn-slate">Start New Game</button>
     </div>
   </div>
 
   <!-- Winner Dialog -->
   <div id="modal-winner" class="modal-overlay">
-    <div class="modal-card" style="text-align:center;">
-      <div style="font-size: 52px; margin-bottom: 4px;"><span class="winner-trophy-aura">👑</span></div>
-      <h2 id="winner-title" class="modal-title" style="color:#FBBF24;">Victory!</h2>
-      <p id="winner-desc" class="modal-desc">Player 1 has achieved victory!</p>
+    <div class="modal-card winner-podium-card" style="text-align:center;">
+      <div class="winner-trophy-container">
+        <div class="winner-trophy-aura">
+          <svg viewBox="0 0 64 64" width="76" height="76" fill="none">
+            <defs>
+              <linearGradient id="goldTrophyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FDE047"/>
+                <stop offset="50%" stop-color="#F59E0B"/>
+                <stop offset="100%" stop-color="#B45309"/>
+              </linearGradient>
+            </defs>
+            <path d="M16 12h32v18c0 9-7 16-16 16s-16-7-16-16V12z" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="2"/>
+            <path d="M16 16H8c0 10 6 14 8 15v-15z" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="1.5"/>
+            <path d="M48 16h8c0 10-6 14-8 15v-15z" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="1.5"/>
+            <path d="M28 46h8v8h-8z" fill="url(#goldTrophyGrad)"/>
+            <path d="M18 54h28v6H18z" rx="2" fill="url(#goldTrophyGrad)" stroke="#FEF3C7" stroke-width="1.5"/>
+            <circle cx="32" cy="24" r="5" fill="#FEF3C7" opacity="0.8"/>
+          </svg>
+        </div>
+      </div>
+      <h2 id="winner-title" class="winner-title-banner">VICTORY!</h2>
+      <p id="winner-desc" class="modal-desc" style="font-size:14px; color:#FEF3C7; font-weight:700;">Player 1 has achieved victory!</p>
 
-      <div id="winner-stats-box" style="background:#0F172A; padding:10px 12px; border-radius:12px; border:1px solid #38BDF8; margin:6px 0; text-align:left; font-size:12px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#CBD5E1;"><span>🎲 Total Turns:</span><b id="stat-turns" style="color:#38BDF8;">14</b></div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#CBD5E1;"><span>⚡ Sixes Rolled:</span><b id="stat-sixes" style="color:#F59E0B;">5</b></div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#CBD5E1;"><span>💥 Captures Made:</span><b id="stat-captures" style="color:#EF4444;">3</b></div>
-        <div style="display:flex; justify-content:space-between; color:#FBBF24; font-weight:900; margin-top:6px; border-top:1px stroke #334155; padding-top:4px;"><span>💰 Reward Bonus:</span><b>+3,000 🪙</b></div>
+      <div id="winner-stats-box" style="background:#0F172A; padding:12px 14px; border-radius:16px; border:1.5px solid #F59E0B; margin:8px 0; text-align:left; font-size:12px; box-shadow:inset 0 2px 6px rgba(0,0,0,0.4);">
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#CBD5E1;"><span>Total Turns:</span><b id="stat-turns" style="color:#38BDF8;">14</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#CBD5E1;"><span>Sixes Rolled:</span><b id="stat-sixes" style="color:#F59E0B;">5</b></div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#CBD5E1;"><span>Captures Made:</span><b id="stat-captures" style="color:#EF4444;">3</b></div>
+        <div style="display:flex; justify-content:space-between; color:#FBBF24; font-weight:900; margin-top:6px; border-top:1px solid #334155; padding-top:6px; font-size:13px;"><span>Reward Bonus:</span><b>+3,000 🪙</b></div>
       </div>
 
-      <button id="btn-winner-mainmenu" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900; margin-top:4px;">🏠 Main Menu</button>
-      <button id="btn-play-again" class="modal-btn" style="background:#10B981; margin-top:6px;">Play Again</button>
+      <button id="btn-winner-mainmenu" class="modal-btn btn-gold" style="width:100%; margin-top:6px;">Main Menu</button>
+      <button id="btn-play-again" class="modal-btn btn-green" style="width:100%; margin-top:6px;">Play Again</button>
     </div>
   </div>
 
@@ -826,12 +943,16 @@
         }
       } catch (e) { /* ignore */ }
       const syncSettingsLabels = () => {
-        document.getElementById('setting-sound-label').innerText = window.soundEngine.enabled ? 'On' : 'Off';
-        document.getElementById('setting-camera-label').innerText = game.currentPreset === 'top' ? 'Top-Down' : '3D View';
+        const setLabel = (id, text) => {
+          const el = document.getElementById(id);
+          if (el) el.innerText = text;
+        };
+        setLabel('setting-sound-label', window.soundEngine.enabled ? 'On' : 'Off');
+        setLabel('setting-camera-label', game.currentPreset === 'top' ? 'Top-Down' : '3D View');
         const diff = (game.difficulty || 'normal');
-        document.getElementById('setting-diff-label').innerText = diff.charAt(0).toUpperCase() + diff.slice(1);
-        soundBtn.innerText = window.soundEngine.enabled ? '🔊' : '🔇';
-        cameraBtn.innerText = game.currentPreset === 'top' ? '📷' : '🗺';
+        setLabel('setting-diff-label', diff.charAt(0).toUpperCase() + diff.slice(1));
+        if (soundBtn) soundBtn.innerText = window.soundEngine.enabled ? '🔊' : '🔇';
+        if (cameraBtn) cameraBtn.innerText = game.currentPreset === 'top' ? '📷' : '🗺';
       };
       syncSettingsLabels();
 
@@ -1179,20 +1300,8 @@
         }, 4100);
       };
 
-      // Settings modal
+      // Settings page
       document.getElementById('btn-setting-close').onclick = () => { playClick(); settingsModal.style.display = 'none'; };
-      document.getElementById('btn-setting-sound').onclick = () => {
-        playClick();
-        window.soundEngine.enabled = !window.soundEngine.enabled;
-        document.getElementById('setting-sound-label').innerText = window.soundEngine.enabled ? 'On' : 'Off';
-      };
-      document.getElementById('btn-setting-bgm').onclick = () => {
-        playClick();
-        window.soundEngine.bgmEnabled = !window.soundEngine.bgmEnabled;
-        if (window.soundEngine.bgmEnabled) window.soundEngine.startBGM();
-        else window.soundEngine.stopBGM();
-        document.getElementById('setting-bgm-label').innerText = window.soundEngine.bgmEnabled ? 'On' : 'Off';
-      };
       document.getElementById('btn-setting-camera').onclick = () => {
         playClick();
         const next = game.currentPreset === 'top' ? 'fit3d' : 'top';

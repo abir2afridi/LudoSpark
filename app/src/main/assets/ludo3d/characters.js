@@ -400,10 +400,10 @@ class LudoCharacters {
     // Characters stand on podiums along the top/bottom edges of the board,
     // keeping all four visible in portrait without fighting the corner HUD.
     this.positions = [
-      [-4.8, 10.6],   // Player 1 (Blue): bottom-left
-      [-4.8, -10.6],  // Player 2 (Red): top-left
-      [4.8, -10.6],   // Player 3 (Green): top-right
-      [4.8, 10.6]     // Player 4 (Yellow): bottom-right
+      [-4.8, 11.5],   // Player 1 (Blue): bottom-left
+      [-4.8, -11.5],  // Player 2 (Red): top-left
+      [4.8, -11.5],   // Player 3 (Green): top-right
+      [4.8, 11.5]     // Player 4 (Yellow): bottom-right
     ];
 
     // Gender configuration: Alternating Female & Male for diversity
@@ -475,13 +475,13 @@ class LudoCharacters {
 
       group.add(pedestalGroup);
 
-      // ---- Character Model (scale: 2.25 for grand presence) ----
+      // ---- Character Model (scale: 2.4 for grand presence) ----
       const body = createHumanoidMesh({
         color,
         skinTone: this.skinTones[i],
         hairColor: this.hairColors[i],
         female: this.females[i],
-        scale: 2.25,
+        scale: 2.4,
         isPawn: false
       });
       body.position.y = 0.2;
