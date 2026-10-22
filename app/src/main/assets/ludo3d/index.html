@@ -307,6 +307,31 @@
 
     <!-- Quick Token Choice Bar -->
     <div id="token-selector-bar" class="token-selector-bar"></div>
+
+    <!-- Floating Emoji & Voice Bar Toggle Button -->
+    <div style="position:absolute; bottom:88px; right:16px; pointer-events:auto; z-index:25;">
+      <button id="btn-emoji-toggle" class="icon-btn" style="width:46px; height:46px; font-size:20px; background:linear-gradient(180deg, #F59E0B 0%, #B45309 100%); border:2px solid #FEF3C7; box-shadow:0 4px 12px rgba(0,0,0,0.5);">💬</button>
+    </div>
+
+    <!-- Emoji & Voice Popup Panel -->
+    <div id="emoji-picker-panel" style="position:absolute; bottom:142px; right:16px; background:rgba(15,23,42,0.95); backdrop-filter:blur(10px); border:2px solid #38BDF8; border-radius:16px; padding:10px; display:none; flex-direction:column; gap:8px; pointer-events:auto; z-index:30; box-shadow:0 8px 24px rgba(0,0,0,0.6);">
+      <div style="display:flex; gap:8px; font-size:22px;">
+        <span class="emoji-opt" id="emoji-1" style="cursor:pointer;">😂</span>
+        <span class="emoji-opt" id="emoji-2" style="cursor:pointer;">😡</span>
+        <span class="emoji-opt" id="emoji-3" style="cursor:pointer;">😭</span>
+        <span class="emoji-opt" id="emoji-4" style="cursor:pointer;">👍</span>
+        <span class="emoji-opt" id="emoji-5" style="cursor:pointer;">😎</span>
+        <span class="emoji-opt" id="emoji-6" style="cursor:pointer;">🎉</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <button class="voice-opt-btn" id="voice-msg-1" style="background:#1E293B; border:1px solid rgba(255,255,255,0.2); color:#FFF; font-size:11px; font-weight:700; padding:5px 8px; border-radius:8px; cursor:pointer;">🗣️ "Nice Move!"</button>
+        <button class="voice-opt-btn" id="voice-msg-2" style="background:#1E293B; border:1px solid rgba(255,255,255,0.2); color:#FFF; font-size:11px; font-weight:700; padding:5px 8px; border-radius:8px; cursor:pointer;">🗣️ "Hurry Up!"</button>
+        <button class="voice-opt-btn" id="voice-msg-3" style="background:#1E293B; border:1px solid rgba(255,255,255,0.2); color:#FFF; font-size:11px; font-weight:700; padding:5px 8px; border-radius:8px; cursor:pointer;">🗣️ "Good Game!"</button>
+      </div>
+    </div>
+
+    <!-- Animated Floating Speech Bubble -->
+    <div id="floating-emoji-bubble" style="position:absolute; bottom:92px; left:20px; background:#FEF3C7; color:#0F172A; padding:6px 12px; border-radius:16px; font-size:16px; font-weight:900; border:2px solid #F59E0B; display:none; z-index:40; box-shadow:0 4px 12px rgba(0,0,0,0.5);">😂 Nice Move!</div>
   </div>
 
   <!-- ========================================================================== -->
@@ -402,6 +427,104 @@
         </div>
       </div>
       <button id="btn-close-shop" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- 7 Up 7 Down Mini Game Modal -->
+  <div id="modal-game-7updown" class="modal-overlay">
+    <div class="modal-card" style="text-align:center; max-width:380px;">
+      <h2 class="modal-title">7️⃣ 7 Up 7 Down Mini Game</h2>
+      <p class="modal-desc">Bet on the sum of 2 dice rolls!</p>
+
+      <div style="display:flex; justify-content:center; gap:12px; margin:10px 0;">
+        <div id="7up-dice1" style="font-size:38px; background:#0F172A; padding:6px 14px; border-radius:12px; border:1.5px solid #38BDF8;">⚀</div>
+        <div id="7up-dice2" style="font-size:38px; background:#0F172A; padding:6px 14px; border-radius:12px; border:1.5px solid #38BDF8;">⚅</div>
+      </div>
+      <div id="7up-result-text" style="font-size:15px; font-weight:900; color:#FBBF24; min-height:22px;">Total Sum: 7</div>
+
+      <p style="font-size:11px; font-weight:700; color:#CBD5E1; margin-top:4px;">Select Bet Category:</p>
+      <div style="display:flex; gap:6px; margin:4px 0;">
+        <button class="modal-btn bet-cat-btn" id="bet-cat-down" style="flex:1; background:#3B82F6; padding:6px 2px; font-size:11px;">7 Down<br><small>(2-6) 2x</small></button>
+        <button class="modal-btn bet-cat-btn" id="bet-cat-7" style="flex:1; background:#1E293B; padding:6px 2px; font-size:11px;">Lucky 7<br><small>(7) 5x</small></button>
+        <button class="modal-btn bet-cat-btn" id="bet-cat-up" style="flex:1; background:#1E293B; padding:6px 2px; font-size:11px;">7 Up<br><small>(8-12) 2x</small></button>
+      </div>
+
+      <p style="font-size:11px; font-weight:700; color:#CBD5E1; margin-top:4px;">Select Coin Bet:</p>
+      <div style="display:flex; gap:6px; margin:4px 0;">
+        <button class="modal-btn bet-amt-btn" id="bet-amt-100" style="flex:1; background:#3B82F6; padding:6px 2px; font-size:11px;">100 🪙</button>
+        <button class="modal-btn bet-amt-btn" id="bet-amt-500" style="flex:1; background:#1E293B; padding:6px 2px; font-size:11px;">500 🪙</button>
+        <button class="modal-btn bet-amt-btn" id="bet-amt-1000" style="flex:1; background:#1E293B; padding:6px 2px; font-size:11px;">1,000 🪙</button>
+      </div>
+
+      <button id="btn-roll-7up" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900; font-size:15px; margin-top:4px;">🎲 ROLL DICE!</button>
+      <button id="btn-close-7up" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- Player Profile Modal -->
+  <div id="modal-profile" class="modal-overlay">
+    <div class="modal-card" style="text-align:center;">
+      <h2 class="modal-title">👤 Player Profile</h2>
+
+      <div style="display:flex; flex-direction:column; align-items:center; margin:6px 0;">
+        <div style="width:68px; height:68px; border-radius:50%; border:3px solid #FBBF24; overflow:hidden; position:relative; box-shadow:0 0 12px rgba(251,191,36,0.6);">
+          <img id="profile-modal-img" src="avatar1.jpg" alt="Profile" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        <b style="font-size:15px; margin-top:4px; color:#FBBF24;" id="profile-name-text">Player 1</b>
+        <span style="font-size:11px; color:#94A3B8;" id="profile-level-text">Level 1 Pro Player</span>
+      </div>
+
+      <!-- XP Progress Bar -->
+      <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; margin-bottom:6px;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:4px;">
+          <span>XP Progress</span>
+          <span id="profile-xp-text">350 / 500 XP</span>
+        </div>
+        <div style="width:100%; height:8px; background:#1E293B; border-radius:4px; overflow:hidden;">
+          <div id="profile-xp-bar" style="width:70%; height:100%; background:linear-gradient(90deg, #3B82F6, #38BDF8);"></div>
+        </div>
+      </div>
+
+      <b style="font-size:11px; color:#FEF3C7; text-align:left;">Choose Avatar:</b>
+      <div style="display:flex; gap:10px; justify-content:center; margin:4px 0;">
+        <img class="avatar-select-option" id="select-avatar-1" src="avatar1.jpg" alt="Avatar 1" style="width:44px; height:44px; border-radius:50%; border:2px solid #3B82F6; cursor:pointer;">
+        <img class="avatar-select-option" id="select-avatar-2" src="avatar2.jpg" alt="Avatar 2" style="width:44px; height:44px; border-radius:50%; border:2px solid #1E293B; cursor:pointer;">
+        <img class="avatar-select-option" id="select-avatar-3" src="avatar3.jpg" alt="Avatar 3" style="width:44px; height:44px; border-radius:50%; border:2px solid #1E293B; cursor:pointer;">
+        <img class="avatar-select-option" id="select-avatar-4" src="avatar4.jpg" alt="Avatar 4" style="width:44px; height:44px; border-radius:50%; border:2px solid #1E293B; cursor:pointer;">
+      </div>
+
+      <button id="btn-close-profile" class="modal-btn" style="background:#475569; margin-top:4px;">Close</button>
+    </div>
+  </div>
+
+  <!-- Daily Quests Modal -->
+  <div id="modal-quests" class="modal-overlay">
+    <div class="modal-card">
+      <h2 class="modal-title">📅 Daily Quests</h2>
+      <div class="modal-desc" style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>🎲 Roll 3 Sixes</b>
+            <p style="font-size:11px; color:#94A3B8;" id="quest1-progress">Progress: 0 / 3</p>
+          </div>
+          <button class="modal-btn" id="btn-claim-quest1" style="padding:6px 10px; font-size:11px; background:#10B981;">500 🪙</button>
+        </div>
+        <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>💥 Capture 1 Token</b>
+            <p style="font-size:11px; color:#94A3B8;" id="quest2-progress">Progress: 0 / 1</p>
+          </div>
+          <button class="modal-btn" id="btn-claim-quest2" style="padding:6px 10px; font-size:11px; background:#10B981;">800 🪙</button>
+        </div>
+        <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>🏆 Win 1 Match</b>
+            <p style="font-size:11px; color:#94A3B8;" id="quest3-progress">Progress: 0 / 1</p>
+          </div>
+          <button class="modal-btn" id="btn-claim-quest3" style="padding:6px 10px; font-size:11px; background:#10B981;">1,500 🪙</button>
+        </div>
+      </div>
+      <button id="btn-close-quests" class="modal-btn" style="background:#475569;">Close</button>
     </div>
   </div>
 
@@ -631,7 +754,73 @@
       document.getElementById('mode-btn-friends').onclick = () => openModeSetup('❤️ Friends Private Table', false);
       document.getElementById('mode-btn-computer').onclick = () => openModeSetup('📱 Vs Computer', true);
       document.getElementById('mode-btn-passplay').onclick = () => openModeSetup('🧑‍🤝‍🧑 Pass & Play', false);
-      document.getElementById('mode-btn-7game').onclick = () => openNavInfo('7️⃣ 7 Up 7 Down', 'Roll dice to guess if the total will be Over 7, Under 7, or Exactly 7 to win double coins!');
+
+      // ---- 7 Up 7 Down Mini Game ----
+      const game7UpDownModal = document.getElementById('modal-game-7updown');
+      document.getElementById('mode-btn-7game').onclick = () => { playClick(); game7UpDownModal.style.display = 'flex'; };
+      document.getElementById('btn-close-7up').onclick = () => { playClick(); game7UpDownModal.style.display = 'none'; };
+
+      let selected7Category = 'down'; // 'down', '7', 'up'
+      let selected7Bet = 100;
+
+      const set7Category = (cat) => {
+        selected7Category = cat;
+        [['bet-cat-down', 'down'], ['bet-cat-7', '7'], ['bet-cat-up', 'up']].forEach(([id, val]) => {
+          const btn = document.getElementById(id);
+          if (btn) btn.style.background = (val === cat) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      document.getElementById('bet-cat-down').onclick = () => { playClick(); set7Category('down'); };
+      document.getElementById('bet-cat-7').onclick = () => { playClick(); set7Category('7'); };
+      document.getElementById('bet-cat-up').onclick = () => { playClick(); set7Category('up'); };
+
+      const set7Bet = (amt) => {
+        selected7Bet = amt;
+        [['bet-amt-100', 100], ['bet-amt-500', 500], ['bet-amt-1000', 1000]].forEach(([id, val]) => {
+          const btn = document.getElementById(id);
+          if (btn) btn.style.background = (val === amt) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      document.getElementById('bet-amt-100').onclick = () => { playClick(); set7Bet(100); };
+      document.getElementById('bet-amt-500').onclick = () => { playClick(); set7Bet(500); };
+      document.getElementById('bet-amt-1000').onclick = () => { playClick(); set7Bet(1000); };
+
+      document.getElementById('btn-roll-7up').onclick = () => {
+        if (currentCoins < selected7Bet) {
+          alert('Not enough coins! Claim free coins in store.');
+          return;
+        }
+        playClick();
+        if (window.soundEngine) window.soundEngine.playDiceTumble();
+
+        currentCoins -= selected7Bet;
+        updateResourceUI();
+
+        const d1 = Math.floor(Math.random() * 6) + 1;
+        const d2 = Math.floor(Math.random() * 6) + 1;
+        const sum = d1 + d2;
+
+        document.getElementById('7up-dice1').innerText = diceUnicode[d1];
+        document.getElementById('7up-dice2').innerText = diceUnicode[d2];
+        document.getElementById('7up-result-text').innerText = `Total Sum: ${sum}`;
+
+        let won = false;
+        let winMultiplier = 2;
+        if (selected7Category === 'down' && sum < 7) { won = true; winMultiplier = 2; }
+        else if (selected7Category === '7' && sum === 7) { won = true; winMultiplier = 5; }
+        else if (selected7Category === 'up' && sum > 7) { won = true; winMultiplier = 2; }
+
+        setTimeout(() => {
+          if (won) {
+            const winAmt = selected7Bet * winMultiplier;
+            window.addCoins(winAmt);
+            alert(`🎉 YOU WON ${winAmt.toLocaleString()} COINS!\nDice Total: ${sum}`);
+          } else {
+            alert(`❌ Better Luck Next Time!\nDice Total: ${sum}`);
+          }
+        }, 300);
+      };
+
       document.getElementById('mode-btn-tournament').onclick = () => openNavInfo('👑 Ludo Tournament', 'Compete in 8-player bracket tournaments and win massive coin pots!');
       document.getElementById('mode-btn-snake').onclick = () => openNavInfo('🐍 Snake & Ladder 3D', 'Classic 3D Snake & Ladder board game mode available soon!');
 
@@ -647,7 +836,86 @@
         modeSetupModal.style.display = 'none';
       };
 
-      // ---- Header / Side Reward Clicks ----
+      // ---- Profile & Avatar Selection ----
+      const profileModal = document.getElementById('modal-profile');
+      let currentAvatar = localStorage.getItem('ludoSpark.avatar') || 'avatar1.jpg';
+
+      const setAvatar = (src) => {
+        currentAvatar = src;
+        try { localStorage.setItem('ludoSpark.avatar', src); } catch (e) {}
+        document.querySelector('.profile-avatar-img').src = src;
+        document.getElementById('profile-modal-img').src = src;
+        const p1Img = document.querySelector('#avatar-p1 img');
+        if (p1Img) p1Img.src = src;
+
+        ['1', '2', '3', '4'].forEach(id => {
+          const el = document.getElementById(`select-avatar-${id}`);
+          if (el) el.style.borderColor = (el.getAttribute('src') === src) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      setAvatar(currentAvatar);
+
+      document.getElementById('menu-btn-profile').onclick = () => { playClick(); profileModal.style.display = 'flex'; };
+      document.getElementById('btn-close-profile').onclick = () => { playClick(); profileModal.style.display = 'none'; };
+
+      ['1', '2', '3', '4'].forEach(id => {
+        const el = document.getElementById(`select-avatar-${id}`);
+        if (el) el.onclick = () => {
+          playClick();
+          setAvatar(el.getAttribute('src'));
+        };
+      });
+
+      // ---- Daily Quests ----
+      const questsModal = document.getElementById('modal-quests');
+      document.getElementById('btn-close-quests').onclick = () => { playClick(); questsModal.style.display = 'none'; };
+
+      window.claimQuest = (id, coins) => {
+        playClick();
+        window.addCoins(coins);
+        const btn = document.getElementById(`btn-claim-quest${id}`);
+        if (btn) {
+          btn.innerText = 'Claimed ✓';
+          btn.style.background = '#475569';
+          btn.disabled = true;
+        }
+        const prog = document.getElementById(`quest${id}-progress`);
+        if (prog) prog.innerText = 'Completed!';
+      };
+
+      // ---- In-Game Emoji & Voice Dialogs ----
+      const emojiToggleBtn = document.getElementById('btn-emoji-toggle');
+      const emojiPanel = document.getElementById('emoji-picker-panel');
+      const floatingBubble = document.getElementById('floating-emoji-bubble');
+
+      if (emojiToggleBtn) {
+        emojiToggleBtn.onclick = () => {
+          playClick();
+          emojiPanel.style.display = (emojiPanel.style.display === 'flex') ? 'none' : 'flex';
+        };
+      }
+
+      const triggerBubble = (textStr) => {
+        playClick();
+        emojiPanel.style.display = 'none';
+        floatingBubble.innerText = textStr;
+        floatingBubble.style.display = 'block';
+        floatingBubble.style.animation = 'none';
+        floatingBubble.offsetHeight; // trigger reflow
+        floatingBubble.style.animation = 'floatBubble 1.8s ease-out forwards';
+        setTimeout(() => { floatingBubble.style.display = 'none'; }, 1800);
+      };
+
+      ['1', '2', '3', '4', '5', '6'].forEach(i => {
+        const el = document.getElementById(`emoji-${i}`);
+        if (el) el.onclick = () => triggerBubble(el.innerText);
+      });
+      ['1', '2', '3'].forEach(i => {
+        const el = document.getElementById(`voice-msg-${i}`);
+        if (el) el.onclick = () => triggerBubble(el.innerText);
+      });
+
+      // Header / Side Reward Clicks
       document.getElementById('menu-btn-settings').onclick = () => { playClick(); settingsModal.style.display = 'flex'; };
       document.getElementById('menu-btn-mail').onclick = () => { playClick(); mailModal.style.display = 'flex'; };
       document.getElementById('menu-btn-shop').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
@@ -817,7 +1085,7 @@
       document.getElementById('btn-close-nav-info').onclick = () => { playClick(); navInfoModal.style.display = 'none'; };
 
       document.getElementById('nav-tab-home').onclick = () => { playClick(); showMainMenu(); };
-      document.getElementById('nav-tab-event').onclick = () => openNavInfo('📅 Special Events', 'Join the Season 1 Ludo Masters Event! Complete daily quests to earn exclusive golden avatars and dice skins.', '📅');
+      document.getElementById('nav-tab-event').onclick = () => { playClick(); questsModal.style.display = 'flex'; };
       document.getElementById('nav-tab-adda').onclick = () => openNavInfo('🎙️ Voice Adda Chat', 'Chat with voice & animated emojis in real-time with Ludo players around the world!', '🎙️');
       document.getElementById('nav-tab-inventory').onclick = () => { playClick(); inventoryModal.style.display = 'flex'; };
       document.getElementById('nav-tab-social').onclick = () => openNavInfo('💬 Social & Friends', 'Invite Facebook & WhatsApp friends to play together on private tables!', '💬');
@@ -875,6 +1143,12 @@
         cornerEls.forEach((el, idx) => {
           if (el) el.style.display = (idx < numPlayers) ? '' : 'none';
         });
+
+        // Move the dice slot next to whichever player is currently active
+        const activeCorner = cornerEls[activePlayer.id];
+        if (activeCorner && diceSlot.parentElement !== activeCorner) {
+          activeCorner.appendChild(diceSlot);
+        }
 
         avatarBoxes.forEach((box, idx) => {
           if (box) {

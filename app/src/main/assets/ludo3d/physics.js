@@ -142,7 +142,11 @@ class DicePhysics {
     return q;
   }
 
-  roll(targetValue, onComplete) {
+  /**
+   * Roll the dice. If fromAngle (radians) is given, the dice is tossed
+   * from that board direction toward the center (as if thrown by that player).
+   */
+  roll(targetValue, onComplete, fromAngle = null) {
     if (this.isRolling) return;
     this.isRolling = true;
     this.targetFace = targetValue;
@@ -152,14 +156,23 @@ class DicePhysics {
     if (window.soundEngine) window.soundEngine.init();
 
     // Start toss
-    const startX = (Math.random() - 0.5) * 1.5;
-    const startZ = (Math.random() - 0.5) * 1.5;
-    this.diceBody.position.set(startX, 4.2 + Math.random() * 1.5, startZ);
-
-    // Initial velocity
-    const vx = (Math.random() - 0.5) * 6;
+    let startX = (Math.random() - 0.5) * 1.5;
+    let startZ = (Math.random() - 0.5) * 1.5;
+    let vx = (Math.random() - 0.5) * 6;
+    let vz = (Math.random() - 0.5) * 6;
     const vy = 3 + Math.random() * 4;
-    const vz = (Math.random() - 0.5) * 6;
+
+    if (fromAngle !== null && fromAngle !== undefined) {
+      // Toss from the active player's side toward board center
+      const r = 2.8 + Math.random() * 0.6;
+      startX = Math.cos(fromAngle) * r;
+      startZ = Math.sin(fromAngle) * r;
+      const speed = 5.5 + Math.random() * 2.5;
+      vx = -Math.cos(fromAngle) * speed;
+      vz = -Math.sin(fromAngle) * speed;
+    }
+
+    this.diceBody.position.set(startX, 4.2 + Math.random() * 1.5, startZ);
     this.diceBody.velocity.set(vx, vy, vz);
 
     // Initial spin (high angular velocity)

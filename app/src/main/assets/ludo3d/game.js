@@ -457,10 +457,17 @@ class LudoGame {
 
     this.notifyUI();
 
-    // Toss dice with realistic Cannon.js rigid body physics
+    // Toss dice with realistic Cannon.js rigid body physics.
+    // The dice is thrown from the active player's own board quadrant.
+    const tossAngles = [
+      3 * Math.PI / 4,   // Player 1: bottom-left
+      -3 * Math.PI / 4,  // Player 2: top-left
+      -Math.PI / 4,      // Player 3: top-right
+      Math.PI / 4        // Player 4: bottom-right
+    ];
     this.physics.roll(rollValue, (finalValue) => {
       this.onDiceRollComplete(finalValue);
-    });
+    }, tossAngles[this.activePlayerIndex]);
   }
 
   onDiceRollComplete(roll) {
