@@ -212,13 +212,15 @@ class LudoGame {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
 
-    const boardExtent = 22.8; // comfortably frames the entire board and the 4 corner 3D characters
+    // Wider extent for the board, taller extent for the character podiums on top/bottom
+    const widthExtent = 18.9;
+    const heightExtent = 21.6;
     const vFovRad = (this.camera.fov * Math.PI) / 180;
     const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
 
-    // Ensure board fits horizontally within ~92% width, and vertically leaving margins for UI bars
-    const distW = (boardExtent / 2) / Math.tan(hFovRad / 2) / 0.92;
-    const distH = (boardExtent / 2) / Math.tan(vFovRad / 2) / 0.74;
+    // Fill ~92% of portrait width; keep the full board + characters in landscape
+    const distW = (widthExtent / 2) / Math.tan(hFovRad / 2) / 0.965;
+    const distH = (heightExtent / 2) / Math.tan(vFovRad / 2) / 0.82;
     const requiredDist = Math.max(distW, distH);
 
     if (this.currentPreset === 'top') {

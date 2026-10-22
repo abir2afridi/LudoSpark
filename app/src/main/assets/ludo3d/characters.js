@@ -397,13 +397,13 @@ class LudoCharacters {
     this.time = 0;
     this.activePlayerId = 0;
 
-    // Corner coordinates outside the board (x, z)
-    // Board size is 18, corners are at ~9. 10.4 places characters neatly at corners
+    // Characters stand on podiums along the top/bottom edges of the board,
+    // keeping all four visible in portrait without fighting the corner HUD.
     this.positions = [
-      [-10.4, 10.4],   // Player 1 (Blue): bottom-left
-      [-10.4, -10.4],  // Player 2 (Red): top-left
-      [10.4, -10.4],   // Player 3 (Green): top-right
-      [10.4, 10.4]     // Player 4 (Yellow): bottom-right
+      [-4.8, 10.6],   // Player 1 (Blue): bottom-left
+      [-4.8, -10.6],  // Player 2 (Red): top-left
+      [4.8, -10.6],   // Player 3 (Green): top-right
+      [4.8, 10.6]     // Player 4 (Yellow): bottom-right
     ];
 
     // Gender configuration: Alternating Female & Male for diversity

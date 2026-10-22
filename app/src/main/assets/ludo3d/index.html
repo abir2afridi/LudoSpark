@@ -3,6 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script>
+    // Early error capture — feeds the in-app System Logs page
+    window.SysLogs = (function () {
+      var KEY = 'ludoSpark.systemLogs';
+      var MAX = 400;
+      var cache = [];
+      try { cache = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { cache = []; }
+
+      var persist = function () {
+        try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch (e) { /* ignore */ }
+      };
+
+      var push = function (type, message, stack) {
+        var entry = {
+          t: new Date().toISOString(),
+          type: String(type || 'info'),
+          message: String(message || ''),
+          stack: stack ? String(stack).slice(0, 2000) : ''
+        };
+        cache.push(entry);
+        if (cache.length > MAX) cache = cache.slice(-MAX);
+        persist();
+        try {
+          if (window.AndroidBridge && window.AndroidBridge.logJsError) {
+            window.AndroidBridge.logJsError(entry.type + ': ' + entry.message);
+          }
+        } catch (e) { /* ignore */ }
+      };
+
+      window.addEventListener('error', function (e) {
+        push('error', e.message + ' @ ' + (e.filename || '?') + ':' + e.lineno + ':' + e.colno,
+          e.error && e.error.stack);
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        push('promise', (r && r.message) || r, r && r.stack);
+      });
+
+      var origError = console.error.bind(console);
+      console.error = function () {
+        push('console.error', Array.prototype.map.call(arguments, String).join(' '));
+        origError.apply(null, arguments);
+      };
+      var origWarn = console.warn.bind(console);
+      console.warn = function () {
+        push('console.warn', Array.prototype.map.call(arguments, String).join(' '));
+        origWarn.apply(null, arguments);
+      };
+
+      return {
+        push: push,
+        get: function () { return cache.slice().reverse(); },
+        clear: function () { cache = []; persist(); },
+        native: function () {
+          try {
+            if (window.AndroidBridge && window.AndroidBridge.getCrashLogs) {
+              return window.AndroidBridge.getCrashLogs();
+            }
+          } catch (e) { /* ignore */ }
+          return '';
+        },
+        formatAll: function () {
+          var lines = this.get().map(function (l) {
+            return '[' + l.t + '] ' + l.type.toUpperCase() + ': ' + l.message +
+              (l.stack ? '\n' + l.stack : '');
+          });
+          var nativeLog = this.native();
+          if (nativeLog) lines.unshift('=== ANDROID LOG ===\n' + nativeLog);
+          return lines.join('\n\n') || 'No logs.';
+        }
+      };
+    })();
+  </script>
   <title>Ludo Spark</title>
   <link rel="stylesheet" href="style.css">
   <script src="three.min.js"></script>
@@ -21,7 +94,7 @@
   <div id="canvas-container"></div>
 
   <!-- ========================================================================== -->
-  <!-- MAIN MENU OVERLAY (EXACT SCREENSHOT DESIGN)                                -->
+  <!-- MAIN MENU OVERLAY (EXACT SCREENSHOT DESIGN & MULTI-PAGE NAVIGATION)        -->
   <!-- ========================================================================== -->
   <div id="main-menu" class="main-menu-overlay">
     <!-- Top Header Bar -->
@@ -78,146 +151,214 @@
       </div>
     </div>
 
-    <!-- Main Content Body -->
-    <div class="menu-body-content">
-      <!-- Hero Title Logo ("KING LUDO") -->
-      <div class="hero-logo-container">
-        <div class="sunburst-rays"></div>
-        <div class="crown-icon">
-          <svg viewBox="0 0 24 24" width="34" height="34" fill="#FBBF24" stroke="#78350F" stroke-width="1.5"><path d="M2 20h20v-2H2v2zm2-3h16l2-12-5 4-5-6-5 6-5-4 2 12z"/><circle cx="12" cy="4" r="1.5" fill="#EF4444"/><circle cx="4" cy="7" r="1.5" fill="#3B82F6"/><circle cx="20" cy="7" r="1.5" fill="#10B981"/></svg>
-        </div>
-        <div class="logo-text-king">KING</div>
-        <div class="logo-letters-row">
-          <span class="ludo-letter letter-l">L</span>
-          <span class="ludo-letter letter-u">U</span>
-          <span class="ludo-letter letter-d">D</span>
-          <span class="ludo-letter letter-o">O</span>
-        </div>
+    <!-- ========================================================================== -->
+    <!-- FULL-SCREEN TAB PAGES                                                      -->
+    <!-- ========================================================================== -->
 
-        <!-- 3D Pawns & Board Hero Center Graphic -->
-        <div class="hero-3d-graphic">
-          <div class="pawn pawn-blue">♟</div>
-          <div class="pawn pawn-red">♟</div>
-          <div class="mini-board-preview">
-            <div class="mini-dice">🎲</div>
+    <!-- 1. HOME TAB PAGE (SCREENSHOT MAIN MENU) -->
+    <div id="page-home" class="menu-tab-page active">
+      <div class="menu-body-content">
+        <!-- Hero Title Logo ("KING LUDO") -->
+        <div class="hero-logo-container">
+          <div class="sunburst-rays"></div>
+          <div class="crown-icon">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="#FBBF24" stroke="#78350F" stroke-width="1.5"><path d="M2 20h20v-2H2v2zm2-3h16l2-12-5 4-5-6-5 6-5-4 2 12z"/><circle cx="12" cy="4" r="1.5" fill="#EF4444"/><circle cx="4" cy="7" r="1.5" fill="#3B82F6"/><circle cx="20" cy="7" r="1.5" fill="#10B981"/></svg>
           </div>
-          <div class="pawn pawn-green">♟</div>
-          <div class="pawn pawn-yellow">♟</div>
+          <div class="logo-text-king">KING</div>
+          <div class="logo-letters-row">
+            <span class="ludo-letter letter-l">L</span>
+            <span class="ludo-letter letter-u">U</span>
+            <span class="ludo-letter letter-d">D</span>
+            <span class="ludo-letter letter-o">O</span>
+          </div>
+
+          <!-- 3D Pawns & Board Hero Center Graphic -->
+          <div class="hero-3d-graphic">
+            <div class="pawn pawn-blue">♟</div>
+            <div class="pawn pawn-red">♟</div>
+            <div class="mini-board-preview">
+              <div class="mini-dice">🎲</div>
+            </div>
+            <div class="pawn pawn-green">♟</div>
+            <div class="pawn pawn-yellow">♟</div>
+          </div>
+
+          <button class="help-question-btn" id="menu-btn-help" title="How to Play">?</button>
         </div>
 
-        <!-- Help Question Speech Bubble Button -->
-        <button class="help-question-btn" id="menu-btn-help" title="How to Play">?</button>
-      </div>
+        <!-- Game Mode Grid (Exact Screenshot Layout) -->
+        <div class="game-modes-grid">
+          <div class="modes-row-top">
+            <button class="mode-card-3d" id="mode-btn-online">
+              <span class="mode-card-header"><span class="mode-icon-wrapper"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#38BDF8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span></span>
+              <span class="mode-card-footer"><span class="mode-title-text">ONLINE</span></span>
+            </button>
+            <button class="mode-card-3d" id="mode-btn-teamup">
+              <span class="mode-card-header"><span class="mode-icon-wrapper"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l2 2M19 13l2 2M9.5 6.5L21 18v3h-3L6.5 9.5M5 11L3 9M11 5L9 3"/></svg></span></span>
+              <span class="mode-card-footer"><span class="mode-title-text">TEAM UP</span></span>
+            </button>
+            <button class="mode-card-3d" id="mode-btn-friends">
+              <span class="mode-card-header"><span class="mode-icon-wrapper"><svg viewBox="0 0 24 24" width="26" height="26" fill="#EF4444" stroke="#FFE4E6" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span></span>
+              <span class="mode-card-footer"><span class="mode-title-text">FRIENDS</span></span>
+            </button>
+          </div>
 
-      <!-- Game Mode Grid (Exact Screenshot Layout) -->
-      <div class="game-modes-grid">
-        <!-- Row 1: ONLINE | TEAM UP | FRIENDS -->
-        <div class="modes-row-top">
-          <!-- ONLINE -->
-          <button class="mode-card-3d" id="mode-btn-online">
-            <span class="mode-card-header">
-              <span class="mode-icon-wrapper">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#38BDF8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <div class="modes-row-mid">
+            <button class="mode-card-wide" id="mode-btn-computer">
+              <span class="wide-card-inner">
+                <span class="wide-card-icon-box"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3"/></svg><span class="vs-badge">VS</span></span>
+                <span class="wide-card-label">COMPUTER</span>
               </span>
-            </span>
-            <span class="mode-card-footer">
-              <span class="mode-title-text">ONLINE</span>
-            </span>
-          </button>
+            </button>
+            <button class="mode-card-wide" id="mode-btn-passplay">
+              <span class="wide-card-inner">
+                <span class="wide-card-icon-box"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                <span class="wide-card-label">PASS N PLAY</span>
+              </span>
+            </button>
+          </div>
 
-          <!-- TEAM UP -->
-          <button class="mode-card-3d" id="mode-btn-teamup">
-            <span class="mode-card-header">
-              <span class="mode-icon-wrapper">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l2 2M19 13l2 2M9.5 6.5L21 18v3h-3L6.5 9.5M5 11L3 9M11 5L9 3"/></svg>
-              </span>
-            </span>
-            <span class="mode-card-footer">
-              <span class="mode-title-text">TEAM UP</span>
-            </span>
-          </button>
-
-          <!-- FRIENDS -->
-          <button class="mode-card-3d" id="mode-btn-friends">
-            <span class="mode-card-header">
-              <span class="mode-icon-wrapper">
-                <svg viewBox="0 0 24 24" width="26" height="26" fill="#EF4444" stroke="#FFE4E6" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </span>
-            </span>
-            <span class="mode-card-footer">
-              <span class="mode-title-text">FRIENDS</span>
-            </span>
-          </button>
+          <div class="modes-row-bot">
+            <button class="circle-feature-btn" id="mode-btn-7game" title="7 Mini Game">
+              <span class="circle-btn-inner"><span style="font-size:22px; font-weight:900; color:#FEF3C7;">7</span></span>
+            </button>
+            <button class="banner-tournament-btn" id="mode-btn-tournament">
+              <span class="banner-crown"><svg viewBox="0 0 24 24" width="20" height="20" fill="#78350F"><path d="M2 20h20v-2H2v2zm2-3h16l2-12-5 4-5-6-5 6-5-4 2 12z"/></svg></span>
+              <span class="banner-text">TOURNAMENT</span>
+            </button>
+            <button class="circle-feature-btn" id="mode-btn-snake" title="Snake & Ladder">
+              <span class="circle-btn-inner"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FEF3C7" stroke-width="2" stroke-linecap="round"><path d="M6 3v18M18 3v18M6 8h12M6 16h12"/></svg></span>
+            </button>
+          </div>
         </div>
 
-        <!-- Row 2: COMPUTER | PASS N PLAY -->
-        <div class="modes-row-mid">
-          <!-- COMPUTER -->
-          <button class="mode-card-wide" id="mode-btn-computer">
-            <span class="wide-card-inner">
-              <span class="wide-card-icon-box">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3"/></svg>
-                <span class="vs-badge">VS</span>
-              </span>
-              <span class="wide-card-label">COMPUTER</span>
-            </span>
-          </button>
-
-          <!-- PASS N PLAY -->
-          <button class="mode-card-wide" id="mode-btn-passplay">
-            <span class="wide-card-inner">
-              <span class="wide-card-icon-box">
-                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              </span>
-              <span class="wide-card-label">PASS N PLAY</span>
-            </span>
-          </button>
-        </div>
-
-        <!-- Row 3: 7 Mini Game | TOURNAMENT | SNAKE & LADDER -->
-        <div class="modes-row-bot">
-          <!-- 7 Mini Game -->
-          <button class="circle-feature-btn" id="mode-btn-7game" title="7 Mini Game">
-            <span class="circle-btn-inner">
-              <span style="font-size:22px; font-weight:900; color:#FEF3C7;">7</span>
-            </span>
-          </button>
-
-          <!-- TOURNAMENT Banner -->
-          <button class="banner-tournament-btn" id="mode-btn-tournament">
-            <span class="banner-crown">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="#78350F"><path d="M2 20h20v-2H2v2zm2-3h16l2-12-5 4-5-6-5 6-5-4 2 12z"/></svg>
-            </span>
-            <span class="banner-text">TOURNAMENT</span>
-          </button>
-
-          <!-- SNAKE & LADDER -->
-          <button class="circle-feature-btn" id="mode-btn-snake" title="Snake & Ladder">
-            <span class="circle-btn-inner">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FEF3C7" stroke-width="2" stroke-linecap="round"><path d="M6 3v18M18 3v18M6 8h12M6 16h12"/></svg>
-            </span>
-          </button>
+        <div class="menu-side-rewards-row">
+          <div class="side-reward-card card-free-ad" id="menu-btn-ad-reward">
+            <div class="free-badge-tag">FREE</div>
+            <div class="ad-reward-content">
+              <div class="film-ad-box">🎬 x 4 AD</div>
+              <div class="reward-gems-coins">💎🪙 1200</div>
+            </div>
+          </div>
+          <div class="side-reward-card card-spin-wheel" id="menu-btn-spin">
+            <div class="spin-wheel-circle">
+              <div class="wheel-spinner">🎡</div>
+              <div class="spin-center-text">SPIN</div>
+            </div>
+            <div class="spin-status-label" id="spin-status-text">Ready!</div>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Side Rewards (Bottom Left & Bottom Right above footer) -->
-      <div class="menu-side-rewards-row">
-        <!-- Bottom Left: Free Ad Reward -->
-        <div class="side-reward-card card-free-ad" id="menu-btn-ad-reward">
-          <div class="free-badge-tag">FREE</div>
-          <div class="ad-reward-content">
-            <div class="film-ad-box">🎬 x 4 AD</div>
-            <div class="reward-gems-coins">💎🪙 1200</div>
+    <!-- 2. EVENTS TAB PAGE -->
+    <div id="page-event" class="menu-tab-page">
+      <div class="page-hero-banner">
+        <b style="color:#FBBF24; font-size:16px;">🏆 SEASON 1: LUDO MASTERS</b>
+        <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Complete daily quests to earn exclusive golden rewards!</p>
+      </div>
+
+      <b style="color:#FEF3C7; font-size:13px; margin-bottom:8px;">Daily Quests:</b>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#0F172A; padding:10px 12px; border-radius:14px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>🎲 Roll 3 Sixes</b>
+            <p style="font-size:11px; color:#94A3B8;" id="quest1-progress">Progress: 0 / 3</p>
           </div>
+          <button class="modal-btn" id="btn-claim-quest1" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.claimQuest(1, 500)">500 🪙</button>
         </div>
-
-        <!-- Bottom Right: Spin Wheel -->
-        <div class="side-reward-card card-spin-wheel" id="menu-btn-spin">
-          <div class="spin-wheel-circle">
-            <div class="wheel-spinner">🎡</div>
-            <div class="spin-center-text">SPIN</div>
+        <div style="background:#0F172A; padding:10px 12px; border-radius:14px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>💥 Capture 1 Token</b>
+            <p style="font-size:11px; color:#94A3B8;" id="quest2-progress">Progress: 0 / 1</p>
           </div>
-          <div class="spin-status-label" id="spin-status-text">Ready!</div>
+          <button class="modal-btn" id="btn-claim-quest2" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.claimQuest(2, 800)">800 🪙</button>
+        </div>
+        <div style="background:#0F172A; padding:10px 12px; border-radius:14px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>🏆 Win 1 Match</b>
+            <p style="font-size:11px; color:#94A3B8;" id="quest3-progress">Progress: 0 / 1</p>
+          </div>
+          <button class="modal-btn" id="btn-claim-quest3" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.claimQuest(3, 1500)">1,500 🪙</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ADDA VOICE LOUNGE TAB PAGE -->
+    <div id="page-adda" class="menu-tab-page">
+      <div class="page-hero-banner">
+        <b style="color:#FBBF24; font-size:16px;">🎙️ VOICE ADDA CHATROOMS</b>
+        <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Chat live & send animated emojis with Ludo players!</p>
+      </div>
+
+      <b style="color:#FEF3C7; font-size:13px; margin-bottom:8px;">Active Audio Lounges:</b>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#0F172A; padding:12px; border-radius:14px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>🇧🇩 Bangladesh Ludo Arena</b>
+            <p style="font-size:11px; color:#38BDF8; margin-top:2px;">142 Players Online • Live Audio</p>
+          </div>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="alert('🎙️ Joined Bangladesh Ludo Arena Audio Room!')">Join</button>
+        </div>
+        <div style="background:#0F172A; padding:12px; border-radius:14px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b>🌐 Global Champions Club</b>
+            <p style="font-size:11px; color:#38BDF8; margin-top:2px;">89 Players Online • Live Audio</p>
+          </div>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="alert('🎙️ Joined Global Champions Club!')">Join</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. INVENTORY & WARDROBE TAB PAGE (PROFESSIONAL AAA GAME UI) -->
+    <div id="page-inventory" class="menu-tab-page">
+      <div class="page-hero-banner">
+        <b style="color:#FBBF24; font-size:16px;">🎁 INVENTORY & WARDROBE STUDIO</b>
+        <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Equip 3D Pawns, Custom Dice Sets, and Board Themes</p>
+      </div>
+
+      <!-- Category Filter Bar -->
+      <div class="category-filter-bar">
+        <button class="cat-filter-btn active" id="filter-pawns">♟ PAWNS</button>
+        <button class="cat-filter-btn" id="filter-dice">🎲 DICE SETS</button>
+        <button class="cat-filter-btn" id="filter-boards">🎨 BOARDS</button>
+        <button class="cat-filter-btn" id="filter-bg">🌌 BACKGROUNDS</button>
+      </div>
+
+      <!-- 3D Item Grid -->
+      <div class="items-cards-grid" id="inventory-items-grid">
+        <!-- Dynamic Item Cards rendered by JS -->
+      </div>
+    </div>
+
+    <!-- 5. SOCIAL & FRIENDS TAB PAGE -->
+    <div id="page-social" class="menu-tab-page">
+      <div class="page-hero-banner">
+        <b style="color:#FBBF24; font-size:16px;">👥 SOCIAL & FRIENDS</b>
+        <p style="font-size:12px; color:#CBD5E1; margin-top:2px;">Invite friends to private tables & track leaderboard ranking!</p>
+      </div>
+
+      <div style="background:#0F172A; padding:12px; border-radius:14px; border:1px solid #38BDF8; margin-bottom:10px;">
+        <b style="color:#FBBF24;">🔑 Private Table Room Code:</b>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+          <b style="font-size:18px; color:#38BDF8; letter-spacing:2px;">482901</b>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#3B82F6;" onclick="alert('📋 Room Code 482901 copied to clipboard!')">Copy Code</button>
+        </div>
+      </div>
+
+      <b style="color:#FEF3C7; font-size:13px; margin-bottom:8px;">Weekly Leaderboard Top Champions:</b>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="background:#0F172A; padding:8px 12px; border-radius:12px; border:1px solid #FBBF24; display:flex; justify-content:space-between; align-items:center;">
+          <div>🥇 <b>Master_Raju</b> <span style="font-size:11px; color:#94A3B8;">• Level 24</span></div>
+          <b style="color:#FBBF24;">145,000 🪙</b>
+        </div>
+        <div style="background:#0F172A; padding:8px 12px; border-radius:12px; border:1px solid #94A3B8; display:flex; justify-content:space-between; align-items:center;">
+          <div>🥈 <b>Ludo_Queen</b> <span style="font-size:11px; color:#94A3B8;">• Level 19</span></div>
+          <b style="color:#E2E8F0;">98,500 🪙</b>
+        </div>
+        <div style="background:#0F172A; padding:8px 12px; border-radius:12px; border:1px solid #B45309; display:flex; justify-content:space-between; align-items:center;">
+          <div>🥉 <b>Spark_King</b> <span style="font-size:11px; color:#94A3B8;">• Level 15</span></div>
+          <b style="color:#F59E0B;">72,000 🪙</b>
         </div>
       </div>
     </div>
@@ -281,73 +422,48 @@
     <div id="center-toast" class="center-toast">Your Turn: Roll the Dice!</div>
 
     <!-- 4 Corner Player Avatars -->
-    <!-- Top-Left: Player 2 (Red) -->
     <div class="player-corner corner-top-left" id="corner-p2">
       <div class="avatar-box red-border" id="avatar-p2">
-        <svg class="timer-ring-svg" id="timer-ring-1" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-1" cx="37" cy="37" r="32" />
-        </svg>
         <img src="avatar2.jpg" alt="Player 2">
         <div class="player-tag">Player 2</div>
-        <div class="timer-sec-badge" id="timer-badge-1">15</div>
       </div>
     </div>
 
-    <!-- Top-Right: Player 3 (Green) -->
     <div class="player-corner corner-top-right" id="corner-p3">
       <div class="avatar-box green-border" id="avatar-p3">
-        <svg class="timer-ring-svg" id="timer-ring-2" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-2" cx="37" cy="37" r="32" />
-        </svg>
         <img src="avatar3.jpg" alt="Player 3">
         <div class="player-tag">Player 3</div>
-        <div class="timer-sec-badge" id="timer-badge-2">15</div>
       </div>
     </div>
 
-    <!-- Bottom-Left: Player 1 (Blue - Human) + Dice Slot -->
     <div class="player-corner corner-bottom-left" id="corner-p1">
       <div class="avatar-box blue-border active-turn" id="avatar-p1">
-        <svg class="timer-ring-svg" id="timer-ring-0" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-0" cx="37" cy="37" r="32" />
-        </svg>
         <img src="avatar1.jpg" alt="Player 1">
         <div class="player-tag">Player 1</div>
-        <div class="timer-sec-badge" id="timer-badge-0">15</div>
-      </div>
-
-      <!-- Interactive Dice Box -->
-      <div class="dice-slot" id="dice-slot">
-        <div class="dice-content" id="dice-display">⚡</div>
-        <div class="pointing-hand" id="pointing-hand">👆</div>
       </div>
     </div>
 
-    <!-- Bottom-Right: Player 4 (Yellow) -->
     <div class="player-corner corner-bottom-right" id="corner-p4">
       <div class="avatar-box yellow-border" id="avatar-p4">
-        <svg class="timer-ring-svg" id="timer-ring-3" viewBox="0 0 74 74">
-          <circle class="timer-ring-bg" cx="37" cy="37" r="32" />
-          <circle class="timer-ring-fill" id="timer-fill-3" cx="37" cy="37" r="32" />
-        </svg>
         <img src="avatar4.jpg" alt="Player 4">
         <div class="player-tag">Player 4</div>
-        <div class="timer-sec-badge" id="timer-badge-3">15</div>
       </div>
     </div>
 
-    <!-- Quick Token Choice Bar -->
     <div id="token-selector-bar" class="token-selector-bar"></div>
 
-    <!-- Floating Emoji & Voice Bar Toggle Button -->
+    <!-- Fixed central dice dock -->
+    <div id="dice-dock">
+      <div class="dice-slot" id="dice-slot">
+        <div class="dice-content" id="dice-display"></div>
+      </div>
+      <div class="dice-label" id="dice-label">TAP TO ROLL</div>
+    </div>
+
     <div style="position:absolute; bottom:88px; right:16px; pointer-events:auto; z-index:25;">
       <button id="btn-emoji-toggle" class="icon-btn" style="width:46px; height:46px; font-size:20px; background:linear-gradient(180deg, #F59E0B 0%, #B45309 100%); border:2px solid #FEF3C7; box-shadow:0 4px 12px rgba(0,0,0,0.5);">💬</button>
     </div>
 
-    <!-- Emoji & Voice Popup Panel -->
     <div id="emoji-picker-panel" style="position:absolute; bottom:142px; right:16px; background:rgba(15,23,42,0.95); backdrop-filter:blur(10px); border:2px solid #38BDF8; border-radius:16px; padding:10px; display:none; flex-direction:column; gap:8px; pointer-events:auto; z-index:30; box-shadow:0 8px 24px rgba(0,0,0,0.6);">
       <div style="display:flex; gap:8px; font-size:22px;">
         <span class="emoji-opt" id="emoji-1" style="cursor:pointer;">😂</span>
@@ -364,7 +480,6 @@
       </div>
     </div>
 
-    <!-- Animated Floating Speech Bubble -->
     <div id="floating-emoji-bubble" style="position:absolute; bottom:92px; left:20px; background:#FEF3C7; color:#0F172A; padding:6px 12px; border-radius:16px; font-size:16px; font-weight:900; border:2px solid #F59E0B; display:none; z-index:40; box-shadow:0 4px 12px rgba(0,0,0,0.5);">😂 Nice Move!</div>
   </div>
 
@@ -372,7 +487,7 @@
   <!-- MODAL DIALOGS                                                              -->
   <!-- ========================================================================== -->
 
-  <!-- Mode Setup Dialog (Pick Players, Mode & Difficulty) -->
+  <!-- Mode Setup Dialog -->
   <div id="modal-mode-setup" class="modal-overlay">
     <div class="modal-card">
       <h2 class="modal-title" id="mode-setup-title">🎮 Game Setup</h2>
@@ -402,17 +517,52 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
-  <div id="modal-menu-settings" class="modal-overlay">
-    <div class="modal-card" style="text-align:center;">
-      <h2 class="modal-title">⚙️ Game Settings</h2>
-      <p class="modal-desc">Configure Audio & Camera</p>
-      <button id="btn-setting-sound" class="modal-btn" style="background:#3B82F6;">🔊 Sound Effects: <span id="setting-sound-label">On</span></button>
-      <button id="btn-setting-bgm" class="modal-btn" style="background:#8B5CF6;">🎵 BGM Music: <span id="setting-bgm-label">On</span></button>
+  <!-- Settings Page (full screen) -->
+  <div id="modal-menu-settings" class="modal-overlay settings-page">
+    <div class="modal-card">
+      <div class="settings-page-header">
+        <button id="btn-setting-close" class="settings-back-btn">←</button>
+        <h2 class="modal-title" style="margin:0;">⚙️ Settings</h2>
+        <span style="width:44px;"></span>
+      </div>
+      <p class="modal-desc" style="margin-top:-6px;">Audio, camera, AI & system debugging</p>
+
+      <div style="background:#0F172A; padding:12px; border-radius:14px; border:1px solid #38BDF8; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:#FEF3C7; margin-bottom:4px;">
+          <span>🔊 Sound Effects (SFX)</span>
+          <span id="label-sfx-vol">80%</span>
+        </div>
+        <input type="range" id="slider-sfx-vol" aria-label="Sound Effects Volume" min="0" max="1" step="0.05" value="0.8" style="width:100%; accent-color:#38BDF8; cursor:pointer;">
+
+        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:#FEF3C7; margin:10px 0 4px 0;">
+          <span>🎵 Background Music (BGM)</span>
+          <span id="label-bgm-vol">50%</span>
+        </div>
+        <input type="range" id="slider-bgm-vol" aria-label="Background Music Volume" min="0" max="1" step="0.05" value="0.5" style="width:100%; accent-color:#8B5CF6; cursor:pointer;">
+      </div>
+
       <button id="btn-setting-camera" class="modal-btn" style="background:#0EA5E9;">📷 Camera View: <span id="setting-camera-label">Top-Down</span></button>
       <button id="btn-setting-difficulty" class="modal-btn" style="background:#EC4899;">🤖 AI Difficulty: <span id="setting-diff-label">Normal</span></button>
+      <button id="btn-open-system-logs" class="modal-btn" style="background:#0F172A; border:1px solid #38BDF8;">📋 System Logs</button>
       <button id="btn-setting-exit" class="modal-btn" style="background:#EF4444;">✖ Exit App</button>
-      <button id="btn-setting-close" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- System Logs Page -->
+  <div id="system-logs-page" class="modal-overlay settings-page">
+    <div class="modal-card">
+      <div class="settings-page-header">
+        <button id="btn-close-system-logs" class="settings-back-btn">←</button>
+        <h2 class="modal-title" style="margin:0;">📋 System Logs</h2>
+        <span style="width:44px;"></span>
+      </div>
+      <p class="modal-desc" style="margin-top:-6px;">JS errors, WebView warnings & APK crash logs</p>
+      <div id="system-logs-list" class="system-logs-list"></div>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-copy-logs" class="modal-btn" style="flex:1; background:#3B82F6;">📄 Copy</button>
+        <button id="btn-clear-logs" class="modal-btn" style="flex:1; background:#EF4444;">🗑 Clear</button>
+      </div>
+      <button id="btn-logs-close-bottom" class="modal-btn" style="background:#475569;">Close</button>
     </div>
   </div>
 
@@ -460,84 +610,8 @@
           <div><b>💎 500 Gems</b></div>
           <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.addGems(500)">Free Claim</button>
         </div>
-        <div style="background:#0F172A; padding:10px; border-radius:12px; border:1px solid #38BDF8;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <b style="color:#FBBF24;">♟ 3D Pawn Skins Store</b>
-            <span style="font-size:10px; color:#38BDF8;">Live 3D Preview</span>
-          </div>
-          <div class="turntable-card" style="margin-bottom:8px;">
-            <canvas id="shop-turntable-canvas" width="280" height="135"></canvas>
-            <div class="turntable-badge" id="shop-turntable-item-title">Classic Royal Pawn</div>
-            <div class="turntable-drag-hint">👆 Drag to spin 360°</div>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-            <button class="skin-btn" id="skin-classic">♟ Classic Royal</button>
-            <button class="skin-btn" id="skin-human">🧍 3D Human Walkers</button>
-            <button class="skin-btn" id="skin-knight">🛡️ Golden Knights</button>
-            <button class="skin-btn" id="skin-cyber">🤖 Cyber Mecha</button>
-          </div>
-          <p id="skin-equipped-label" style="font-size:11px; color:#94A3B8; margin-top:6px;">Equipped: Classic Royal</p>
-        </div>
       </div>
       <button id="btn-close-shop" class="modal-btn" style="background:#475569;">Close</button>
-    </div>
-  </div>
-
-  <!-- Inventory & Customization Modal -->
-  <div id="modal-inventory" class="modal-overlay">
-    <div class="modal-card" style="max-height:85vh; overflow-y:auto;">
-      <h2 class="modal-title">🎁 Inventory & Wardrobe</h2>
-      <p class="modal-desc" style="text-align:center;">Customize Pawns, 3D Dice, and Board Theme</p>
-
-      <!-- 3D Live Rotating Preview Turntable -->
-      <div class="turntable-card" style="margin-bottom:10px;">
-        <canvas id="inv-turntable-canvas" width="280" height="145"></canvas>
-        <div class="turntable-badge" id="inv-turntable-item-title">3D Human Walking Pawn</div>
-        <div class="turntable-drag-hint">👆 Drag to spin 360°</div>
-      </div>
-
-      <div style="background:#0F172A; padding:10px; border-radius:12px; border:1px solid #38BDF8; margin-bottom:8px;">
-        <b style="color:#FBBF24; display:block; margin-bottom:6px;">♟ 3D Pawn Skins</b>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-          <button class="skin-btn" id="inv-skin-classic">♟ Classic</button>
-          <button class="skin-btn" id="inv-skin-human">🧍 3D Human</button>
-          <button class="skin-btn" id="inv-skin-knight">🛡️ Knights</button>
-          <button class="skin-btn" id="inv-skin-cyber">🤖 Cyber</button>
-        </div>
-      </div>
-
-      <div style="background:#0F172A; padding:10px; border-radius:12px; border:1px solid #38BDF8; margin-bottom:8px;">
-        <b style="color:#FBBF24; display:block; margin-bottom:6px;">🎲 3D Dice Skins</b>
-        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          <button class="modal-btn" id="skin-dice-white" style="flex:1; min-width:45%; padding:8px 4px; font-size:12px;">White Ivory</button>
-          <button class="modal-btn" id="skin-dice-gold" style="flex:1; min-width:45%; padding:8px 4px; font-size:12px;">Royal Gold</button>
-          <button class="modal-btn" id="skin-dice-neon" style="flex:1; min-width:45%; padding:8px 4px; font-size:12px;">Cyber Neon</button>
-          <button class="modal-btn" id="skin-dice-ruby" style="flex:1; min-width:45%; padding:8px 4px; font-size:12px;">Ruby Jewel</button>
-          <button class="modal-btn" id="skin-dice-emerald" style="flex:1; min-width:45%; padding:8px 4px; font-size:12px;">Emerald Jade</button>
-        </div>
-      </div>
-
-      <div style="background:#0F172A; padding:10px; border-radius:12px; border:1px solid #38BDF8;">
-        <b style="color:#FBBF24; display:block; margin-bottom:6px;">🎨 Board Themes</b>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-          <button class="modal-btn" id="theme-board-classic" style="padding:8px 4px; font-size:12px;">Classic Royal</button>
-          <button class="modal-btn" id="theme-board-wood" style="padding:8px 4px; font-size:12px;">Mahogany</button>
-          <button class="modal-btn" id="theme-board-cyber" style="padding:8px 4px; font-size:12px;">Cyber Neon</button>
-          <button class="modal-btn" id="theme-board-galaxy" style="padding:8px 4px; font-size:12px;">Galaxy Deep</button>
-        </div>
-      </div>
-
-      <div style="background:#0F172A; padding:10px; border-radius:12px; border:1px solid #38BDF8; margin-top:8px;">
-        <b style="color:#FBBF24; display:block; margin-bottom:6px;">🌌 Menu Background Theme</b>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-          <button class="modal-btn" id="menu-bg-blue" style="padding:6px; font-size:11px;">🔵 Space Blue</button>
-          <button class="modal-btn" id="menu-bg-sunset" style="padding:6px; font-size:11px;">🌅 Sunset Gold</button>
-          <button class="modal-btn" id="menu-bg-cyber" style="padding:6px; font-size:11px;">🏙️ Cyberpunk</button>
-          <button class="modal-btn" id="menu-bg-emerald" style="padding:6px; font-size:11px;">🌲 Emerald</button>
-        </div>
-      </div>
-
-      <button id="btn-close-inventory" class="modal-btn" style="background:#475569; margin-top:8px;">Close</button>
     </div>
   </div>
 
@@ -585,7 +659,6 @@
         <span style="font-size:11px; color:#94A3B8;" id="profile-level-text">Level 1 Pro Player</span>
       </div>
 
-      <!-- XP Progress Bar -->
       <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; margin-bottom:6px;">
         <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:4px;">
           <span>XP Progress</span>
@@ -605,37 +678,6 @@
       </div>
 
       <button id="btn-close-profile" class="modal-btn" style="background:#475569; margin-top:4px;">Close</button>
-    </div>
-  </div>
-
-  <!-- Daily Quests Modal -->
-  <div id="modal-quests" class="modal-overlay">
-    <div class="modal-card">
-      <h2 class="modal-title">📅 Daily Quests</h2>
-      <div class="modal-desc" style="display:flex; flex-direction:column; gap:8px;">
-        <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <b>🎲 Roll 3 Sixes</b>
-            <p style="font-size:11px; color:#94A3B8;" id="quest1-progress">Progress: 0 / 3</p>
-          </div>
-          <button class="modal-btn" id="btn-claim-quest1" style="padding:6px 10px; font-size:11px; background:#10B981;">500 🪙</button>
-        </div>
-        <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <b>💥 Capture 1 Token</b>
-            <p style="font-size:11px; color:#94A3B8;" id="quest2-progress">Progress: 0 / 1</p>
-          </div>
-          <button class="modal-btn" id="btn-claim-quest2" style="padding:6px 10px; font-size:11px; background:#10B981;">800 🪙</button>
-        </div>
-        <div style="background:#0F172A; padding:8px 10px; border-radius:12px; border:1px solid #38BDF8; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <b>🏆 Win 1 Match</b>
-            <p style="font-size:11px; color:#94A3B8;" id="quest3-progress">Progress: 0 / 1</p>
-          </div>
-          <button class="modal-btn" id="btn-claim-quest3" style="padding:6px 10px; font-size:11px; background:#10B981;">1,500 🪙</button>
-        </div>
-      </div>
-      <button id="btn-close-quests" class="modal-btn" style="background:#475569;">Close</button>
     </div>
   </div>
 
@@ -694,7 +736,6 @@
       <h2 id="winner-title" class="modal-title" style="color:#FBBF24;">Victory!</h2>
       <p id="winner-desc" class="modal-desc">Player 1 has achieved victory!</p>
 
-      <!-- Match Statistics Summary -->
       <div id="winner-stats-box" style="background:#0F172A; padding:10px 12px; border-radius:12px; border:1px solid #38BDF8; margin:6px 0; text-align:left; font-size:12px;">
         <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#CBD5E1;"><span>🎲 Total Turns:</span><b id="stat-turns" style="color:#38BDF8;">14</b></div>
         <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#CBD5E1;"><span>⚡ Sixes Rolled:</span><b id="stat-sixes" style="color:#F59E0B;">5</b></div>
@@ -715,13 +756,43 @@
 
       const diceUnicode = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
+      // 3D dice icon rendered as SVG (idle + rolled face)
+      const DICE_PIPS = {
+        1: [[20, 19]],
+        2: [[13, 12], [27, 26]],
+        3: [[13, 12], [20, 19], [27, 26]],
+        4: [[13, 12], [27, 12], [13, 26], [27, 26]],
+        5: [[13, 12], [27, 12], [20, 19], [13, 26], [27, 26]],
+        6: [[13, 11], [27, 11], [13, 19], [27, 19], [13, 27], [27, 27]]
+      };
+      const renderDiceIcon = (value) => {
+        const v = DICE_PIPS[value] ? value : 6;
+        const dots = DICE_PIPS[v]
+          .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.7" fill="#0F172A"/>`)
+          .join('');
+        diceDisplay.innerHTML =
+          '<svg width="42" height="42" viewBox="0 0 40 40" aria-hidden="true">' +
+            '<defs>' +
+              '<linearGradient id="diceFaceGrad" x1="0" y1="0" x2="1" y2="1">' +
+                '<stop offset="0%" stop-color="#FFFFFF"/>' +
+                '<stop offset="100%" stop-color="#CBD5E1"/>' +
+              '</linearGradient>' +
+            '</defs>' +
+            '<rect x="6" y="7" width="30" height="30" rx="7" fill="#64748B"/>' +
+            '<rect x="4" y="4" width="30" height="30" rx="7" fill="url(#diceFaceGrad)" stroke="#94A3B8" stroke-width="1.2"/>' +
+            dots +
+          '</svg>';
+      };
+
       // UI Element references
       const mainMenuEl = document.getElementById('main-menu');
       const uiOverlayEl = document.getElementById('ui-overlay');
       const toastEl = document.getElementById('center-toast');
       const diceSlot = document.getElementById('dice-slot');
       const diceDisplay = document.getElementById('dice-display');
+      const diceLabel = document.getElementById('dice-label');
       const tokenSelectorBar = document.getElementById('token-selector-bar');
+      renderDiceIcon(6);
 
       const soundBtn = document.getElementById('btn-sound');
       const cameraBtn = document.getElementById('btn-camera');
@@ -790,149 +861,6 @@
       const playClick = () => {
         if (window.soundEngine) window.soundEngine.playButtonClick();
       };
-
-      // ---- 3D Interactive Turntable Studio for Store & Inventory ----
-      class TurntableStudio {
-        constructor(canvasId, titleId, builder) {
-          this.canvas = document.getElementById(canvasId);
-          this.titleEl = document.getElementById(titleId);
-          this.builder = builder;
-          if (!this.canvas) return;
-
-          this.scene = new THREE.Scene();
-          this.camera = new THREE.PerspectiveCamera(38, this.canvas.width / this.canvas.height, 0.1, 50);
-          this.camera.position.set(0, 1.25, 3.4);
-          this.camera.lookAt(0, 0.65, 0);
-
-          this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
-          this.renderer.setSize(this.canvas.width, this.canvas.height);
-          this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-          const amb = new THREE.AmbientLight(0xFFFFFF, 0.95);
-          this.scene.add(amb);
-          const sun = new THREE.DirectionalLight(0xFFFBEB, 1.3);
-          sun.position.set(3, 6, 3);
-          this.scene.add(sun);
-          const rim = new THREE.DirectionalLight(0x38BDF8, 0.7);
-          rim.position.set(-3, 3, -3);
-          this.scene.add(rim);
-
-          const disc = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.85, 0.95, 0.08, 32),
-            new THREE.MeshStandardMaterial({ color: 0x0F172A, metalness: 0.8, roughness: 0.3 })
-          );
-          disc.position.y = -0.04;
-          this.scene.add(disc);
-
-          this.currentMesh = null;
-          this.rotationY = 0;
-          this.autoRotate = true;
-          this.isDragging = false;
-          this.lastX = 0;
-
-          this.canvas.addEventListener('pointerdown', (e) => {
-            this.isDragging = true;
-            this.autoRotate = false;
-            this.lastX = e.clientX;
-          });
-          window.addEventListener('pointermove', (e) => {
-            if (!this.isDragging) return;
-            const dx = e.clientX - this.lastX;
-            this.lastX = e.clientX;
-            this.rotationY += dx * 0.02;
-          });
-          window.addEventListener('pointerup', () => {
-            this.isDragging = false;
-            setTimeout(() => { if (!this.isDragging) this.autoRotate = true; }, 2000);
-          });
-
-          this.render = this.render.bind(this);
-          requestAnimationFrame(this.render);
-        }
-
-        showPawn(skinKey, titleStr) {
-          if (!this.builder || !this.scene) return;
-          if (this.currentMesh) this.scene.remove(this.currentMesh);
-          if (this.titleEl) this.titleEl.innerText = titleStr;
-          const mesh = this.builder.createTokenMesh('#2563EB', 0, 0, skinKey);
-          mesh.position.set(0, 0, 0);
-          mesh.scale.setScalar(1.2);
-          this.scene.add(mesh);
-          this.currentMesh = mesh;
-          this.rotationY = 0;
-        }
-
-        showDice(skinKey, titleStr) {
-          if (!this.builder || !this.scene) return;
-          if (this.currentMesh) this.scene.remove(this.currentMesh);
-          if (this.titleEl) this.titleEl.innerText = titleStr;
-          const mesh = this.builder.createDiceMesh(skinKey);
-          mesh.position.set(0, 0.65, 0);
-          mesh.scale.setScalar(1.0);
-          this.scene.add(mesh);
-          this.currentMesh = mesh;
-          this.rotationY = 0;
-        }
-
-        render() {
-          requestAnimationFrame(this.render);
-          if (this.autoRotate) {
-            this.rotationY += 0.012;
-          }
-          if (this.currentMesh) {
-            this.currentMesh.rotation.y = this.rotationY;
-          }
-          if (this.renderer && this.scene && this.camera) {
-            this.renderer.render(this.scene, this.camera);
-          }
-        }
-      }
-
-      const shopTurntable = new TurntableStudio('shop-turntable-canvas', 'shop-turntable-item-title', game.builder);
-      const invTurntable = new TurntableStudio('inv-turntable-canvas', 'inv-turntable-item-title', game.builder);
-
-      // Pawn skin store & inventory (persisted and applied live)
-      const pawnSkinsList = ['classic', 'human', 'knight', 'cyber'];
-      const skinLabels = {
-        classic: 'Classic Royal Pawns',
-        human: '3D Human Walking Pawns',
-        knight: 'Golden Knight Pawns',
-        cyber: 'Cyber Mecha Pawns'
-      };
-
-      const updateSkinUI = () => {
-        const curSkin = game.pawnSkin || 'classic';
-        pawnSkinsList.forEach(s => {
-          const shopBtn = document.getElementById(`skin-${s}`);
-          if (shopBtn) shopBtn.classList.toggle('equipped', s === curSkin);
-          const invBtn = document.getElementById(`inv-skin-${s}`);
-          if (invBtn) invBtn.classList.toggle('equipped', s === curSkin);
-        });
-        const label = document.getElementById('skin-equipped-label');
-        if (label) label.innerText = 'Equipped: ' + (skinLabels[curSkin] || curSkin);
-      };
-
-      pawnSkinsList.forEach(s => {
-        const shopBtn = document.getElementById(`skin-${s}`);
-        if (shopBtn) {
-          shopBtn.onclick = () => {
-            playClick();
-            game.setPawnSkin(s);
-            updateSkinUI();
-            shopTurntable.showPawn(s, skinLabels[s]);
-          };
-        }
-        const invBtn = document.getElementById(`inv-skin-${s}`);
-        if (invBtn) {
-          invBtn.onclick = () => {
-            playClick();
-            game.setPawnSkin(s);
-            updateSkinUI();
-            invTurntable.showPawn(s, skinLabels[s]);
-          };
-        }
-      });
-      updateSkinUI();
 
       // Show/Hide Main Menu vs Game Screen
       const showMainMenu = () => {
@@ -1126,9 +1054,6 @@
       });
 
       // ---- Daily Quests ----
-      const questsModal = document.getElementById('modal-quests');
-      document.getElementById('btn-close-quests').onclick = () => { playClick(); questsModal.style.display = 'none'; };
-
       window.claimQuest = (id, coins) => {
         playClick();
         window.addCoins(coins);
@@ -1154,15 +1079,6 @@
         };
       }
 
-      const emojiEmoteMap = {
-        '😂': 'laugh',
-        '😡': 'angry',
-        '😭': 'sad',
-        '👍': 'cool',
-        '😎': 'cool',
-        '🎉': 'cheer'
-      };
-
       const triggerBubble = (textStr) => {
         playClick();
         emojiPanel.style.display = 'none';
@@ -1172,9 +1088,6 @@
         floatingBubble.offsetHeight; // trigger reflow
         floatingBubble.style.animation = 'floatBubble 1.8s ease-out forwards';
         setTimeout(() => { floatingBubble.style.display = 'none'; }, 1800);
-
-        const emote = emojiEmoteMap[textStr] || 'cheer';
-        game.triggerPlayerEmote(0, emote);
       };
 
       ['1', '2', '3', '4', '5', '6'].forEach(i => {
@@ -1189,15 +1102,9 @@
       // Header / Side Reward Clicks
       document.getElementById('menu-btn-settings').onclick = () => { playClick(); settingsModal.style.display = 'flex'; };
       document.getElementById('menu-btn-mail').onclick = () => { playClick(); mailModal.style.display = 'flex'; };
-
-      const openShop = () => {
-        playClick();
-        shopModal.style.display = 'flex';
-        shopTurntable.showPawn(game.pawnSkin || 'classic', skinLabels[game.pawnSkin || 'classic'] || 'Classic Royal');
-      };
-      document.getElementById('menu-btn-shop').onclick = openShop;
-      document.getElementById('menu-btn-coins').onclick = openShop;
-      document.getElementById('menu-btn-diamonds').onclick = openShop;
+      document.getElementById('menu-btn-shop').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
+      document.getElementById('menu-btn-coins').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
+      document.getElementById('menu-btn-diamonds').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
       document.getElementById('menu-btn-free-chest').onclick = () => {
         playClick();
         window.addCoins(500);
@@ -1292,6 +1199,30 @@
         game.setCameraPreset(next);
         document.getElementById('setting-camera-label').innerText = next === 'top' ? 'Top-Down' : '3D View';
       };
+
+      // ---- Volume Sliders (SFX & BGM) ----
+      const sfxSlider = document.getElementById('slider-sfx-vol');
+      const bgmSlider = document.getElementById('slider-bgm-vol');
+
+      if (sfxSlider && window.soundEngine) {
+        sfxSlider.value = window.soundEngine.sfxVolume;
+        document.getElementById('label-sfx-vol').innerText = `${Math.round(window.soundEngine.sfxVolume * 100)}%`;
+        sfxSlider.oninput = (e) => {
+          const val = parseFloat(e.target.value);
+          window.soundEngine.setSFXVolume(val);
+          document.getElementById('label-sfx-vol').innerText = `${Math.round(val * 100)}%`;
+        };
+      }
+
+      if (bgmSlider && window.soundEngine) {
+        bgmSlider.value = window.soundEngine.bgmVolume;
+        document.getElementById('label-bgm-vol').innerText = `${Math.round(window.soundEngine.bgmVolume * 100)}%`;
+        bgmSlider.oninput = (e) => {
+          const val = parseFloat(e.target.value);
+          window.soundEngine.setBGMVolume(val);
+          document.getElementById('label-bgm-vol').innerText = `${Math.round(val * 100)}%`;
+        };
+      }
       document.getElementById('btn-setting-exit').onclick = () => {
         playClick();
         if (window.AndroidBridge && window.AndroidBridge.exitApp) {
@@ -1299,70 +1230,173 @@
         }
       };
 
-      // ---- Inventory & Customization Modal ----
-      const inventoryModal = document.getElementById('modal-inventory');
-      document.getElementById('btn-close-inventory').onclick = () => { playClick(); inventoryModal.style.display = 'none'; };
+      // ---- System Logs page (debugging) ----
+      const systemLogsPage = document.getElementById('system-logs-page');
+      const systemLogsList = document.getElementById('system-logs-list');
 
-      const updateDiceSkinUI = (skin) => {
-        ['white', 'gold', 'neon', 'ruby', 'emerald'].forEach(s => {
-          const btn = document.getElementById(`skin-dice-${s}`);
-          if (btn) btn.style.background = (s === skin) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      updateDiceSkinUI(game.diceSkin);
+      const escapeLogHtml = (s) => String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-      const diceSkinNames = {
-        white: 'White Ivory',
-        gold: 'Royal Gold',
-        neon: 'Cyber Neon',
-        ruby: 'Ruby Jewel',
-        emerald: 'Emerald Jade'
-      };
-
-      ['white', 'gold', 'neon', 'ruby', 'emerald'].forEach(s => {
-        const btn = document.getElementById(`skin-dice-${s}`);
-        if (btn) btn.onclick = () => {
-          playClick();
-          game.setDiceSkin(s);
-          updateDiceSkinUI(s);
-          invTurntable.showDice(s, `${diceSkinNames[s] || s} 3D Dice`);
-        };
-      });
-
-      const updateBoardThemeUI = (theme) => {
-        ['classic', 'wood', 'cyber', 'galaxy'].forEach(t => {
-          const btn = document.getElementById(`theme-board-${t}`);
-          if (btn) btn.style.background = (t === theme) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      updateBoardThemeUI(game.boardTheme);
-
-      ['classic', 'wood', 'cyber', 'galaxy'].forEach(t => {
-        const btn = document.getElementById(`theme-board-${t}`);
-        if (btn) btn.onclick = () => {
-          playClick();
-          game.setBoardTheme(t);
-          updateBoardThemeUI(t);
-        };
-      });
-
-      const setMenuBackground = (bgName) => {
-        try { localStorage.setItem('ludoSpark.menuBg', bgName); } catch (e) {}
-        mainMenuEl.classList.remove('menu-bg-sunset', 'menu-bg-cyber', 'menu-bg-emerald');
-        if (bgName !== 'blue') {
-          mainMenuEl.classList.add(`menu-bg-${bgName}`);
+      const renderSystemLogs = () => {
+        const entries = (window.SysLogs && window.SysLogs.get()) || [];
+        const native = (window.SysLogs && window.SysLogs.native()) || '';
+        let html = '';
+        if (native) {
+          html += '<div class="log-entry error"><div class="log-meta">ANDROID / APK</div><div class="log-msg">' +
+            escapeLogHtml(native) + '</div></div>';
         }
-        ['blue', 'sunset', 'cyber', 'emerald'].forEach(b => {
-          const btn = document.getElementById(`menu-bg-${b}`);
-          if (btn) btn.style.background = (b === bgName) ? '#3B82F6' : '#1E293B';
+        entries.forEach((l) => {
+          const cls = (l.type.indexOf('error') >= 0 || l.type === 'promise') ? 'error'
+            : (l.type === 'console.warn' ? 'warn' : 'info');
+          html += '<div class="log-entry ' + cls + '">' +
+            '<div class="log-meta">' + escapeLogHtml(l.t) + ' · ' + escapeLogHtml(l.type) + '</div>' +
+            '<div class="log-msg">' + escapeLogHtml(l.message) + '</div>' +
+            (l.stack ? '<pre>' + escapeLogHtml(l.stack) + '</pre>' : '') +
+            '</div>';
+        });
+        systemLogsList.innerHTML = html || '<p class="log-empty">No errors logged yet 🎉</p>';
+      };
+
+      document.getElementById('btn-open-system-logs').onclick = () => {
+        playClick();
+        renderSystemLogs();
+        systemLogsPage.style.display = 'flex';
+      };
+      document.getElementById('btn-close-system-logs').onclick = () => { playClick(); systemLogsPage.style.display = 'none'; };
+      document.getElementById('btn-logs-close-bottom').onclick = () => { playClick(); systemLogsPage.style.display = 'none'; };
+
+      document.getElementById('btn-clear-logs').onclick = () => {
+        playClick();
+        if (window.SysLogs) window.SysLogs.clear();
+        try {
+          if (window.AndroidBridge && window.AndroidBridge.clearCrashLogs) {
+            window.AndroidBridge.clearCrashLogs();
+          }
+        } catch (e) { /* ignore */ }
+        renderSystemLogs();
+      };
+
+      document.getElementById('btn-copy-logs').onclick = () => {
+        playClick();
+        const text = window.SysLogs ? window.SysLogs.formatAll() : '';
+        const done = () => alert('📄 Logs copied to clipboard!');
+        const fallbackCopy = () => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) { /* ignore */ }
+          document.body.removeChild(ta);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+        } else {
+          fallbackCopy();
+        }
+      };
+
+      if (window.SysLogs) window.SysLogs.push('info', 'App UI initialized');
+
+      // ---- Full-Screen Multi-Page Navigation ----
+      const navTabs = ['home', 'event', 'adda', 'inventory', 'social'];
+      const openPage = (pageName) => {
+        navTabs.forEach(t => {
+          const pageEl = document.getElementById(`page-${t}`);
+          const tabBtn = document.getElementById(`nav-tab-${t}`);
+          if (pageEl) pageEl.classList.toggle('active', t === pageName);
+          if (tabBtn) tabBtn.classList.toggle('active', t === pageName);
         });
       };
-      setMenuBackground(localStorage.getItem('ludoSpark.menuBg') || 'blue');
 
-      ['blue', 'sunset', 'cyber', 'emerald'].forEach(b => {
-        const btn = document.getElementById(`menu-bg-${b}`);
-        if (btn) btn.onclick = () => { playClick(); setMenuBackground(b); };
-      });
+      document.getElementById('nav-tab-home').onclick = () => { playClick(); openPage('home'); };
+      document.getElementById('nav-tab-event').onclick = () => { playClick(); openPage('event'); };
+      document.getElementById('nav-tab-adda').onclick = () => { playClick(); openPage('adda'); };
+      document.getElementById('nav-tab-inventory').onclick = () => { playClick(); openPage('inventory'); renderInventoryGrid('pawns'); };
+      document.getElementById('nav-tab-social').onclick = () => { playClick(); openPage('social'); };
+
+      // ---- Professional AAA Inventory & Wardrobe Studio Renderer ----
+      let currentInvCategory = 'pawns';
+      const inventoryData = {
+        pawns: [
+          { id: 'classic', title: 'Classic Royal', desc: 'Standard 3D Pawns', rarity: 'common', type: 'pawn' },
+          { id: 'human', title: '3D Human Walkers', desc: 'Walking Characters', rarity: 'rare', type: 'pawn' },
+          { id: 'knight', title: 'Golden Knights', desc: 'Armor Shield Pawns', rarity: 'epic', type: 'pawn' },
+          { id: 'cyber', title: 'Cyber Mecha', desc: 'Glowing Futuristic Pawns', rarity: 'legendary', type: 'pawn' }
+        ],
+        dice: [
+          { id: 'white', title: 'White Ivory', desc: 'Clean Glossy Die', rarity: 'common', type: 'dice' },
+          { id: 'gold', title: 'Royal Gold', desc: 'Metallic Gold Die', rarity: 'rare', type: 'dice' },
+          { id: 'neon', title: 'Cyber Neon', desc: 'Cyan Glowing Die', rarity: 'epic', type: 'dice' },
+          { id: 'ruby', title: 'Ruby Jewel', desc: 'Translucent Red Die', rarity: 'epic', type: 'dice' },
+          { id: 'emerald', title: 'Emerald Jade', desc: 'Jade Green Die', rarity: 'legendary', type: 'dice' }
+        ],
+        boards: [
+          { id: 'classic', title: 'Classic Royal', desc: 'Vibrant Blue Board', rarity: 'common', type: 'board' },
+          { id: 'wood', title: 'Mahogany Wood', desc: 'Rich Polished Wood', rarity: 'rare', type: 'board' },
+          { id: 'cyber', title: 'Cyberpunk Neon', desc: 'Futuristic Grid', rarity: 'epic', type: 'board' },
+          { id: 'galaxy', title: 'Galaxy Deep', desc: 'Cosmic Starry Board', rarity: 'legendary', type: 'board' }
+        ],
+        bg: [
+          { id: 'blue', title: 'Space Blue', desc: 'Deep Cosmic Blue', rarity: 'common', type: 'bg' },
+          { id: 'sunset', title: 'Sunset Gold', desc: 'Warm Golden Glow', rarity: 'rare', type: 'bg' },
+          { id: 'cyber', title: 'Cyberpunk City', desc: 'Purple Neon City', rarity: 'epic', type: 'bg' },
+          { id: 'emerald', title: 'Emerald Forest', desc: 'Emerald Night', rarity: 'legendary', type: 'bg' }
+        ]
+      };
+
+      const renderInventoryGrid = (categoryName) => {
+        currentInvCategory = categoryName;
+        ['pawns', 'dice', 'boards', 'bg'].forEach(c => {
+          const btn = document.getElementById(`filter-${c}`);
+          if (btn) btn.classList.toggle('active', c === categoryName);
+        });
+
+        const gridEl = document.getElementById('inventory-items-grid');
+        if (!gridEl) return;
+
+        const items = inventoryData[categoryName] || [];
+        let html = '';
+
+        items.forEach(item => {
+          let isEquipped = false;
+          if (item.type === 'pawn') isEquipped = (game.pawnSkin === item.id);
+          else if (item.type === 'dice') isEquipped = (game.diceSkin === item.id);
+          else if (item.type === 'board') isEquipped = (game.boardTheme === item.id);
+          else if (item.type === 'bg') isEquipped = (localStorage.getItem('ludoSpark.menuBg') || 'blue') === item.id;
+
+          const equippedClass = isEquipped ? 'item-card-3d equipped' : 'item-card-3d';
+          const btnText = isEquipped ? 'EQUIPPED ✓' : 'EQUIP';
+          const btnClass = isEquipped ? 'equip-btn btn-active' : 'equip-btn btn-equip';
+
+          html += `<div class="${equippedClass}">
+            <span class="rarity-tag rarity-${item.rarity}">${item.rarity}</span>
+            <div class="item-preview-box">✨</div>
+            <div class="item-title">${item.title}</div>
+            <div class="item-desc">${item.desc}</div>
+            <button class="${btnClass}" onclick="window.handleEquipItem('${item.type}', '${item.id}')">${btnText}</button>
+          </div>`;
+        });
+
+        gridEl.innerHTML = html;
+      };
+
+      window.handleEquipItem = (type, id) => {
+        playClick();
+        if (type === 'pawn') game.setPawnSkin(id);
+        else if (type === 'dice') game.setDiceSkin(id);
+        else if (type === 'board') game.setBoardTheme(id);
+        else if (type === 'bg') {
+          localStorage.setItem('ludoSpark.menuBg', id);
+          mainMenuEl.classList.remove('menu-bg-sunset', 'menu-bg-cyber', 'menu-bg-emerald');
+          if (id !== 'blue') mainMenuEl.classList.add(`menu-bg-${id}`);
+        }
+        renderInventoryGrid(currentInvCategory);
+      };
+
+      document.getElementById('filter-pawns').onclick = () => { playClick(); renderInventoryGrid('pawns'); };
+      document.getElementById('filter-dice').onclick = () => { playClick(); renderInventoryGrid('dice'); };
+      document.getElementById('filter-boards').onclick = () => { playClick(); renderInventoryGrid('boards'); };
+      document.getElementById('filter-bg').onclick = () => { playClick(); renderInventoryGrid('bg'); };
 
       // Start BGM
       window.soundEngine.startBGM();
@@ -1377,7 +1411,6 @@
       document.getElementById('btn-close-mail').onclick = () => { playClick(); mailModal.style.display = 'none'; };
       document.getElementById('btn-close-shop').onclick = () => { playClick(); shopModal.style.display = 'none'; };
 
-      // Nav Tabs
       const openNavInfo = (title, desc, icon = '✨') => {
         playClick();
         document.getElementById('nav-info-title').innerText = title;
@@ -1387,16 +1420,6 @@
       };
 
       document.getElementById('btn-close-nav-info').onclick = () => { playClick(); navInfoModal.style.display = 'none'; };
-
-      document.getElementById('nav-tab-home').onclick = () => { playClick(); showMainMenu(); };
-      document.getElementById('nav-tab-event').onclick = () => { playClick(); questsModal.style.display = 'flex'; };
-      document.getElementById('nav-tab-adda').onclick = () => openNavInfo('🎙️ Voice Adda Chat', 'Chat with voice & animated emojis in real-time with Ludo players around the world!', '🎙️');
-      document.getElementById('nav-tab-inventory').onclick = () => {
-        playClick();
-        inventoryModal.style.display = 'flex';
-        invTurntable.showPawn(game.pawnSkin || 'classic', skinLabels[game.pawnSkin || 'classic'] || 'Classic Royal');
-      };
-      document.getElementById('nav-tab-social').onclick = () => openNavInfo('💬 Social & Friends', 'Invite Facebook & WhatsApp friends to play together on private tables!', '💬');
 
       // ---- In-Game Pause / Home buttons ----
       document.getElementById('btn-back-header').onclick = () => {
@@ -1442,63 +1465,18 @@
         document.getElementById('corner-p4')
       ];
 
-      // ---- Circular 15s Turn Timer HUD Updates ----
-      window.onTimerUpdate = (activePlayerId, remainingSec, totalSec) => {
-        const sec = Math.ceil(remainingSec);
-        [0, 1, 2, 3].forEach(idx => {
-          const ringEl = document.getElementById(`timer-ring-${idx}`);
-          const fillEl = document.getElementById(`timer-fill-${idx}`);
-          const badgeEl = document.getElementById(`timer-badge-${idx}`);
-          if (!ringEl || !fillEl || !badgeEl) return;
-
-          if (idx === activePlayerId && game.timerActive && remainingSec > 0) {
-            ringEl.style.display = 'block';
-            badgeEl.style.display = 'flex';
-
-            const circumference = 201.06; // 2 * PI * 32
-            const fraction = Math.max(0, Math.min(1, remainingSec / totalSec));
-            const offset = (1.0 - fraction) * circumference;
-            fillEl.style.strokeDashoffset = offset;
-            badgeEl.innerText = sec;
-
-            if (remainingSec <= 5) {
-              fillEl.classList.add('warning');
-              badgeEl.classList.add('warning');
-            } else {
-              fillEl.classList.remove('warning');
-              badgeEl.classList.remove('warning');
-            }
-          } else {
-            ringEl.style.display = 'none';
-            badgeEl.style.display = 'none';
-          }
-        });
-      };
-
       // ---- Handle Game State updates ----
       window.onGameStateChanged = (data) => {
         const { activePlayer, state, currentRoll, history, isGameOver } = data;
         const progress = data.playerProgress || [];
         const numPlayers = data.numPlayers || 4;
 
-        if (state !== 'WAIT_ROLL' && state !== 'WAIT_SELECT') {
-          [0, 1, 2, 3].forEach(idx => {
-            const ringEl = document.getElementById(`timer-ring-${idx}`);
-            const badgeEl = document.getElementById(`timer-badge-${idx}`);
-            if (ringEl) ringEl.style.display = 'none';
-            if (badgeEl) badgeEl.style.display = 'none';
-          });
-        }
-
         cornerEls.forEach((el, idx) => {
           if (el) el.style.display = (idx < numPlayers) ? '' : 'none';
         });
 
-        // Move the dice slot next to whichever player is currently active
         const activeCorner = cornerEls[activePlayer.id];
-        if (activeCorner && diceSlot.parentElement !== activeCorner) {
-          activeCorner.appendChild(diceSlot);
-        }
+        // Dice now lives in a fixed bottom-center dock; corners only show avatars
 
         avatarBoxes.forEach((box, idx) => {
           if (box) {
@@ -1512,29 +1490,31 @@
 
         if (state === 'ROLLING') {
           diceSlot.classList.add('rolling');
-          diceDisplay.innerText = '🎲';
-          pointingHand.style.display = 'none';
+          diceSlot.classList.remove('waiting');
+          renderDiceIcon(currentRoll);
           toastEl.innerText = `${activePlayer.name} rolling...`;
         } else {
           diceSlot.classList.remove('rolling');
-          if (currentRoll >= 1 && currentRoll <= 6) {
-            diceDisplay.innerText = diceUnicode[currentRoll] || currentRoll;
-          } else {
-            diceDisplay.innerText = '⚡';
-          }
+          renderDiceIcon(currentRoll >= 1 && currentRoll <= 6 ? currentRoll : 6);
+        }
+
+        // Dice frame keeps blinking until the player rolls
+        diceSlot.classList.toggle('waiting', state === 'WAIT_ROLL');
+        if (diceLabel) {
+          diceLabel.innerText =
+            state === 'WAIT_ROLL' ? (activePlayer.isAI ? 'AI TURN' : 'TAP TO ROLL') :
+            state === 'ROLLING' ? 'ROLLING...' :
+            state === 'WAIT_SELECT' ? 'PICK A TOKEN' :
+            state === 'MOVING' ? 'MOVING...' :
+            state === 'GAME_OVER' ? 'GAME OVER' : '';
         }
 
         if (state === 'WAIT_ROLL') {
           tokenSelectorBar.style.display = 'none';
-          if (!activePlayer.isAI) {
-            pointingHand.style.display = 'block';
-            toastEl.innerText = 'Your Turn: Tap Dice to Roll!';
-          } else {
-            pointingHand.style.display = 'none';
-            toastEl.innerText = `${activePlayer.name} (AI) thinking...`;
-          }
+          toastEl.innerText = activePlayer.isAI
+            ? `${activePlayer.name} (AI) thinking...`
+            : 'Your Turn: Tap the Dice to Roll!';
         } else if (state === 'WAIT_SELECT') {
-          pointingHand.style.display = 'none';
           toastEl.innerText = activePlayer.isAI ? 'AI selecting token...' : `Rolled ${currentRoll}! Tap token to move`;
 
           tokenSelectorBar.innerHTML = '';
@@ -1554,11 +1534,9 @@
             tokenSelectorBar.style.display = 'none';
           }
         } else if (state === 'MOVING') {
-          pointingHand.style.display = 'none';
           tokenSelectorBar.style.display = 'none';
           toastEl.innerText = `${activePlayer.name} moving...`;
         } else if (state === 'GAME_OVER') {
-          pointingHand.style.display = 'none';
           tokenSelectorBar.style.display = 'none';
           const winnerName = data.finishedPlayers[0] || 'Champion';
           document.getElementById('winner-title').innerText = `${winnerName} Wins!`;
@@ -1568,12 +1546,20 @@
         }
       };
 
-      // Tapping the Dice Slot triggers roll
-      diceSlot.addEventListener('click', () => {
+      // Initialize HUD with current state (dice blink, labels)
+      game.notifyUI();
+
+      // Tapping the Dice Dock triggers roll
+      const tryRoll = () => {
         if (game.state === 'WAIT_ROLL' && !game.playerConfigs[game.activePlayerIndex].isAI) {
           game.handleRoll();
         }
-      });
+      };
+      diceSlot.addEventListener('pointerdown', (e) => {
+        if (e.cancelable) e.preventDefault();
+        tryRoll();
+      }, { passive: false });
+      diceSlot.addEventListener('click', tryRoll);
 
       // In-game header buttons
       soundBtn.onclick = () => {

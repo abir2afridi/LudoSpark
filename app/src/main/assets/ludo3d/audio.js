@@ -1,12 +1,18 @@
 /**
  * High-quality procedural sound synthesizer & Background Music (BGM) engine using Web Audio API.
- * Completely self-contained: works offline without any external audio files.
+ * Completely self-contained: works offline with independent SFX & BGM Volume Controls.
  */
 class SoundEngine {
   constructor() {
     this.ctx = null;
     this.enabled = true;
     this.bgmEnabled = true;
+
+    // Independent Volume Sliders [0.0 .. 1.0]
+    const ls = typeof localStorage !== 'undefined' ? localStorage : null;
+    this.sfxVolume = parseFloat((ls && ls.getItem('ludoSpark.sfxVol')) || '0.8');
+    this.bgmVolume = parseFloat((ls && ls.getItem('ludoSpark.bgmVol')) || '0.5');
+
     this.bgmTimer = null;
     this.bgmStep = 0;
   }
@@ -23,12 +29,21 @@ class SoundEngine {
     }
   }
 
+  setSFXVolume(val) {
+    this.sfxVolume = Math.max(0, Math.min(1, val));
+    try { localStorage.setItem('ludoSpark.sfxVol', this.sfxVolume); } catch (e) {}
+  }
+
+  setBGMVolume(val) {
+    this.bgmVolume = Math.max(0, Math.min(1, val));
+    try { localStorage.setItem('ludoSpark.bgmVol', this.bgmVolume); } catch (e) {}
+  }
+
   // ---- Background Music Loop (Procedural Melody) ----
   startBGM() {
     this.init();
     if (this.bgmTimer) return;
 
-    // Smooth gentle chord melody sequence (C major pentatonic / ludo folk style)
     const melody = [
       [261.63, 329.63, 392.00], // C
       [293.66, 349.23, 440.00], // Dm
@@ -41,7 +56,7 @@ class SoundEngine {
     ];
 
     this.bgmTimer = setInterval(() => {
-      if (!this.enabled || !this.bgmEnabled || !this.ctx) return;
+      if (!this.enabled || !this.bgmEnabled || !this.ctx || this.bgmVolume <= 0.01) return;
       try {
         const t = this.ctx.currentTime;
         const chord = melody[this.bgmStep % melody.length];
@@ -53,7 +68,8 @@ class SoundEngine {
           osc.type = i === 0 ? 'sine' : 'triangle';
           osc.frequency.setValueAtTime(freq * 0.5, t);
 
-          gain.gain.setValueAtTime(0.025, t);
+          const vol = 0.05 * this.bgmVolume;
+          gain.gain.setValueAtTime(vol, t);
           gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
 
           osc.connect(gain);
@@ -75,7 +91,7 @@ class SoundEngine {
   // ---- Sound Effects ----
   playDiceTumble() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
@@ -90,7 +106,7 @@ class SoundEngine {
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(400 + Math.random() * 200, t);
 
-      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.setValueAtTime(0.25 * this.sfxVolume, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
 
       osc.connect(filter);
@@ -104,17 +120,16 @@ class SoundEngine {
 
   playSixRoll() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
-      // High excitement double ding
       [880, 1320, 1760].forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, t + idx * 0.05);
 
-        gain.gain.setValueAtTime(0.25, t + idx * 0.05);
+        gain.gain.setValueAtTime(0.25 * this.sfxVolume, t + idx * 0.05);
         gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.05 + 0.3);
 
         osc.connect(gain);
@@ -127,7 +142,7 @@ class SoundEngine {
 
   playTokenHop(stepIndex = 0) {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
@@ -138,7 +153,7 @@ class SoundEngine {
       osc.frequency.setValueAtTime(baseFreq * 1.5, t);
       osc.frequency.exponentialRampToValueAtTime(baseFreq, t + 0.05);
 
-      gain.gain.setValueAtTime(0.22, t);
+      gain.gain.setValueAtTime(0.22 * this.sfxVolume, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
 
       osc.connect(gain);
@@ -151,7 +166,7 @@ class SoundEngine {
 
   playCapture() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
@@ -160,7 +175,7 @@ class SoundEngine {
       osc.frequency.setValueAtTime(480, t);
       osc.frequency.exponentialRampToValueAtTime(90, t + 0.28);
 
-      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.setValueAtTime(0.35 * this.sfxVolume, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
 
       osc.connect(gain);
@@ -168,7 +183,6 @@ class SoundEngine {
       osc.start(t);
       osc.stop(t + 0.29);
 
-      // Noise burst
       const bufferSize = this.ctx.sampleRate * 0.1;
       const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -178,7 +192,7 @@ class SoundEngine {
       const noise = this.ctx.createBufferSource();
       noise.buffer = buffer;
       const nGain = this.ctx.createGain();
-      nGain.gain.setValueAtTime(0.3, t);
+      nGain.gain.setValueAtTime(0.3 * this.sfxVolume, t);
       nGain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
       noise.connect(nGain);
       nGain.connect(this.ctx.destination);
@@ -188,7 +202,7 @@ class SoundEngine {
 
   playSafeSpot() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       [659.25, 987.77].forEach((f, idx) => {
@@ -197,7 +211,7 @@ class SoundEngine {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(f, t + idx * 0.06);
 
-        gain.gain.setValueAtTime(0.2, t + idx * 0.06);
+        gain.gain.setValueAtTime(0.2 * this.sfxVolume, t + idx * 0.06);
         gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.06 + 0.35);
 
         osc.connect(gain);
@@ -210,7 +224,7 @@ class SoundEngine {
 
   playTokenHome() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const notes = [523.25, 659.25, 783.99, 1046.50];
@@ -220,7 +234,7 @@ class SoundEngine {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, t + idx * 0.08);
 
-        gain.gain.setValueAtTime(0.25, t + idx * 0.08);
+        gain.gain.setValueAtTime(0.25 * this.sfxVolume, t + idx * 0.08);
         gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.08 + 0.4);
 
         osc.connect(gain);
@@ -233,7 +247,7 @@ class SoundEngine {
 
   playVictory() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const melody = [
@@ -249,7 +263,7 @@ class SoundEngine {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(item.f, t + offset);
 
-        gain.gain.setValueAtTime(0.3, t + offset);
+        gain.gain.setValueAtTime(0.3 * this.sfxVolume, t + offset);
         gain.gain.exponentialRampToValueAtTime(0.001, t + offset + item.d + 0.1);
 
         osc.connect(gain);
@@ -263,7 +277,7 @@ class SoundEngine {
 
   playButtonClick() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
@@ -271,7 +285,7 @@ class SoundEngine {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(800, t);
       osc.frequency.exponentialRampToValueAtTime(400, t + 0.03);
-      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.setValueAtTime(0.15 * this.sfxVolume, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
@@ -282,7 +296,7 @@ class SoundEngine {
 
   playTick(isWarning = false) {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
@@ -290,7 +304,7 @@ class SoundEngine {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(isWarning ? 1200 : 750, t);
       osc.frequency.exponentialRampToValueAtTime(300, t + 0.04);
-      gain.gain.setValueAtTime(isWarning ? 0.22 : 0.12, t);
+      gain.gain.setValueAtTime((isWarning ? 0.22 : 0.12) * this.sfxVolume, t);
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
       osc.connect(gain);
       gain.connect(this.ctx.destination);
@@ -301,7 +315,7 @@ class SoundEngine {
 
   playBlast() {
     this.init();
-    if (!this.enabled || !this.ctx) return;
+    if (!this.enabled || !this.ctx || this.sfxVolume <= 0.01) return;
     try {
       const t = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
@@ -309,7 +323,7 @@ class SoundEngine {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(280, t);
       osc.frequency.exponentialRampToValueAtTime(40, t + 0.25);
-      gain.gain.setValueAtTime(0.4, t);
+      gain.gain.setValueAtTime(0.4 * this.sfxVolume, t);
       gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
       osc.connect(gain);
       gain.connect(this.ctx.destination);

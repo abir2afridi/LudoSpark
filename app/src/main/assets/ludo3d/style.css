@@ -1432,3 +1432,126 @@ body, html {
   0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
   100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
 }
+
+/* ---- Fixed bottom-center dice dock ---- */
+#dice-dock {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  pointer-events: auto;
+  z-index: 35;
+}
+
+#dice-dock .dice-slot {
+  width: 70px;
+  height: 70px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #FFFFFF 0%, #DCE6F2 100%);
+  border: 3px solid #38BDF8;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.55), 0 0 20px rgba(56,189,248,0.5);
+  touch-action: manipulation;
+  z-index: 30;
+}
+
+.dice-label {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.4px;
+  color: #7DD3FC;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+  white-space: nowrap;
+}
+
+/* Dice frame blinks until the player taps to roll */
+#dice-dock .dice-slot.waiting {
+  border-color: #FBBF24;
+  animation: diceWaitBlink 0.9s infinite ease-in-out;
+}
+
+@keyframes diceWaitBlink {
+  0%, 100% {
+    box-shadow: 0 10px 24px rgba(0,0,0,0.55), 0 0 8px rgba(251,191,36,0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 10px 24px rgba(0,0,0,0.55), 0 0 26px rgba(251,191,36,1), 0 0 44px rgba(251,191,36,0.55);
+    transform: scale(1.09);
+  }
+}
+
+/* ---- Full-screen Settings & System Logs ---- */
+#modal-menu-settings.settings-page,
+#system-logs-page.settings-page {
+  background: radial-gradient(circle at 50% 20%, #0D3280 0%, #06184D 55%, #020B2A 100%);
+  backdrop-filter: none;
+  padding: 0;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+
+#modal-menu-settings.settings-page .modal-card,
+#system-logs-page.settings-page .modal-card {
+  max-width: none;
+  width: 100%;
+  min-height: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 18px 20px 28px;
+  gap: 12px;
+}
+
+.settings-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-back-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #FEF3C7;
+  background: linear-gradient(180deg, #F59E0B 0%, #B45309 100%);
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.5);
+}
+
+.system-logs-list {
+  flex: 1;
+  min-height: 240px;
+  max-height: 58vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(2,11,42,0.6);
+  border: 1px solid #1E293B;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.log-entry {
+  background: #0F172A;
+  border-left: 3px solid #38BDF8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #CBD5E1;
+}
+.log-entry.error { border-left-color: #EF4444; }
+.log-entry.warn { border-left-color: #F59E0B; }
+.log-meta { color: #64748B; font-size: 9px; margin-bottom: 3px; }
+.log-msg { white-space: pre-wrap; word-break: break-word; }
+.log-entry pre { white-space: pre-wrap; word-break: break-word; font-size: 9px; color: #94A3B8; margin-top: 4px; max-height: 140px; overflow: auto; }
+.log-empty { text-align: center; color: #64748B; font-size: 13px; padding: 30px 0; }
