@@ -203,7 +203,7 @@ class LudoGame {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
 
-    const boardExtent = 20.2; // total board width including trim and margin
+    const boardExtent = 22.8; // comfortably frames the entire board and the 4 corner 3D characters
     const vFovRad = (this.camera.fov * Math.PI) / 180;
     const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
 
@@ -226,13 +226,12 @@ class LudoGame {
       this.camera.lookAt(0, 0, 0.2);
     } else {
       // Default: Pure Screen Fit 3D
-      // Elevation angle 74 degrees provides gorgeous 3D token and dice perspective
-      // while keeping the entire board completely framed on mobile.
-      const angleRad = (74 * Math.PI) / 180;
+      // Elevation angle 70 degrees provides gorgeous 3D perspective of board, characters, and tokens
+      const angleRad = (70 * Math.PI) / 180;
       const camY = requiredDist * Math.sin(angleRad);
       const camZ = requiredDist * Math.cos(angleRad);
       this.camera.position.set(0, camY, camZ);
-      this.camera.lookAt(0, 0, 0.35);
+      this.camera.lookAt(0, 0, 0.25);
     }
   }
 
@@ -320,6 +319,10 @@ class LudoGame {
    * Calculates 3D world coordinate for a token based on its step
    */
   getTokenWorldPos(token) {
+    if (this.gameMode === 'SNAKE') {
+      const pos = this.builder.snakeCellToWorld(token.step || 1);
+      return new THREE.Vector3(pos.x, 0.36, pos.z);
+    }
     const p = token.player;
     if (token.step === 0) {
       // In yard nest
@@ -401,11 +404,15 @@ class LudoGame {
 
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
-      // 1. Tapping dice to roll
+      // 1. Tapping dice to roll (or tapping active 3D character holding the dice)
       if (this.state === 'WAIT_ROLL') {
         const activeCfg = this.playerConfigs[this.activePlayerIndex];
         if (!activeCfg.isAI) {
-          const intersects = this.raycaster.intersectObject(this.diceMesh);
+          const targets = [this.diceMesh];
+          if (this.characters && this.characters.chars[this.activePlayerIndex]) {
+            targets.push(this.characters.chars[this.activePlayerIndex].group);
+          }
+          const intersects = this.raycaster.intersectObjects(targets, true);
           if (intersects.length > 0) {
             this.handleRoll();
             return;
@@ -542,6 +549,13 @@ class LudoGame {
   }
 
   getMovableTokens(playerId, roll) {
+    if (this.gameMode === 'SNAKE') {
+      const playerToken = this.tokens.find(t => t.player === playerId);
+      if (playerToken && playerToken.step + roll <= 100) {
+        return [playerToken];
+      }
+      return [];
+    }
     const playerTokens = this.tokens.filter(t => t.player === playerId);
     const movable = [];
 
@@ -668,18 +682,21 @@ class LudoGame {
       }
     }
 
-    // Blinking cell highlights along the path the pawn will traverse
+    let waypointIdx = 0;
+
+    // Create vibrant cell highlights for each step along the path
     waypoints.forEach((wp, idx) => {
       const hl = this.builder.createCellHighlight(cfg.color);
       hl.position.set(wp.x, 0.356, wp.z);
       hl.visible = true;
-      hl.userData.phase = idx * 0.85;
+      hl.userData.stepIndex = idx;
+      hl.userData.totalSteps = waypoints.length;
+      hl.userData.getCurrentStep = () => waypointIdx;
       this.scene.add(hl);
       this.moveHighlights.push(hl);
     });
 
-    let waypointIdx = 0;
-    const stepDuration = isWalker ? 240 : 160;
+    const stepDuration = isWalker ? 270 : 160;
     let hopStartTime = performance.now();
     let fromPos = token.mesh.position.clone();
     const parts = token.mesh.userData.parts || null;
@@ -689,12 +706,24 @@ class LudoGame {
       token.isMoving = false;
       token.mesh.position.copy(waypoints[waypoints.length - 1]);
       token.halo.position.set(token.mesh.position.x, 0.38, token.mesh.position.z);
+
       if (parts) {
-        parts.legL.rotation.x = 0;
-        parts.legR.rotation.x = 0;
-        parts.armL.rotation.x = 0;
-        parts.armR.rotation.x = 0;
+        parts.legL.rotation.set(0, 0, 0);
+        parts.legR.rotation.set(0, 0, 0);
+        if (parts.calfL) parts.calfL.rotation.set(0, 0, 0);
+        if (parts.calfR) parts.calfR.rotation.set(0, 0, 0);
+        if (parts.footL) parts.footL.rotation.set(0, 0, 0);
+        if (parts.footR) parts.footR.rotation.set(0, 0, 0);
+        parts.armL.rotation.set(0, 0, 0);
+        parts.armR.rotation.set(0, 0, 0);
+        if (parts.forearmL) parts.forearmL.rotation.set(0, 0, 0);
+        if (parts.forearmR) parts.forearmR.rotation.set(0, 0, 0);
+        if (parts.torso) parts.torso.rotation.set(0, 0, 0);
+        if (parts.head) parts.head.rotation.set(0, 0, 0);
+        if (parts.pony) parts.pony.rotation.set(0, 0, 0);
       }
+
+      // Stop highlight blinking immediately on arrival!
       this.clearMoveHighlights();
       this.onTokenMoveComplete(token);
     };
@@ -710,32 +739,63 @@ class LudoGame {
       const t = Math.min(1.0, elapsed / stepDuration);
 
       if (isWalker && parts) {
-        // Realistic walk cycle: bob up/down, swinging legs and arms, turning to face travel
+        // ---- REALISTIC HUMAN GAIT WALK CYCLE ----
         const currentX = THREE.MathUtils.lerp(fromPos.x, toPos.x, t);
         const currentZ = THREE.MathUtils.lerp(fromPos.z, toPos.z, t);
-        const bob = Math.sin(t * Math.PI) * 0.05;
+
+        // Natural double-bounce per step (pelvis rise and drop)
+        const stepPhase = t * Math.PI * 2;
+        const bob = Math.abs(Math.sin(stepPhase)) * 0.045;
         token.mesh.position.set(currentX, 0.36 + bob, currentZ);
 
+        // Smooth rotation to face travel direction
         const dx = toPos.x - fromPos.x;
         const dz = toPos.z - fromPos.z;
         if (Math.abs(dx) > 0.001 || Math.abs(dz) > 0.001) {
           const targetYaw = Math.atan2(dx, dz);
           let deltaYaw = targetYaw - token.mesh.rotation.y;
           deltaYaw = Math.atan2(Math.sin(deltaYaw), Math.cos(deltaYaw));
-          token.mesh.rotation.y += deltaYaw * 0.35;
+          token.mesh.rotation.y += deltaYaw * 0.45;
         }
 
-        const swing = Math.sin(t * Math.PI * 2);
-        parts.legL.rotation.x = swing * 0.65;
-        parts.legR.rotation.x = -swing * 0.65;
-        parts.armL.rotation.x = -swing * 0.45;
-        parts.armR.rotation.x = swing * 0.45;
+        // Leg swing with knee flexion
+        const legSwing = Math.sin(stepPhase);
+        parts.legL.rotation.x = legSwing * 0.72;
+        parts.legR.rotation.x = -legSwing * 0.72;
+
+        if (parts.calfL) parts.calfL.rotation.x = Math.max(0, -legSwing * 0.65);
+        if (parts.calfR) parts.calfR.rotation.x = Math.max(0, legSwing * 0.65);
+        if (parts.footL) parts.footL.rotation.x = -legSwing * 0.22;
+        if (parts.footR) parts.footR.rotation.x = legSwing * 0.22;
+
+        // Counter-balancing arm swing with bent elbows
+        parts.armL.rotation.x = -legSwing * 0.52;
+        parts.armR.rotation.x = legSwing * 0.52;
+        if (parts.forearmL) parts.forearmL.rotation.x = -0.32 + Math.abs(legSwing) * 0.35;
+        if (parts.forearmR) parts.forearmR.rotation.x = -0.32 + Math.abs(legSwing) * 0.35;
+
+        // Subtle torso athletic lean and pelvic counter-twist
+        if (parts.torso) {
+          parts.torso.rotation.x = 0.10;
+          parts.torso.rotation.y = -legSwing * 0.12;
+        }
+        if (parts.head) {
+          parts.head.rotation.y = legSwing * 0.06;
+        }
+        if (parts.pony) {
+          parts.pony.rotation.z = Math.sin(stepPhase) * 0.25;
+        }
       } else {
+        // Classic / Knight / Cyber fluid hop arc
         const hopHeight = 0.85;
         const currentX = THREE.MathUtils.lerp(fromPos.x, toPos.x, t);
         const currentZ = THREE.MathUtils.lerp(fromPos.z, toPos.z, t);
         const currentY = fromPos.y + 4 * hopHeight * t * (1 - t);
         token.mesh.position.set(currentX, currentY, currentZ);
+
+        const dx = toPos.x - fromPos.x;
+        const tilt = Math.sin(t * Math.PI) * 0.15;
+        token.mesh.rotation.z = dx > 0 ? -tilt : tilt;
       }
 
       token.halo.position.set(token.mesh.position.x, 0.38, token.mesh.position.z);
@@ -758,8 +818,10 @@ class LudoGame {
   clearMoveHighlights() {
     this.moveHighlights.forEach(hl => {
       this.scene.remove(hl);
-      if (hl.geometry) hl.geometry.dispose();
-      if (hl.material) hl.material.dispose();
+      hl.traverse(c => {
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) c.material.dispose();
+      });
     });
     this.moveHighlights = [];
   }
@@ -790,11 +852,52 @@ class LudoGame {
       this.movableTokens = this.getMovableTokens(this.activePlayerIndex, this.currentRoll);
       this.highlightMovableTokens();
     }
-    this.addHistory(this.pawnSkin === 'human' ? 'Equipped 3D Human Pawns!' : 'Equipped Classic Pawns!');
+    const skinNames = {
+      classic: 'Classic Royal Pawns',
+      human: '3D Human Walking Pawns',
+      knight: 'Golden Knight Pawns',
+      cyber: 'Cyber Mecha Pawns'
+    };
+    this.addHistory(`Equipped ${skinNames[this.pawnSkin] || 'Pawns'}!`);
     this.notifyUI();
   }
 
   onTokenMoveComplete(token) {
+    if (this.gameMode === 'SNAKE') {
+      const ladders = { 4: 14, 9: 31, 20: 38, 28: 84, 40: 59, 63: 81, 71: 91 };
+      const snakes = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 24, 93: 73, 99: 78 };
+
+      if (ladders[token.step]) {
+        const topCell = ladders[token.step];
+        this.addHistory(`🪜 Climbed Ladder to ${topCell}!`);
+        token.step = topCell;
+        this.updateTokenPosition(token, false);
+        if (window.soundEngine) window.soundEngine.playSafeSpot();
+      } else if (snakes[token.step]) {
+        const tailCell = snakes[token.step];
+        this.addHistory(`🐍 Bitten by Snake! Slid down to ${tailCell}`);
+        token.step = tailCell;
+        this.updateTokenPosition(token, false);
+        if (window.soundEngine) window.soundEngine.playCapture();
+      }
+
+      if (token.step >= 100) {
+        token.step = 100;
+        this.updateTokenPosition(token, false);
+        this.finishedPlayers.push(token.player);
+        this.state = 'GAME_OVER';
+        if (window.soundEngine) window.soundEngine.playVictory();
+        this.spawnConfetti({ x: 0, y: 5, z: 0 }, 150);
+        this.notifyUI();
+        return;
+      }
+
+      this.state = 'WAIT_ROLL';
+      this.passTurn();
+      this.notifyUI();
+      return;
+    }
+
     let awardedExtraTurn = false;
     this.adjustOverlappingTokens();
 
@@ -973,9 +1076,14 @@ class LudoGame {
   }
 
   newGame(numPlayers = 4, botCount = 3, difficulty = this.difficulty) {
+    this.gameMode = 'LUDO';
     this.numPlayers = numPlayers;
     this.difficulty = difficulty;
     this.pendingSkinApply = false;
+
+    if (this.boardGroup) this.scene.remove(this.boardGroup);
+    this.boardGroup = this.builder.buildBoard(this.scene, this.boardTheme, 'LUDO');
+
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('ludoSpark.difficulty', difficulty);
     }
@@ -992,9 +1100,55 @@ class LudoGame {
     this.clearMoveHighlights();
     this.initTokens();
     this.fitBoardToScreen();
-    this.addHistory(`New game started with ${numPlayers} players!`);
+    this.addHistory(`New Ludo game started with ${numPlayers} players!`);
     this.notifyUI();
     this.saveGame();
+  }
+
+  newSnakeLadderGame(numPlayers = 2, botCount = 1) {
+    this.gameMode = 'SNAKE';
+    this.numPlayers = numPlayers;
+    this.pendingSkinApply = false;
+
+    if (this.boardGroup) this.scene.remove(this.boardGroup);
+    this.boardGroup = this.builder.buildBoard(this.scene, 'classic', 'SNAKE');
+
+    for (let i = 0; i < 4; i++) {
+      this.playerConfigs[i].isAI = i >= (numPlayers - botCount);
+    }
+
+    this.tokens.forEach(t => {
+      this.scene.remove(t.mesh);
+      this.scene.remove(t.halo);
+    });
+    this.tokens = [];
+
+    for (let p = 0; p < this.numPlayers; p++) {
+      const cfg = this.playerConfigs[p];
+      const mesh = this.builder.createTokenMesh(cfg.color, p, 0);
+      this.scene.add(mesh);
+
+      const haloGeom = new THREE.RingGeometry(0.5, 0.75, 32);
+      const haloMat = new THREE.MeshBasicMaterial({ color: 0xFDE047, side: THREE.DoubleSide, transparent: true, opacity: 0.0 });
+      const halo = new THREE.Mesh(haloGeom, haloMat);
+      halo.rotation.x = -Math.PI / 2;
+      halo.position.y = 0.38;
+      this.scene.add(halo);
+
+      const token = { id: `${p}_0`, player: p, tokenIndex: 0, step: 1, mesh, halo, isMoving: false };
+      this.tokens.push(token);
+      this.updateTokenPosition(token, false);
+    }
+
+    this.activePlayerIndex = 0;
+    this.state = 'WAIT_ROLL';
+    this.currentRoll = 0;
+    this.finishedPlayers = [];
+    this.turnHistory = [];
+    this.clearMoveHighlights();
+    this.fitBoardToScreen();
+    this.addHistory(`🐍 3D Snake & Ladder game started with ${numPlayers} players!`);
+    this.notifyUI();
   }
 
   // ---- Save / Resume (localStorage) ----
@@ -1121,12 +1275,30 @@ class LudoGame {
       }
     }
 
-    // Blink the cells the pawn is walking across
+    // Blink the cells the pawn is walking across with dynamic traveling ripple
     if (this.moveHighlights.length > 0) {
-      const blinkTime = performance.now() * 0.007;
+      const blinkTime = performance.now() * 0.008;
       this.moveHighlights.forEach(hl => {
-        const wave = Math.max(0, Math.sin(blinkTime + hl.userData.phase));
-        hl.material.opacity = 0.12 + 0.55 * wave;
+        const curIdx = hl.userData.getCurrentStep ? hl.userData.getCurrentStep() : 0;
+        const stepIdx = hl.userData.stepIndex !== undefined ? hl.userData.stepIndex : 0;
+        const coreMat = hl.userData.coreMat || hl.material;
+        const haloMat = hl.userData.haloMat;
+
+        if (stepIdx < curIdx) {
+          // Already traversed cells: smooth quick fade down
+          if (coreMat) coreMat.opacity = Math.max(0, coreMat.opacity - delta * 4.0);
+          if (haloMat) haloMat.opacity = Math.max(0, haloMat.opacity - delta * 4.0);
+        } else if (stepIdx === curIdx) {
+          // Cell currently being stepped onto: brightest pulsating flash
+          const flash = 0.5 + 0.5 * Math.sin(blinkTime * 14);
+          if (coreMat) coreMat.opacity = 0.6 + 0.38 * flash;
+          if (haloMat) haloMat.opacity = 0.5 + 0.45 * flash;
+        } else {
+          // Upcoming cells: traveling ripple wave in player color
+          const wave = 0.5 + 0.5 * Math.sin(blinkTime * 8 - (stepIdx - curIdx) * 1.2);
+          if (coreMat) coreMat.opacity = 0.20 + 0.60 * wave;
+          if (haloMat) haloMat.opacity = 0.28 * wave;
+        }
       });
     }
 

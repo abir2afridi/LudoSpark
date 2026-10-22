@@ -193,14 +193,14 @@ class DicePhysics {
       const dx = targetX - startX;
       const dz = targetZ - startZ;
       const dist = Math.hypot(dx, dz) || 1;
-      const speed = Math.min(14, Math.max(8, dist * 1.6));
+      const speed = Math.min(13, Math.max(7.5, dist * 1.45));
 
       vx = (dx / dist) * speed;
       vz = (dz / dist) * speed;
-      vy = 2.2 + Math.random() * 1.6;
+      vy = 3.8 + Math.random() * 1.4;
 
       // Longer flight time for the longer distance from hand to board
-      this.rollDuration = Math.max(1400, Math.min(2100, dist * 130));
+      this.rollDuration = Math.max(1400, Math.min(2100, dist * 135));
     } else if (fromAngle !== null && fromAngle !== undefined) {
       // Toss from the active player's side toward board center
       const r = 2.8 + Math.random() * 0.6;

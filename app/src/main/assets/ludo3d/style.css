@@ -196,6 +196,26 @@ body, html {
   padding: 0 3px 0 6px;
   gap: 4px;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.resource-pill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-20deg);
+  animation: shimmer 4s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
 }
 
 .res-icon {
@@ -290,6 +310,52 @@ body, html {
   margin-top: -4px;
 }
 
+/* Rotating Golden Sunburst Rays behind Logo */
+.sunburst-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 210px;
+  height: 210px;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(
+    from 0deg,
+    rgba(251, 191, 36, 0.2) 0deg 15deg,
+    transparent 15deg 30deg,
+    rgba(251, 191, 36, 0.2) 30deg 45deg,
+    transparent 45deg 60deg,
+    rgba(251, 191, 36, 0.2) 60deg 75deg,
+    transparent 75deg 90deg,
+    rgba(251, 191, 36, 0.2) 90deg 105deg,
+    transparent 105deg 120deg,
+    rgba(251, 191, 36, 0.2) 120deg 135deg,
+    transparent 135deg 150deg,
+    rgba(251, 191, 36, 0.2) 150deg 165deg,
+    transparent 165deg 180deg,
+    rgba(251, 191, 36, 0.2) 180deg 195deg,
+    transparent 195deg 210deg,
+    rgba(251, 191, 36, 0.2) 210deg 225deg,
+    transparent 225deg 240deg,
+    rgba(251, 191, 36, 0.2) 240deg 255deg,
+    transparent 255deg 270deg,
+    rgba(251, 191, 36, 0.2) 270deg 285deg,
+    transparent 285deg 300deg,
+    rgba(251, 191, 36, 0.2) 300deg 315deg,
+    transparent 315deg 330deg,
+    rgba(251, 191, 36, 0.2) 330deg 345deg,
+    transparent 345deg 360deg
+  );
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  animation: rotateSunburst 20s infinite linear;
+}
+
+@keyframes rotateSunburst {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 .crown-icon {
   font-size: 34px;
   margin-bottom: -16px;
@@ -310,6 +376,7 @@ body, html {
   letter-spacing: 4px;
   text-shadow: 0 2px 4px #000, 0 0 10px rgba(251, 191, 36, 0.6);
   margin-bottom: -4px;
+  z-index: 4;
 }
 
 .logo-letters-row {
@@ -398,6 +465,7 @@ body, html {
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   transition: transform 0.15s;
+  z-index: 6;
 }
 
 .help-question-btn:active {
@@ -411,6 +479,17 @@ body, html {
   flex-direction: column;
   gap: 10px;
   margin-top: 2px;
+}
+
+/* 3D Depth Card perspective hover/press effects */
+.mode-card-3d, .mode-card-wide, .banner-tournament-btn, .circle-feature-btn {
+  perspective: 600px;
+  transform-style: preserve-3d;
+}
+
+.mode-card-3d:active, .mode-card-wide:active, .banner-tournament-btn:active {
+  transform: translateY(3px) rotateX(12deg) scale(0.96);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.8), 0 2px 0 #B45309;
 }
 
 /* Row 1: ONLINE | TEAM UP | FRIENDS */
@@ -435,11 +514,6 @@ body, html {
   transition: transform 0.12s, box-shadow 0.12s;
   padding: 0;
   position: relative;
-}
-
-.mode-card-3d:active {
-  transform: translateY(3px);
-  box-shadow: 0 2px 0 #B45309, 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .mode-card-header {
@@ -510,11 +584,6 @@ body, html {
   transition: transform 0.12s, box-shadow 0.12s;
   overflow: hidden;
   padding: 4px;
-}
-
-.mode-card-wide:active {
-  transform: translateY(3px);
-  box-shadow: 0 2px 0 #B45309, 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .wide-card-inner {
@@ -610,11 +679,6 @@ body, html {
   cursor: pointer;
   transition: transform 0.12s, box-shadow 0.12s;
   padding: 0 10px;
-}
-
-.banner-tournament-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #78350F, 0 3px 6px rgba(0,0,0,0.4);
 }
 
 .banner-crown {
@@ -784,7 +848,7 @@ body, html {
   height: 3px;
   background: #FBBF24;
   border-radius: 0 0 4px 4px;
-  box-shadow: 0 0 8px #FBBF24;
+  box-shadow: 0 0 12px #FBBF24;
 }
 
 .nav-tab:active {
@@ -807,6 +871,15 @@ body, html {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.3px;
+}
+
+.nav-dot-badge, .nav-new-badge {
+  animation: pulseBadge 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes pulseBadge {
+  0% { transform: scale(1); box-shadow: 0 0 4px rgba(239, 68, 68, 0.6); }
+  100% { transform: scale(1.18); box-shadow: 0 0 10px rgba(239, 68, 68, 1); }
 }
 
 .nav-dot-badge {
@@ -1037,23 +1110,6 @@ body, html {
   justify-content: center;
 }
 
-/* Animated cartoon pointing hand */
-.pointing-hand {
-  position: absolute;
-  bottom: -32px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 36px;
-  pointer-events: none;
-  animation: handTap 0.8s infinite alternate ease-in-out;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
-}
-
-@keyframes handTap {
-  0% { transform: translateX(-50%) translateY(0); }
-  100% { transform: translateX(-50%) translateY(-8px); }
-}
-
 /* Status toast in center */
 .center-toast {
   position: absolute;
@@ -1196,25 +1252,27 @@ body, html {
   100% { opacity: 0; transform: translateY(-24px) scale(0.9); }
 }
 
-/* ---- Pawn skin picker in store ---- */
-.skin-btn {
-  flex: 1;
-  padding: 10px 8px;
-  border-radius: 10px;
-  border: 1.5px solid #475569;
-  background: #1E293B;
-  color: #E2E8F0;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* Victory Trophy Golden Aura */
+.winner-trophy-aura {
+  position: relative;
+  display: inline-block;
 }
-.skin-btn.equipped {
-  border-color: #FBBF24;
-  background: #334155;
-  color: #FBBF24;
-  box-shadow: 0 0 12px rgba(251, 191, 36, 0.45);
+
+.winner-trophy-aura::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 130px;
+  height: 130px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.6) 0%, rgba(251, 191, 36, 0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulseTrophy 1.5s infinite alternate;
 }
-.skin-btn:active {
-  transform: scale(0.96);
+
+@keyframes pulseTrophy {
+  0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
 }

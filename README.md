@@ -25,6 +25,7 @@ Immersive 3D Ludo board game for Android — glossy main menu, Three.js graphics
 
 ### Platform
 - **Immersive fullscreen** — status & navigation bars hidden (swipe from edge to reveal)
+- **Full-screen Settings page** with Sound / Music / Camera / AI difficulty and a **System Logs** page that captures JS errors, WebView console errors, and native APK crash stack traces for easy debugging
 - Procedural Web Audio sound (zero audio files) + haptic feedback via Android bridge
 - Fully offline; all assets bundled in the APK
 

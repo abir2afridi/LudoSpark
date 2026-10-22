@@ -8,6 +8,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.ViewGroup
+import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -42,6 +43,9 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
+
+    // Install persistent crash logging so crashes can be inspected in-app later
+    CrashLogger.install(this)
 
     // Immersive fullscreen: hide status + system navigation bars.
     // Swiping from a screen edge briefly reveals them (standard game behavior).
@@ -107,6 +111,19 @@ class AndroidWebAppInterface(
       (context as? ComponentActivity)?.finish()
     }
   }
+
+  @JavascriptInterface
+  fun logJsError(message: String) {
+    CrashLogger.log(context, "JS", message)
+  }
+
+  @JavascriptInterface
+  fun getCrashLogs(): String = CrashLogger.read(context)
+
+  @JavascriptInterface
+  fun clearCrashLogs() {
+    CrashLogger.clear(context)
+  }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -154,7 +171,19 @@ fun LudoMainScreen() {
             overScrollMode = WebView.OVER_SCROLL_NEVER
             setBackgroundColor(android.graphics.Color.parseColor("#061138"))
             webViewClient = WebViewClient()
-            webChromeClient = WebChromeClient()
+            webChromeClient = object : WebChromeClient() {
+              override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                val msg = consoleMessage ?: return false
+                if (msg.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
+                  CrashLogger.log(
+                    ctx,
+                    "WEBVIEW",
+                    "${msg.message()} (${msg.sourceId()}:${msg.lineNumber()})"
+                  )
+                }
+                return true
+              }
+            }
 
             addJavascriptInterface(
               AndroidWebAppInterface(

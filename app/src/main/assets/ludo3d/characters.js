@@ -1,350 +1,418 @@
 /**
- * Low-poly 3D humanoids:
- *  - createHumanoidMesh(): shared factory used by 3D player characters
- *    standing around the board AND by the "3D Human" pawn skin.
- *  - LudoCharacters: one character per player, positioned just outside the
- *    board corners, facing the board. Holds & throws the dice.
+ * LudoSpark 3D Characters & Realistic Humanoid Pawns Studio
+ * 
+ * Features:
+ * - High-detail stylized 3D Human models (distinct Male & Female meshes, expressive faces,
+ *   eyes, hair styling, shirts with collar/badges, belts, sneakers, team colors).
+ * - Full articulated skeleton (head, neck, torso, hips, upper/lower arms, hands, legs, feet).
+ * - 4 Corner 3D Players standing around the board with animated breathing, weight-shifting,
+ *   turn-anticipation, holding 3D dice in hand, and dramatic full-body windup & throw onto the board!
+ * - Realistic walking mechanics used when human pawns traverse board cells.
  */
 
 function createHumanoidMesh(opts = {}) {
   const color = opts.color !== undefined ? opts.color : 0x3B82F6;
   const skinTone = opts.skinTone !== undefined ? opts.skinTone : 0xF1C27D;
-  const hairColor = opts.hairColor !== undefined ? opts.hairColor : 0x3B2417;
+  const hairColor = opts.hairColor !== undefined ? opts.hairColor : 0x2E1B0F;
   const female = !!opts.female;
   const scale = opts.scale || 1;
+  const isPawn = !!opts.isPawn;
 
   const group = new THREE.Group();
   const parts = {};
 
-  const mat = (c, rough = 0.7, metal = 0.05) =>
+  // Material helpers
+  const mat = (c, rough = 0.55, metal = 0.08) =>
     new THREE.MeshStandardMaterial({ color: c, roughness: rough, metalness: metal });
 
-  // Slightly darker shade for cel-shade outline
-  const outlineMat = new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.BackSide });
+  const skinMat = mat(skinTone, 0.7, 0.02);
+  const clothMat = mat(color, 0.45, 0.15);
+  const clothDarkMat = mat(new THREE.Color(color).clone().multiplyScalar(0.7).getHex(), 0.5, 0.1);
+  const pantsMat = mat(female ? 0x1E293B : 0x0F172A, 0.8, 0.05);
+  const hairMat = mat(hairColor, 0.9, 0.02);
+  const whiteMat = mat(0xFFFFFF, 0.3, 0.05);
+  const darkMat = mat(0x111827, 0.9, 0.0);
+  const goldMat = mat(0xF59E0B, 0.25, 0.7);
 
-  const skinMat = mat(skinTone, 0.8);
-  const shirtMat = mat(color, 0.5, 0.15);
-  const pantsMat = mat(0x1E293B, 0.85);
-  const shoeMat = mat(0x0B1220, 0.9);
-  const hairMat = mat(hairColor, 0.9);
-  const whiteMat = mat(0xFFFFFF, 0.5, 0.0);
-  const pupilMat = mat(0x111111, 0.6, 0.0);
-  const beltMat = mat(0x3A2010, 0.9, 0.15);
-  const collarMat = mat(
-    new THREE.Color(color).offsetHSL(0, 0, 0.12).getHex(), 0.5, 0.15
+  // ---- Root Spine / Pelvis Container ----
+  const pelvisGroup = new THREE.Group();
+  pelvisGroup.position.set(0, 0.52, 0);
+  group.add(pelvisGroup);
+  parts.pelvis = pelvisGroup;
+
+  // Pelvis mesh / Hips
+  const hipWidth = female ? 0.24 : 0.22;
+  const hips = new THREE.Mesh(
+    new THREE.CylinderGeometry(hipWidth * 0.48, hipWidth * 0.52, 0.13, 14),
+    pantsMat
   );
-
-  // Helper: add a cel-shade outline shell around a mesh
-  const addOutline = (mesh, expand) => {
-    const outMesh = new THREE.Mesh(mesh.geometry.clone(), outlineMat);
-    outMesh.scale.multiplyScalar(1 + expand);
-    outMesh.position.copy(mesh.position);
-    outMesh.rotation.copy(mesh.rotation);
-    outMesh.renderOrder = -1;
-    return outMesh;
-  };
-
-  // ---- Legs (pivot at the hip) — with upper + lower segments ----
-  const makeLeg = (x) => {
-    const leg = new THREE.Group();
-    leg.position.set(x, 0.45, 0);
-
-    // Upper leg (thigh)
-    const upperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.048, 0.22, 10), pantsMat);
-    upperLeg.position.y = -0.11;
-    upperLeg.castShadow = true;
-    leg.add(upperLeg);
-
-    // Lower leg (shin) — part of the leg group for basic swing
-    const lowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.04, 0.22, 10), pantsMat);
-    lowerLeg.position.y = -0.33;
-    lowerLeg.castShadow = true;
-    leg.add(lowerLeg);
-
-    // Shoe — rounded front for style
-    const shoeShape = new THREE.Group();
-    const soleMesh = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.055, 0.16), shoeMat);
-    soleMesh.position.set(0, 0, 0.01);
-    soleMesh.castShadow = true;
-    shoeShape.add(soleMesh);
-    // Rounded toe cap
-    const toeCap = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), shoeMat);
-    toeCap.rotation.x = -Math.PI / 2;
-    toeCap.position.set(0, 0.005, 0.08);
-    toeCap.castShadow = true;
-    shoeShape.add(toeCap);
-    // Heel bump
-    const heel = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.035, 0.04), shoeMat);
-    heel.position.set(0, -0.015, -0.07);
-    shoeShape.add(heel);
-    shoeShape.position.set(0, -0.455, 0.025);
-    leg.add(shoeShape);
-
-    group.add(leg);
-    return leg;
-  };
-  parts.legL = makeLeg(-0.095);
-  parts.legR = makeLeg(0.095);
-
-  // ---- Hips + torso ----
-  const hips = new THREE.Mesh(new THREE.CylinderGeometry(0.108, 0.118, 0.12, 12), pantsMat);
-  hips.position.y = 0.5;
   hips.castShadow = true;
-  group.add(hips);
+  hips.receiveShadow = true;
+  pelvisGroup.add(hips);
 
-  // Belt between pants and shirt
-  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.122, 0.12, 0.045, 14), beltMat);
-  belt.position.y = 0.555;
-  belt.castShadow = true;
-  group.add(belt);
-  // Belt buckle
-  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.035, 0.01), mat(0xD4A840, 0.3, 0.8));
-  buckle.position.set(0, 0.555, 0.122);
-  group.add(buckle);
-
-  const torso = new THREE.Mesh(
-    new THREE.CylinderGeometry(female ? 0.1 : 0.125, female ? 0.14 : 0.105, 0.34, 14),
-    shirtMat
+  // Belt with golden buckle
+  const belt = new THREE.Mesh(
+    new THREE.CylinderGeometry(hipWidth * 0.505, hipWidth * 0.505, 0.035, 14),
+    darkMat
   );
-  torso.position.y = 0.66;
-  torso.castShadow = true;
-  group.add(torso);
-  // Torso cel outline
-  const torsoOutline = addOutline(torso, 0.06);
-  group.add(torsoOutline);
+  belt.position.y = 0.06;
+  pelvisGroup.add(belt);
 
-  // ---- Collar / neckline ----
-  const collar = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.072, female ? 0.1 : 0.11, 0.04, 14),
-    collarMat
-  );
-  collar.position.y = 0.84;
-  collar.castShadow = true;
-  group.add(collar);
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.035, 0.02), goldMat);
+  buckle.position.set(0, 0.06, hipWidth * 0.51);
+  pelvisGroup.add(buckle);
 
-  // ---- Team color badge on chest ----
-  const badge = new THREE.Mesh(
-    new THREE.CircleGeometry(0.04, 16),
-    new THREE.MeshStandardMaterial({
-      color: color,
-      emissive: color,
-      emissiveIntensity: 0.4,
-      roughness: 0.3,
-      metalness: 0.6
-    })
-  );
-  badge.position.set(0, 0.72, female ? 0.1 : 0.118);
-  badge.rotation.x = -0.15;
-  group.add(badge);
-  // Badge ring border
-  const badgeRing = new THREE.Mesh(
-    new THREE.RingGeometry(0.038, 0.052, 16),
-    mat(0xE2E8F0, 0.3, 0.85)
-  );
-  badgeRing.position.copy(badge.position);
-  badgeRing.position.z += 0.001;
-  badgeRing.rotation.x = badge.rotation.x;
-  group.add(badgeRing);
+  // ---- Torso (pivots from hips) ----
+  const torsoGroup = new THREE.Group();
+  torsoGroup.position.set(0, 0.06, 0);
+  pelvisGroup.add(torsoGroup);
+  parts.torso = torsoGroup;
 
-  // ---- Arms (pivot at the shoulder) with upper arm + forearm ----
-  const makeArm = (x) => {
-    const arm = new THREE.Group();
-    arm.position.set(x, 0.79, 0);
+  const chestTop = female ? 0.20 : 0.26;
+  const chestBottom = female ? 0.22 : 0.21;
+  const chestGeom = new THREE.CylinderGeometry(chestTop * 0.5, chestBottom * 0.5, 0.32, 14);
+  const chest = new THREE.Mesh(chestGeom, clothMat);
+  chest.position.y = 0.16;
+  chest.castShadow = true;
+  chest.receiveShadow = true;
+  torsoGroup.add(chest);
 
-    // Upper arm
-    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.038, 0.18, 10), shirtMat);
-    upperArm.position.y = -0.09;
-    upperArm.castShadow = true;
-    arm.add(upperArm);
+  // Jacket / V-Neck collar trim
+  const collarGeom = new THREE.TorusGeometry(0.08, 0.018, 8, 16, Math.PI);
+  const collar = new THREE.Mesh(collarGeom, whiteMat);
+  collar.rotation.x = Math.PI / 2;
+  collar.position.set(0, 0.31, 0.02);
+  torsoGroup.add(collar);
 
-    // Forearm (skin-colored or shirt sleeve)
-    const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.032, 0.16, 10), skinMat);
-    forearm.position.y = -0.26;
-    forearm.castShadow = true;
-    arm.add(forearm);
+  // Team Crest / Golden Badge on chest
+  const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.01, 8), goldMat);
+  badge.rotation.x = Math.PI / 2;
+  badge.position.set(-0.06, 0.22, 0.115);
+  torsoGroup.add(badge);
 
-    // Store forearm ref for animation
-    arm.userData = arm.userData || {};
-    arm.userData.forearm = forearm;
+  // ---- Neck + Head ----
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.046, 0.08, 10), skinMat);
+  neck.position.y = 0.35;
+  torsoGroup.add(neck);
 
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 10), skinMat);
-    hand.position.y = -0.36;
-    hand.castShadow = true;
-    arm.add(hand);
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 0.46, 0);
+  torsoGroup.add(headGroup);
+  parts.head = headGroup;
 
-    group.add(arm);
-    return { arm, hand };
-  };
-  const leftArm = makeArm(-0.168);
-  const rightArm = makeArm(0.168);
-  parts.armL = leftArm.arm;
-  parts.armR = rightArm.arm;
-  parts.handR = rightArm.hand;
+  // Head sphere (slightly cute/stylized proportion)
+  const headRadius = female ? 0.145 : 0.15;
+  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 18, 16), skinMat);
+  headMesh.castShadow = true;
+  headGroup.add(headMesh);
 
-  // ---- Neck + head (slightly bigger = cartoony cute) ----
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.046, 0.06, 10), skinMat);
-  neck.position.y = 0.86;
-  group.add(neck);
+  // Ears
+  [-1, 1].forEach(side => {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), skinMat);
+    ear.scale.set(0.5, 1, 0.8);
+    ear.position.set(side * (headRadius * 0.95), 0, 0);
+    headGroup.add(ear);
+  });
 
-  // Bigger head for stylized proportions
-  parts.head = new THREE.Mesh(new THREE.SphereGeometry(0.135, 16, 16), skinMat);
-  parts.head.position.y = 1.01;
-  parts.head.castShadow = true;
-  group.add(parts.head);
-  // Head cel outline
-  const headOutline = addOutline(parts.head, 0.05);
-  group.add(headOutline);
-
-  // ---- Eyes ----
-  const makeEye = (xOff) => {
-    const eyeGroup = new THREE.Group();
-    // White of eye
-    const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 10), whiteMat);
-    eyeWhite.position.set(xOff, 1.025, 0.11);
-    eyeWhite.scale.set(1, 1, 0.55);
-    group.add(eyeWhite);
-    // Pupil
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 8), pupilMat);
-    pupil.position.set(xOff, 1.025, 0.128);
-    group.add(pupil);
-    // Iris colored ring
-    const iris = new THREE.Mesh(
-      new THREE.SphereGeometry(0.023, 8, 8),
-      mat(0x3B82F6, 0.5, 0.1)
+  // Eyes (white sclera + pupil + bright glint dot)
+  [-1, 1].forEach(side => {
+    const eyeWhite = new THREE.Mesh(
+      new THREE.SphereGeometry(0.034, 12, 10),
+      whiteMat
     );
-    iris.position.set(xOff, 1.025, 0.124);
-    group.add(iris);
-    return eyeGroup;
-  };
-  makeEye(-0.045);
-  makeEye(0.045);
+    eyeWhite.scale.set(1, 1.25, 0.5);
+    eyeWhite.position.set(side * 0.052, 0.015, headRadius * 0.86);
+    headGroup.add(eyeWhite);
 
-  // ---- Smile / mouth ----
-  const smileCurve = new THREE.EllipseCurve(0, 0, 0.035, 0.015, Math.PI * 0.15, Math.PI * 0.85, false, 0);
-  const smilePoints = smileCurve.getPoints(12);
-  const smileGeom = new THREE.BufferGeometry().setFromPoints(smilePoints);
-  const smileLine = new THREE.Line(
-    smileGeom,
-    new THREE.LineBasicMaterial({ color: 0x8B4513, linewidth: 2 })
-  );
-  smileLine.position.set(0, 0.985, 0.128);
-  group.add(smileLine);
+    // Dark colored pupil
+    const pupilColor = female ? 0x2563EB : 0x1E293B;
+    const pupil = new THREE.Mesh(
+      new THREE.SphereGeometry(0.018, 10, 8),
+      mat(pupilColor, 0.3, 0.1)
+    );
+    pupil.position.set(side * 0.052, 0.015, headRadius * 0.94);
+    headGroup.add(pupil);
 
-  // ---- Hair (improved styles) ----
-  // Main hair cap
-  const hair = new THREE.Mesh(
-    new THREE.SphereGeometry(0.142, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.55),
-    hairMat
-  );
-  hair.position.set(0, 1.025, -0.012);
-  hair.rotation.x = -0.12;
-  hair.castShadow = true;
-  group.add(hair);
+    // Eye catchlight glint (makes eyes look alive!)
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.007, 6, 6), whiteMat);
+    glint.position.set(side * 0.052 + 0.007, 0.023, headRadius * 0.96);
+    headGroup.add(glint);
 
+    // Eyebrows
+    const brow = new THREE.Mesh(
+      new THREE.BoxGeometry(0.038, 0.008, 0.012),
+      hairMat
+    );
+    brow.position.set(side * 0.052, 0.052, headRadius * 0.88);
+    brow.rotation.z = side * -0.12;
+    headGroup.add(brow);
+  });
+
+  // Cheerful Smile (subtle curved arc)
+  const smileGeom = new THREE.TorusGeometry(0.032, 0.006, 6, 12, Math.PI * 0.7);
+  const smileMat = mat(0x991B1B, 0.7, 0);
+  const smile = new THREE.Mesh(smileGeom, smileMat);
+  smile.rotation.x = Math.PI * 0.15;
+  smile.rotation.z = Math.PI * 0.15;
+  smile.position.set(0, -0.052, headRadius * 0.92);
+  headGroup.add(smile);
+
+  // Cute blush cheeks for female
   if (female) {
-    // Female: longer hair flowing down the back
-    const backHair = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.06, 0.38, 10), hairMat);
-    backHair.position.set(0, 0.84, -0.09);
-    backHair.castShadow = true;
-    group.add(backHair);
-    // Side hair strands
-    const makeStrand = (xOff) => {
-      const strand = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.025, 0.22, 8), hairMat);
-      strand.position.set(xOff, 0.91, -0.04);
-      strand.rotation.z = xOff > 0 ? -0.2 : 0.2;
-      strand.castShadow = true;
-      group.add(strand);
-    };
-    makeStrand(-0.1);
-    makeStrand(0.1);
-    // Hair band / accessory
-    const hairBand = new THREE.Mesh(
-      new THREE.TorusGeometry(0.13, 0.012, 8, 16),
-      mat(color, 0.4, 0.3)
-    );
-    hairBand.position.set(0, 1.06, -0.01);
-    hairBand.rotation.x = -0.35;
-    group.add(hairBand);
-  } else {
-    // Male: short textured crop with volume on top
-    const topHair = new THREE.Mesh(
-      new THREE.BoxGeometry(0.2, 0.06, 0.18),
-      hairMat
-    );
-    topHair.position.set(0, 1.1, 0.01);
-    topHair.castShadow = true;
-    group.add(topHair);
-    // Side fade (thin)
-    const sideFade = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.14, 0.138, 0.04, 14),
-      hairMat
-    );
-    sideFade.position.set(0, 1.0, -0.005);
-    group.add(sideFade);
+    [-1, 1].forEach(side => {
+      const blushMat = new THREE.MeshBasicMaterial({
+        color: 0xF43F5E,
+        transparent: true,
+        opacity: 0.35
+      });
+      const blush = new THREE.Mesh(new THREE.CircleGeometry(0.024, 10), blushMat);
+      blush.position.set(side * 0.088, -0.022, headRadius * 0.82);
+      blush.rotation.y = side * 0.45;
+      headGroup.add(blush);
+    });
   }
 
-  // ---- Cheek blush (subtle) ----
-  const blushMat = mat(
-    new THREE.Color(skinTone).offsetHSL(0, 0.25, -0.05).getHex(), 0.9, 0.0
-  );
-  const blushL = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 8), blushMat);
-  blushL.position.set(-0.08, 1.0, 0.1);
-  blushL.scale.set(1, 0.6, 0.4);
-  group.add(blushL);
-  const blushR = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 8), blushMat);
-  blushR.position.set(0.08, 1.0, 0.1);
-  blushR.scale.set(1, 0.6, 0.4);
-  group.add(blushR);
+  // ---- Hair Styling ----
+  if (female) {
+    // Feminine stylized bob + side locks + ponytail
+    const hairCap = new THREE.Mesh(
+      new THREE.SphereGeometry(headRadius * 1.05, 16, 14, 0, Math.PI * 2, 0, Math.PI * 0.62),
+      hairMat
+    );
+    hairCap.position.set(0, 0.01, -0.01);
+    hairCap.castShadow = true;
+    headGroup.add(hairCap);
 
-  // ---- Team-colored metallic base ring ----
-  const baseRing = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.15, 0.18, 0.05, 20),
-    mat(0xE2E8F0, 0.3, 0.85)
-  );
-  baseRing.position.y = 0.025;
-  baseRing.castShadow = true;
-  group.add(baseRing);
+    // Front bangs
+    const bangs = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.06, 10), hairMat);
+    bangs.position.set(0, 0.085, 0.07);
+    bangs.rotation.x = 0.5;
+    headGroup.add(bangs);
+
+    // Long ponytail in the back
+    const pony = new THREE.Group();
+    pony.position.set(0, 0.04, -headRadius * 0.9);
+    pony.rotation.x = -0.35;
+
+    const hairTie = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.012, 8, 14), clothMat);
+    pony.add(hairTie);
+
+    const ponyTail = new THREE.Mesh(
+      new THREE.ConeGeometry(0.065, 0.28, 10),
+      hairMat
+    );
+    ponyTail.position.set(0, -0.12, -0.03);
+    ponyTail.rotation.x = 0.2;
+    ponyTail.castShadow = true;
+    pony.add(ponyTail);
+    headGroup.add(pony);
+    parts.pony = pony;
+  } else {
+    // Masculine stylish textured crop
+    const hairCap = new THREE.Mesh(
+      new THREE.SphereGeometry(headRadius * 1.05, 16, 14, 0, Math.PI * 2, 0, Math.PI * 0.55),
+      hairMat
+    );
+    hairCap.position.set(0, 0.02, -0.01);
+    hairCap.castShadow = true;
+    headGroup.add(hairCap);
+
+    // Front styled quiff spikes
+    for (let s = -2; s <= 2; s++) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.08, 6), hairMat);
+      spike.position.set(s * 0.035, 0.12, 0.08 - Math.abs(s) * 0.02);
+      spike.rotation.x = 0.45;
+      spike.rotation.z = -s * 0.15;
+      headGroup.add(spike);
+    }
+  }
+
+  // ---- Arms (Shoulder pivots) ----
+  const makeArm = (side) => {
+    const shoulderGroup = new THREE.Group();
+    const shoulderX = side * (chestTop * 0.5 + 0.05);
+    shoulderGroup.position.set(shoulderX, 0.28, 0);
+    torsoGroup.add(shoulderGroup);
+
+    // Sleeve shoulder cap
+    const sleeve = new THREE.Mesh(new THREE.SphereGeometry(0.052, 10, 10), clothMat);
+    sleeve.castShadow = true;
+    shoulderGroup.add(sleeve);
+
+    // Upper arm
+    const upperArm = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.038, 0.032, 0.18, 10),
+      clothMat
+    );
+    upperArm.position.y = -0.09;
+    upperArm.castShadow = true;
+    shoulderGroup.add(upperArm);
+
+    // Forearm / Elbow pivot
+    const forearmGroup = new THREE.Group();
+    forearmGroup.position.set(0, -0.18, 0);
+    shoulderGroup.add(forearmGroup);
+
+    const forearm = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.032, 0.028, 0.16, 10),
+      skinMat
+    );
+    forearm.position.y = -0.08;
+    forearm.castShadow = true;
+    forearmGroup.add(forearm);
+
+    // Hand with thumb hint
+    const handGroup = new THREE.Group();
+    handGroup.position.set(0, -0.17, 0);
+    forearmGroup.add(handGroup);
+
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.036, 10, 8), skinMat);
+    palm.scale.set(0.9, 1.2, 0.6);
+    palm.castShadow = true;
+    handGroup.add(palm);
+
+    const thumb = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.01, 0.04, 6), skinMat);
+    thumb.position.set(side * -0.022, 0.01, 0.015);
+    thumb.rotation.z = side * -0.6;
+    handGroup.add(thumb);
+
+    return { shoulder: shoulderGroup, forearm: forearmGroup, hand: handGroup };
+  };
+
+  const leftArm = makeArm(-1);
+  const rightArm = makeArm(1);
+
+  parts.armL = leftArm.shoulder;
+  parts.forearmL = leftArm.forearm;
+  parts.handL = leftArm.hand;
+
+  parts.armR = rightArm.shoulder;
+  parts.forearmR = rightArm.forearm;
+  parts.handR = rightArm.hand;
+
+  // ---- Legs (Hip pivots) ----
+  const makeLeg = (side) => {
+    const hipGroup = new THREE.Group();
+    hipGroup.position.set(side * (hipWidth * 0.32), -0.04, 0);
+    pelvisGroup.add(hipGroup);
+
+    // Thigh
+    const thigh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.056, 0.046, 0.22, 10),
+      pantsMat
+    );
+    thigh.position.y = -0.11;
+    thigh.castShadow = true;
+    hipGroup.add(thigh);
+
+    // Knee / Calf pivot
+    const calfGroup = new THREE.Group();
+    calfGroup.position.set(0, -0.22, 0);
+    hipGroup.add(calfGroup);
+
+    const calf = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.046, 0.038, 0.22, 10),
+      pantsMat
+    );
+    calf.position.y = -0.11;
+    calf.castShadow = true;
+    calfGroup.add(calf);
+
+    // Sneaker Foot (stylish game sneaker: white sole, colored top, laces)
+    const footGroup = new THREE.Group();
+    footGroup.position.set(0, -0.22, 0);
+    calfGroup.add(footGroup);
+
+    // White rubber sole
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(0.082, 0.035, 0.17), whiteMat);
+    sole.position.set(0, -0.018, 0.025);
+    sole.castShadow = true;
+    footGroup.add(sole);
+
+    // Colored sneaker upper
+    const sneaker = new THREE.Mesh(
+      new THREE.BoxGeometry(0.078, 0.055, 0.155),
+      clothDarkMat
+    );
+    sneaker.position.set(0, 0.022, 0.02);
+    sneaker.castShadow = true;
+    footGroup.add(sneaker);
+
+    // Toe cap
+    const toeCap = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.04, 0.05, 8), whiteMat);
+    toeCap.rotation.x = Math.PI / 2;
+    toeCap.position.set(0, 0.015, 0.08);
+    footGroup.add(toeCap);
+
+    return { hip: hipGroup, calf: calfGroup, foot: footGroup };
+  };
+
+  const leftLeg = makeLeg(-1);
+  const rightLeg = makeLeg(1);
+
+  parts.legL = leftLeg.hip;
+  parts.calfL = leftLeg.calf;
+  parts.footL = leftLeg.foot;
+
+  parts.legR = rightLeg.hip;
+  parts.calfR = rightLeg.calf;
+  parts.footR = rightLeg.foot;
+
+  // ---- Base Ring (for pawns, gives clean grounded presence) ----
+  if (isPawn) {
+    const baseMat = mat(color, 0.2, 0.6);
+    const ring = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.24, 0.28, 0.05, 24),
+      baseMat
+    );
+    ring.position.y = 0.025;
+    ring.receiveShadow = true;
+    group.add(ring);
+
+    const rimGold = new THREE.Mesh(
+      new THREE.TorusGeometry(0.26, 0.018, 8, 24),
+      goldMat
+    );
+    rimGold.rotation.x = Math.PI / 2;
+    rimGold.position.y = 0.05;
+    group.add(rimGold);
+  }
 
   group.scale.setScalar(scale);
   group.userData.parts = parts;
+  group.userData.isFemale = female;
   return group;
 }
 
+/**
+ * Manages the 4 3D Player Characters stationed around the board corners.
+ * They hold the dice in hand, wind up and throw it on roll click,
+ * and perform rich idle breathing, weight shifting, and turn cheering.
+ */
 class LudoCharacters {
   constructor(scene, playerConfigs) {
     this.scene = scene;
     this.playerConfigs = playerConfigs;
     this.chars = [];
     this.time = 0;
-    this.activeId = -1;
+    this.activePlayerId = 0;
 
-    // Just outside the 4 board corners (x, z), facing the center
+    // Corner coordinates outside the board (x, z)
+    // Board size is 18, corners are at ~9. 10.4 places characters neatly at corners
     this.positions = [
-      [-10.3, 10.3],   // Player 1: bottom-left
-      [-10.3, -10.3],  // Player 2: top-left
-      [10.3, -10.3],   // Player 3: top-right
-      [10.3, 10.3]     // Player 4: bottom-right
+      [-10.4, 10.4],   // Player 1 (Blue): bottom-left
+      [-10.4, -10.4],  // Player 2 (Red): top-left
+      [10.4, -10.4],   // Player 3 (Green): top-right
+      [10.4, 10.4]     // Player 4 (Yellow): bottom-right
     ];
+
+    // Gender configuration: Alternating Female & Male for diversity
     this.females = [true, false, false, true];
     this.skinTones = [0xF1C27D, 0xC68642, 0xE0AC69, 0x8D5524];
-    this.hairColors = [0x3B2417, 0x1C1108, 0x2E1B0F, 0x120D08];
+    this.hairColors = [0x3B2417, 0x111827, 0x2E1B0F, 0x0F172A];
 
     this.buildAll();
   }
-
-  /* ── Easing helpers ────────────────────────────────── */
-
-  // Attempt to reuse a single smoothstep across idle & throw
-  static _smoothstep(t) { return t * t * (3 - 2 * t); }
-  // Spring overshoot: peaks ~1.12 at t≈0.65 then settles to 1
-  static _spring(t) {
-    if (t >= 1) return 1;
-    return 1 - Math.exp(-6 * t) * Math.cos(7.5 * t);
-  }
-  // Cheap seeded-ish pseudo-random per-character from time (deterministic wobble)
-  static _hash(n) { let s = Math.sin(n) * 43758.5453; return s - Math.floor(s); }
-
-  /* ── Build ─────────────────────────────────────────── */
 
   buildAll() {
     for (let i = 0; i < 4; i++) {
@@ -354,114 +422,108 @@ class LudoCharacters {
 
       const group = new THREE.Group();
       group.position.set(x, 0, z);
-      // Face the board center
-      group.rotation.y = Math.atan2(-x, -z);
 
-      // Glowing pedestal ring showing whose character it is
+      // Face toward board center (0, 0)
+      const lookYaw = Math.atan2(-x, -z);
+      group.rotation.y = lookYaw;
+
+      // ---- Multi-Tier Glowing Pedestal Platform ----
+      const pedestalGroup = new THREE.Group();
+
+      // Outer tier
+      const pedBase = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.05, 1.15, 0.12, 32),
+        new THREE.MeshStandardMaterial({
+          color: 0x0F172A,
+          roughness: 0.3,
+          metalness: 0.8
+        })
+      );
+      pedBase.position.y = 0.06;
+      pedBase.receiveShadow = true;
+      pedBase.castShadow = true;
+      pedestalGroup.add(pedBase);
+
+      // Pulsing neon emissive ring
       const ringMat = new THREE.MeshStandardMaterial({
         color,
         emissive: color,
-        emissiveIntensity: 0.15,
+        emissiveIntensity: 0.3,
+        roughness: 0.2,
+        metalness: 0.5
+      });
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.08, 32), ringMat);
+      ring.position.y = 0.14;
+      pedestalGroup.add(ring);
+
+      // Inner platform surface
+      const surfaceMat = new THREE.MeshStandardMaterial({
+        color: 0x1E293B,
         roughness: 0.4,
         metalness: 0.3
       });
-      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.07, 28), ringMat);
-      ring.position.y = 0.035;
-      ring.receiveShadow = true;
-      group.add(ring);
+      const surface = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.04, 32), surfaceMat);
+      surface.position.y = 0.18;
+      pedestalGroup.add(surface);
 
-      // Spotlight above the active character (starts dim)
-      const spot = new THREE.PointLight(color, 0, 8, 2);
-      spot.position.set(0, 5, 0);
-      group.add(spot);
+      // Team colored star emblem in pedestal center
+      const starGeom = new THREE.CylinderGeometry(0.24, 0.24, 0.015, 5);
+      const starMat = new THREE.MeshBasicMaterial({ color });
+      const star = new THREE.Mesh(starGeom, starMat);
+      star.position.y = 0.205;
+      pedestalGroup.add(star);
 
+      group.add(pedestalGroup);
+
+      // ---- Character Model (scale: 2.25 for grand presence) ----
       const body = createHumanoidMesh({
         color,
         skinTone: this.skinTones[i],
         hairColor: this.hairColors[i],
         female: this.females[i],
-        scale: 2.15
+        scale: 2.25,
+        isPawn: false
       });
-      body.position.y = 0.07;
+      body.position.y = 0.2;
       group.add(body);
 
+      // Spotlight right above the character
+      const spot = new THREE.PointLight(color, 0.6, 6);
+      spot.position.set(0, 3.8, 0);
+      group.add(spot);
+
       this.scene.add(group);
+
       this.chars.push({
+        id: i,
         group,
         body,
+        pedestal: pedestalGroup,
         ringMat,
-        ring,
         spot,
         parts: body.userData.parts,
+        baseYaw: lookYaw,
         holdingPose: false,
         throwAnim: null,
-
-        /* ── per-character animation state ── */
-        // Idle gesture state-machine
-        idleGesture: 0,         // 0=none, 1=scratch head, 2=cross arms, 3=arm pump (ready)
-        idleGestureT: 0,
-        idleGestureDur: 0,
-        nextGestureAt: 3 + i * 1.5, // stagger first gestures
-
-        // Weight shift phase offset (unique per character)
-        weightPhase: i * 1.57,
-
-        // Head look targets (smooth)
-        headYaw: 0,
-        headPitch: 0,
-
-        // Active spring animation
-        scaleSpringT: -1,       // <0 means inactive
-        prevActive: false,
-
-        // Torso lean for throw (smoothed)
-        torsoLeanX: 0,
-        torsoLeanZ: 0,
-
-        // Step-forward offset (z in local space)
-        stepOffset: 0,
-
-        // Track dice after throw
-        headTrackDice: false,
-        headTrackT: 0
+        idleSeed: i * 2.37,
+        activePulse: 0.0
       });
     }
   }
 
-  /* ── Public API ─────────────────────────────────────── */
-
   setActive(activeId) {
-    this.activeId = activeId;
+    this.activePlayerId = activeId;
     this.chars.forEach((ch, i) => {
-      const active = i === activeId;
-
-      // Trigger spring animation on transition to active
-      if (active && !ch.prevActive) {
-        ch.scaleSpringT = 0;
-        // Also trigger "ready" arm-pump gesture
-        ch.idleGesture = 3;
-        ch.idleGestureT = 0;
-        ch.idleGestureDur = 0.55;
-      }
-      ch.prevActive = active;
-
-      // Spring-based scale for active, smooth for inactive
-      if (active && ch.scaleSpringT >= 0 && ch.scaleSpringT < 1) {
-        // Spring is handled in update()
-      } else {
-        const target = active ? 1.07 : 1.0;
-        ch.group.scale.x += (target - ch.group.scale.x) * 0.2;
-        ch.group.scale.y = ch.group.scale.x;
-        ch.group.scale.z = ch.group.scale.x;
-      }
-
-      // Spotlight intensity (smooth in update)
-      // Ring pulsing base handled in update()
+      const active = (i === activeId);
+      ch.spot.intensity = active ? 1.6 : 0.3;
+      ch.activePulse = active ? 1.0 : 0.0;
     });
   }
 
   setHolding(playerId) {
-    this.chars.forEach((ch, i) => { ch.holdingPose = (i === playerId); });
+    this.chars.forEach((ch, i) => {
+      ch.holdingPose = (i === playerId);
+    });
   }
 
   getHandWorldPosition(playerId, target) {
@@ -471,277 +533,202 @@ class LudoCharacters {
     return ch.parts.handR.getWorldPosition(target);
   }
 
+  /**
+   * Starts a dynamic, realistic full-body dice throw:
+   * - Windup: Leans back, steps back, raises arm with dice
+   * - Power Release: Lunges forward, sweeps arm forward, releases dice
+   * - Follow-Through: Arm swings down, leans into throw, watches dice travel
+   */
   startThrow(playerId, onRelease) {
     const ch = this.chars[playerId];
     if (!ch) {
       if (onRelease) onRelease();
       return;
     }
-    ch.throwAnim = { t: 0, released: false, onRelease };
-    ch.headTrackDice = false;
-    ch.headTrackT = 0;
+    ch.throwAnim = {
+      t: 0,
+      released: false,
+      onRelease,
+      windupDuration: 0.32,
+      releaseDuration: 0.18,
+      followDuration: 0.45
+    };
   }
-
-  /* ── Per-frame update ───────────────────────────────── */
 
   update(delta) {
     this.time += delta;
-    // Clamp delta for stability on tab-back / hitches
-    const dt = Math.min(delta, 0.05);
 
     this.chars.forEach((ch, i) => {
-      const isActive = (i === this.activeId);
-      const t = this.time;
       const parts = ch.parts;
+      const isActive = (i === this.activePlayerId);
+      const isThrowing = !!ch.throwAnim;
 
-      /* ─── 1. Idle body animation (breathing + weight shift + sway) ─── */
-
-      // Breathing bob
-      const breathe = Math.sin(t * 2.1 + i * 1.7) * 0.012;
-
-      // Weight shift: slow lateral hip sway (period ~3.5s per character)
-      const weightT = t * 1.8 + ch.weightPhase;
-      const weightShift = Math.sin(weightT) * 0.015;  // subtle lateral
-      const legShift = Math.sin(weightT);
-
-      // Legs reflect weight shift: the "weighted" leg straightens,
-      // the other bends slightly
-      parts.legL.rotation.x = legShift * 0.04;
-      parts.legR.rotation.x = -legShift * 0.04;
-      // Slight lateral body sway
-      ch.body.rotation.z = weightShift * 0.6;
-
-      // Very subtle random body sway (fore-aft)
-      const sway = Math.sin(t * 0.9 + i * 2.3) * 0.008
-                 + Math.sin(t * 1.7 + i * 3.1) * 0.005;
-
-      // Apply body Y position (breathing + step offset for throw)
-      ch.body.position.y = 0.07 + breathe;
-      ch.body.position.z = ch.stepOffset;
-
-      // Body sway (lean) in X = forward tilt
-      // Combined: idle sway + throw torso lean
-      ch.body.rotation.x = sway + ch.torsoLeanX;
-
-      /* ─── 2. Head look ─── */
-      let targetYaw = 0;
-      let targetPitch = 0;
-
-      if (ch.headTrackDice) {
-        // After throwing, look down toward the board center
-        targetPitch = 0.2;
-        targetYaw = 0;
-        ch.headTrackT += dt;
-        if (ch.headTrackT > 2.0) ch.headTrackDice = false;
-      } else if (isActive) {
-        // Active character looks toward board center (slightly down)
-        targetPitch = 0.12;
-        targetYaw = 0;
-      } else {
-        // Inactive: slow random look-around
-        targetYaw = Math.sin(t * 0.4 + i * 2.5) * 0.18
-                  + Math.sin(t * 0.7 + i * 4.1) * 0.1;
-        targetPitch = Math.sin(t * 0.35 + i * 1.8) * 0.08;
-      }
-
-      ch.headYaw += (targetYaw - ch.headYaw) * Math.min(1, dt * 3);
-      ch.headPitch += (targetPitch - ch.headPitch) * Math.min(1, dt * 3);
-      parts.head.rotation.y = ch.headYaw;
-      parts.head.rotation.x = ch.headPitch;
-
-      /* ─── 3. Active player emphasis ─── */
-
-      // Ring pulsing glow
+      // Active pedestal breathing pulse
       if (isActive) {
-        const pulse = 0.85 + Math.sin(t * 3.5) * 0.25;
-        ch.ringMat.emissiveIntensity = pulse;
+        const pulse = 0.5 + 0.5 * Math.sin(this.time * 4.5);
+        ch.ringMat.emissiveIntensity = 0.6 + 0.7 * pulse;
+        ch.spot.intensity = 1.3 + 0.5 * pulse;
+        // Subtle energetic hovering/scale spring
+        const targetScale = 1.05 + 0.02 * pulse;
+        ch.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15);
       } else {
-        ch.ringMat.emissiveIntensity += (0.15 - ch.ringMat.emissiveIntensity) * Math.min(1, dt * 4);
+        ch.ringMat.emissiveIntensity = 0.25;
+        ch.spot.intensity = 0.25;
+        ch.group.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
       }
 
-      // Spotlight
-      const spotTarget = isActive ? 1.8 : 0;
-      ch.spot.intensity += (spotTarget - ch.spot.intensity) * Math.min(1, dt * 5);
+      // ---- Throw Sequence Animation ----
+      if (isThrowing) {
+        const anim = ch.throwAnim;
+        anim.t += delta;
+        const wD = anim.windupDuration;
+        const rD = anim.releaseDuration;
+        const fD = anim.followDuration;
 
-      // Spring scale animation
-      if (ch.scaleSpringT >= 0 && ch.scaleSpringT < 1) {
-        ch.scaleSpringT = Math.min(1, ch.scaleSpringT + dt * 2.2);
-        const s = 1.0 + 0.07 * LudoCharacters._spring(ch.scaleSpringT);
-        ch.group.scale.setScalar(s);
-        if (ch.scaleSpringT >= 1) ch.scaleSpringT = -1; // done
-      }
+        if (anim.t < wD) {
+          // PHASE 1: WIND-UP
+          // Lean back, twist torso, pull throwing arm high and back
+          const p = anim.t / wD;
+          const easeBack = p * p;
 
-      /* ─── 4. Idle gestures (occasional) ─── */
+          parts.torso.rotation.x = -0.32 * easeBack;
+          parts.torso.rotation.y = 0.35 * easeBack;
+          parts.head.rotation.x = 0.15 * easeBack;
 
-      if (!ch.throwAnim && !ch.holdingPose) {
-        // Decrement next-gesture timer
-        ch.nextGestureAt -= dt;
-        if (ch.idleGesture === 0 && ch.nextGestureAt <= 0) {
-          // Pick a random gesture (1 = scratch head, 2 = cross arms)
-          ch.idleGesture = Math.random() < 0.5 ? 1 : 2;
-          ch.idleGestureT = 0;
-          ch.idleGestureDur = 1.2 + Math.random() * 0.8;
-          ch.nextGestureAt = 4 + Math.random() * 5; // next gesture in 4-9s
-        }
+          // Right arm raised high back with dice
+          parts.armR.rotation.x = 1.8 * easeBack;
+          parts.armR.rotation.z = -0.4 * easeBack;
+          if (parts.forearmR) parts.forearmR.rotation.x = -1.1 * easeBack;
 
-        if (ch.idleGesture > 0) {
-          ch.idleGestureT += dt;
-          const gp = Math.min(1, ch.idleGestureT / ch.idleGestureDur);
-          // Envelope: ramp up to 0.2, hold, ramp down from 0.8
-          const env = gp < 0.2 ? gp / 0.2
-                    : gp > 0.8 ? (1 - gp) / 0.2
-                    : 1;
+          // Left arm balances out in front
+          parts.armL.rotation.x = -0.6 * easeBack;
+          parts.armL.rotation.z = -0.3 * easeBack;
 
-          if (ch.idleGesture === 1) {
-            // Scratch head: raise right arm overhead
-            parts.armR.rotation.x = -2.5 * env;
-            parts.armR.rotation.z = 0.3 * env;
-            // Tilt head slightly
-            parts.head.rotation.z = -0.1 * env;
-          } else if (ch.idleGesture === 2) {
-            // Cross arms: both arms fold inward
-            parts.armR.rotation.x = -0.8 * env;
-            parts.armR.rotation.z = -0.6 * env;
-            parts.armL.rotation.x = -0.8 * env;
-            parts.armL.rotation.z = 0.6 * env;
-          } else if (ch.idleGesture === 3) {
-            // Ready arm pump (short, excited gesture for becoming active)
-            const pump = Math.sin(gp * Math.PI * 3) * env;
-            parts.armR.rotation.x = -1.3 * pump;
-            parts.armL.rotation.x = -0.5 * pump;
+          // Slight step back into back foot
+          ch.body.position.z = -0.12 * easeBack;
+          ch.body.position.y = 0.2 - 0.04 * easeBack;
+          parts.legR.rotation.x = -0.2 * easeBack;
+          parts.legL.rotation.x = 0.15 * easeBack;
+
+        } else if (anim.t < wD + rD) {
+          // PHASE 2: POWER THROW & LAUNCH
+          const p = (anim.t - wD) / rD;
+          const easeThrow = Math.sin(p * Math.PI * 0.5);
+
+          // Torso lunges forward and twists toward the board center
+          parts.torso.rotation.x = -0.32 + 0.65 * easeThrow;
+          parts.torso.rotation.y = 0.35 - 0.55 * easeThrow;
+          parts.head.rotation.x = -0.2 * easeThrow;
+
+          // Right arm sweeps forward like a baseball/bowling pitch
+          parts.armR.rotation.x = 1.8 - 3.4 * easeThrow;
+          parts.armR.rotation.z = -0.4 + 0.6 * easeThrow;
+          if (parts.forearmR) parts.forearmR.rotation.x = -1.1 + 1.3 * easeThrow;
+
+          // Lunge forward
+          ch.body.position.z = -0.12 + 0.28 * easeThrow;
+          ch.body.position.y = 0.16 + 0.03 * easeThrow;
+
+          // Release the dice midway through the forward sweep
+          if (!anim.released && p >= 0.45) {
+            anim.released = true;
+            if (anim.onRelease) anim.onRelease();
           }
 
-          if (gp >= 1) {
-            ch.idleGesture = 0;
-            ch.idleGestureT = 0;
-          }
-        }
-      }
+        } else if (anim.t < wD + rD + fD) {
+          // PHASE 3: FOLLOW-THROUGH & SETTLE
+          const p = (anim.t - wD - rD) / fD;
+          const settle = 1.0 - Math.min(1.0, p);
 
-      /* ─── 5. Throw animation (full-body) ─── */
+          parts.torso.rotation.x = 0.33 * settle;
+          parts.torso.rotation.y = -0.2 * settle;
+          parts.armR.rotation.x = -1.6 * settle;
+          parts.armR.rotation.z = 0.2 * settle;
+          if (parts.forearmR) parts.forearmR.rotation.x = 0.2 * settle;
 
-      if (ch.throwAnim) {
-        const a = ch.throwAnim;
-        a.t += dt;
-        const WINDUP = 0.35;
-        const RELEASE = 0.2;
-        const FOLLOW = 0.5;
+          // Head looks eagerly at the board
+          parts.head.rotation.x = -0.2 * settle;
 
-        if (a.t < WINDUP) {
-          // ── Windup phase ──
-          const p = a.t / WINDUP;
-          const ep = LudoCharacters._smoothstep(p);
-
-          // Arm winds back
-          parts.armR.rotation.x = 1.6 * ep;
-          parts.armR.rotation.z = 0;
-
-          // Left arm out for balance
-          parts.armL.rotation.x = -0.3 * ep;
-          parts.armL.rotation.z = 0.15 * ep;
-
-          // Body leans back
-          ch.torsoLeanX = -0.12 * ep;
-
-          // Slight step back
-          ch.stepOffset = 0.06 * ep;
-
-          // Head tilts back to look at arm
-          parts.head.rotation.x = -0.15 * ep;
-
-        } else if (a.t < WINDUP + RELEASE) {
-          // ── Release phase ──
-          const p = (a.t - WINDUP) / RELEASE;
-          const ep = LudoCharacters._smoothstep(p);
-
-          // Arm swings forward aggressively
-          parts.armR.rotation.x = 1.6 - 3.3 * ep;
-          parts.armR.rotation.z = 0;
-
-          // Body lunges forward
-          ch.torsoLeanX = -0.12 + 0.25 * ep;
-
-          // Step forward
-          ch.stepOffset = 0.06 - 0.24 * ep;
-
-          // Left arm swings back for momentum
-          parts.armL.rotation.x = -0.3 + 0.5 * ep;
-          parts.armL.rotation.z = 0.15 - 0.3 * ep;
-
-          // Release dice at 40% through release
-          if (!a.released && p > 0.4) {
-            a.released = true;
-            if (a.onRelease) a.onRelease();
-          }
+          ch.body.position.z = 0.16 * settle;
+          ch.body.position.y = 0.2;
+          parts.legR.rotation.x = 0;
+          parts.legL.rotation.x = 0;
 
         } else {
-          // ── Follow-through + relax phase ──
-          const elapsed = a.t - WINDUP - RELEASE;
-          const p = Math.min(1, elapsed / FOLLOW);
-          const ep = LudoCharacters._smoothstep(p);
-
-          // Arm follows through then returns to rest
-          const followArm = -1.7 * (1 - ep);
-          parts.armR.rotation.x = followArm;
-          parts.armR.rotation.z = 0;
-
-          // Body straightens
-          ch.torsoLeanX = 0.13 * (1 - ep);
-
-          // Step back to neutral
-          ch.stepOffset = -0.18 * (1 - ep);
-
-          // Left arm relaxes
-          parts.armL.rotation.x = 0.2 * (1 - ep);
-          parts.armL.rotation.z = -0.15 * (1 - ep);
-
-          // Head tracks dice (look down toward board)
-          parts.head.rotation.x = 0.2 * (1 - ep * 0.5);
-
-          if (p >= 1) {
-            parts.armR.rotation.x = 0;
-            parts.armR.rotation.z = 0;
-            parts.armL.rotation.x = 0;
-            parts.armL.rotation.z = 0;
-            ch.torsoLeanX = 0;
-            ch.stepOffset = 0;
-            ch.throwAnim = null;
-            // Start tracking dice with head
-            ch.headTrackDice = true;
-            ch.headTrackT = 0;
-          }
+          // Finished throw — return control to normal idle
+          parts.torso.rotation.set(0, 0, 0);
+          parts.armR.rotation.set(0, 0, 0);
+          parts.armL.rotation.set(0, 0, 0);
+          if (parts.forearmR) parts.forearmR.rotation.set(0, 0, 0);
+          if (parts.forearmL) parts.forearmL.rotation.set(0, 0, 0);
+          parts.head.rotation.set(0, 0, 0);
+          ch.body.position.set(0, 0.2, 0);
+          ch.throwAnim = null;
         }
 
       } else if (ch.holdingPose) {
-        /* ─── 6. Improved holding pose ─── */
-        // Right arm raised with hand near face level (dice grip)
-        const armTarget = -1.15;
-        parts.armR.rotation.x += (armTarget - parts.armR.rotation.x) * Math.min(1, dt * 10);
-        parts.armR.rotation.z = 0;
+        // ---- DICE HOLDING POSE (Ready to Roll) ----
+        // Smoothly raise right arm in front with palm up, presenting the dice
+        const targetArmRX = -1.25;
+        const targetArmRZ = -0.28;
+        const targetForearmRX = -0.75;
+        const lerpSpeed = Math.min(1, delta * 8.5);
 
-        // Left arm relaxed at side, slightly back
-        const leftTarget = 0.1;
-        parts.armL.rotation.x += (leftTarget - parts.armL.rotation.x) * Math.min(1, dt * 8);
-        parts.armL.rotation.z = 0;
+        parts.armR.rotation.x += (targetArmRX - parts.armR.rotation.x) * lerpSpeed;
+        parts.armR.rotation.z += (targetArmRZ - parts.armR.rotation.z) * lerpSpeed;
+        if (parts.forearmR) {
+          parts.forearmR.rotation.x += (targetForearmRX - parts.forearmR.rotation.x) * lerpSpeed;
+        }
 
-        // Subtle anticipation lean (slight back lean as if about to throw)
-        ch.torsoLeanX += (-0.04 - ch.torsoLeanX) * Math.min(1, dt * 4);
+        // Left arm rests gently on hip
+        parts.armL.rotation.x += (-0.3 - parts.armL.rotation.x) * lerpSpeed;
+        parts.armL.rotation.z += (-0.45 - parts.armL.rotation.z) * lerpSpeed;
 
-        // Look at the dice (slight upward gaze)
-        parts.head.rotation.x = -0.1;
+        // Head looks proudly down towards the dice in hand
+        parts.head.rotation.x += (0.18 - parts.head.rotation.x) * lerpSpeed;
+        parts.head.rotation.y += (0.12 - parts.head.rotation.y) * lerpSpeed;
 
-      } else if (ch.idleGesture === 0) {
-        /* ─── 7. Default idle arm return ─── */
-        parts.armR.rotation.x += (0 - parts.armR.rotation.x) * Math.min(1, dt * 8);
-        parts.armR.rotation.z += (0 - parts.armR.rotation.z) * Math.min(1, dt * 8);
+        // Subtle anticipatory breathing
+        const breath = Math.sin(this.time * 3.2 + ch.idleSeed) * 0.018;
+        ch.body.position.y = 0.2 + breath;
 
-        // Gentle idle sway on the free arm
-        parts.armL.rotation.x += (Math.sin(t * 1.6 + i) * 0.06 - parts.armL.rotation.x) * Math.min(1, dt * 8);
-        parts.armL.rotation.z += (0 - parts.armL.rotation.z) * Math.min(1, dt * 8);
+      } else {
+        // ---- NATURAL IDLE STANCE (Weight shift & breathing) ----
+        const t = this.time + ch.idleSeed;
+        const lerpSpeed = Math.min(1, delta * 6);
 
-        // Smoothly return torso lean and step offset
-        ch.torsoLeanX += (0 - ch.torsoLeanX) * Math.min(1, dt * 6);
-        ch.stepOffset += (0 - ch.stepOffset) * Math.min(1, dt * 6);
+        // Breathing cycle (torso expands/lifts)
+        const breath = Math.sin(t * 2.2) * 0.014;
+        ch.body.position.y = 0.2 + breath;
+
+        // Subtle realistic weight shifting from foot to foot (period ~5.5s)
+        const weightShift = Math.sin(t * 1.15);
+        parts.pelvis.position.x = weightShift * 0.02;
+        parts.pelvis.rotation.z = -weightShift * 0.03;
+        parts.torso.rotation.z = weightShift * 0.025;
+
+        // Gentle arm sway
+        parts.armL.rotation.x += (Math.sin(t * 1.6) * 0.08 - parts.armL.rotation.x) * lerpSpeed;
+        parts.armL.rotation.z += (-0.12 - parts.armL.rotation.z) * lerpSpeed;
+        parts.armR.rotation.x += (Math.sin(t * 1.6 + 1.2) * 0.08 - parts.armR.rotation.x) * lerpSpeed;
+        parts.armR.rotation.z += (0.12 - parts.armR.rotation.z) * lerpSpeed;
+
+        if (parts.forearmL) parts.forearmL.rotation.x += (0 - parts.forearmL.rotation.x) * lerpSpeed;
+        if (parts.forearmR) parts.forearmR.rotation.x += (0 - parts.forearmR.rotation.x) * lerpSpeed;
+
+        // Head subtle idle look around
+        const headSway = Math.sin(t * 0.8) * 0.12;
+        parts.head.rotation.y += (headSway - parts.head.rotation.y) * lerpSpeed;
+        parts.head.rotation.x += (Math.sin(t * 1.4) * 0.04 - parts.head.rotation.x) * lerpSpeed;
+
+        // Ponytail physics sway if female
+        if (parts.pony) {
+          parts.pony.rotation.z = Math.sin(t * 2.5) * 0.15;
+          parts.pony.rotation.x = -0.35 + Math.cos(t * 2.2) * 0.08;
+        }
+
+        // Return body to origin
+        ch.body.position.z += (0 - ch.body.position.z) * lerpSpeed;
       }
     });
   }
