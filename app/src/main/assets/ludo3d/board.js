@@ -463,23 +463,55 @@ class LudoBoardBuilder {
   }
 
   /**
-   * Transparent colored plane used to blink the cells a pawn walks across.
+   * Enhanced cell highlight with inner glow plane + outer halo ring
+   * for vibrant ripple/blink effects during pawn movement.
    */
   createCellHighlight(colorHex) {
-    const geometry = new THREE.PlaneGeometry(1.08, 1.08);
-    const material = new THREE.MeshBasicMaterial({
+    const group = new THREE.Group();
+
+    // Inner bright core
+    const coreGeometry = new THREE.PlaneGeometry(1.08, 1.08);
+    const coreMaterial = new THREE.MeshBasicMaterial({
       color: colorHex,
       transparent: true,
       opacity: 0.0,
       side: THREE.DoubleSide,
       depthWrite: false
     });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.y = 0.356;
-    mesh.renderOrder = 3;
-    mesh.visible = false;
-    return mesh;
+    const core = new THREE.Mesh(coreGeometry, coreMaterial);
+    core.rotation.x = -Math.PI / 2;
+    core.renderOrder = 3;
+    group.add(core);
+
+    // Outer soft halo ring for glow
+    const haloGeometry = new THREE.RingGeometry(0.48, 0.72, 24);
+    const haloMaterial = new THREE.MeshBasicMaterial({
+      color: colorHex,
+      transparent: true,
+      opacity: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+    halo.rotation.x = -Math.PI / 2;
+    halo.renderOrder = 2;
+    group.add(halo);
+
+    group.position.y = 0.356;
+    group.visible = false;
+
+    // Store material refs for animation
+    group.userData.coreMat = coreMaterial;
+    group.userData.haloMat = haloMaterial;
+    group.userData.phase = 0;
+    group.userData.index = 0;
+    group.userData.totalCells = 1;
+
+    // Make group behave like a mesh for the existing code
+    // (material.opacity access compatibility)
+    group.material = coreMaterial;
+
+    return group;
   }
 
   createDiceMesh(skin = 'white') {

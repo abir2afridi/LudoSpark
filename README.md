@@ -11,7 +11,10 @@ Immersive 3D Ludo board game for Android — glossy main menu, Three.js graphics
 
 ### Gameplay
 - **Straight top-down board** (default) with a 2D/3D camera toggle
-- **Realistic dice physics** (Cannon.js) — fair RNG, correct face display, and the dice is tossed **from the active player's own board quadrant**; the HUD dice slot also **moves to whichever player's turn it is**
+- **Realistic dice physics** (Cannon.js) — fair RNG, correct face display; the dice is tossed **from the active player's own board quadrant** and the HUD dice slot **moves to whichever player's turn it is**
+- **3D players around the board** — male & female 3D characters stand at all four sides; the active player's pedestal glows and the dice rests **in their hand** until you tap to roll, then the character winds up and **throws it onto the board**
+- **Pawn skins from the Store** — switch between refined Classic pawns and **3D Human pawns**; human pawns **walk cell-by-cell** with swinging arms & legs instead of hopping
+- **Blinking path cells** — every cell a pawn will cross blinks in that player's color until the pawn stops
 - **2/3/4 players** — Vs AI Bots or Pass & Play (hot-seat)
 - **AI difficulty**: Easy / Normal / Hard (threat avoidance + capture/home strategy)
 - Classic rules: capture, safe stars, 3-consecutive-sixes penalty, extra turns, victory ranking
@@ -46,7 +49,8 @@ Open in Android Studio (Hedgehog or newer); requires device/emulator with API 24
 app/src/main/assets/ludo3d/
   index.html   # Main menu, HUD, modals, UI glue
   game.js      # Game engine (rules, AI, save/resume, camera, dice toss)
-  board.js     # Procedural board texture + 3D meshes
+  board.js     # Procedural board texture + 3D meshes + pawn skins
+  characters.js# 3D humanoid players & shared humanoid factory
   physics.js   # Dice rigid-body physics
   audio.js     # Procedural sound synth
   style.css    # Menu + HUD styling

@@ -786,7 +786,10 @@ class LudoGame {
       this.updateTokenPosition(t, false);
     });
     this.adjustOverlappingTokens();
-    if (this.state === 'WAIT_SELECT') this.highlightMovableTokens();
+    if (this.state === 'WAIT_SELECT') {
+      this.movableTokens = this.getMovableTokens(this.activePlayerIndex, this.currentRoll);
+      this.highlightMovableTokens();
+    }
     this.addHistory(this.pawnSkin === 'human' ? 'Equipped 3D Human Pawns!' : 'Equipped Classic Pawns!');
     this.notifyUI();
   }
@@ -1107,7 +1110,7 @@ class LudoGame {
         this.diceHolder = this.activePlayerIndex;
       }
 
-      if (this.physics.isHeld && this.diceHolder >= 0) {
+      if (this.diceHolder >= 0) {
         const hand = this.characters.getHandWorldPosition(this.diceHolder, this._tmpVec);
         if (hand) {
           this.physics.holdAt(hand.x, hand.y + 0.17, hand.z);
