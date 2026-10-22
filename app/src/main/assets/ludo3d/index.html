@@ -1154,6 +1154,15 @@
         };
       }
 
+      const emojiEmoteMap = {
+        '😂': 'laugh',
+        '😡': 'angry',
+        '😭': 'sad',
+        '👍': 'cool',
+        '😎': 'cool',
+        '🎉': 'cheer'
+      };
+
       const triggerBubble = (textStr) => {
         playClick();
         emojiPanel.style.display = 'none';
@@ -1163,6 +1172,9 @@
         floatingBubble.offsetHeight; // trigger reflow
         floatingBubble.style.animation = 'floatBubble 1.8s ease-out forwards';
         setTimeout(() => { floatingBubble.style.display = 'none'; }, 1800);
+
+        const emote = emojiEmoteMap[textStr] || 'cheer';
+        game.triggerPlayerEmote(0, emote);
       };
 
       ['1', '2', '3', '4', '5', '6'].forEach(i => {
@@ -1177,9 +1189,15 @@
       // Header / Side Reward Clicks
       document.getElementById('menu-btn-settings').onclick = () => { playClick(); settingsModal.style.display = 'flex'; };
       document.getElementById('menu-btn-mail').onclick = () => { playClick(); mailModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-shop').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-coins').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
-      document.getElementById('menu-btn-diamonds').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
+
+      const openShop = () => {
+        playClick();
+        shopModal.style.display = 'flex';
+        shopTurntable.showPawn(game.pawnSkin || 'classic', skinLabels[game.pawnSkin || 'classic'] || 'Classic Royal');
+      };
+      document.getElementById('menu-btn-shop').onclick = openShop;
+      document.getElementById('menu-btn-coins').onclick = openShop;
+      document.getElementById('menu-btn-diamonds').onclick = openShop;
       document.getElementById('menu-btn-free-chest').onclick = () => {
         playClick();
         window.addCoins(500);
@@ -1293,12 +1311,21 @@
       };
       updateDiceSkinUI(game.diceSkin);
 
+      const diceSkinNames = {
+        white: 'White Ivory',
+        gold: 'Royal Gold',
+        neon: 'Cyber Neon',
+        ruby: 'Ruby Jewel',
+        emerald: 'Emerald Jade'
+      };
+
       ['white', 'gold', 'neon', 'ruby', 'emerald'].forEach(s => {
         const btn = document.getElementById(`skin-dice-${s}`);
         if (btn) btn.onclick = () => {
           playClick();
           game.setDiceSkin(s);
           updateDiceSkinUI(s);
+          invTurntable.showDice(s, `${diceSkinNames[s] || s} 3D Dice`);
         };
       });
 
@@ -1364,7 +1391,11 @@
       document.getElementById('nav-tab-home').onclick = () => { playClick(); showMainMenu(); };
       document.getElementById('nav-tab-event').onclick = () => { playClick(); questsModal.style.display = 'flex'; };
       document.getElementById('nav-tab-adda').onclick = () => openNavInfo('🎙️ Voice Adda Chat', 'Chat with voice & animated emojis in real-time with Ludo players around the world!', '🎙️');
-      document.getElementById('nav-tab-inventory').onclick = () => { playClick(); inventoryModal.style.display = 'flex'; };
+      document.getElementById('nav-tab-inventory').onclick = () => {
+        playClick();
+        inventoryModal.style.display = 'flex';
+        invTurntable.showPawn(game.pawnSkin || 'classic', skinLabels[game.pawnSkin || 'classic'] || 'Classic Royal');
+      };
       document.getElementById('nav-tab-social').onclick = () => openNavInfo('💬 Social & Friends', 'Invite Facebook & WhatsApp friends to play together on private tables!', '💬');
 
       // ---- In-Game Pause / Home buttons ----
@@ -1411,24 +1442,35 @@
         document.getElementById('corner-p4')
       ];
 
-      // ---- 15s Turn Timer Badge Display ----
+      // ---- Circular 15s Turn Timer HUD Updates ----
       window.onTimerUpdate = (activePlayerId, remainingSec, totalSec) => {
         const sec = Math.ceil(remainingSec);
-        avatarBoxes.forEach((box, idx) => {
-          if (box) {
-            let timerBadge = box.querySelector('.turn-timer-badge');
-            if (idx === activePlayerId && game.timerActive) {
-              if (!timerBadge) {
-                timerBadge = document.createElement('div');
-                timerBadge.className = 'turn-timer-badge';
-                timerBadge.style.cssText = 'position:absolute; top:-6px; right:-6px; background:#EF4444; color:#FFF; font-size:10px; font-weight:900; padding:1px 5px; border-radius:10px; border:1px solid #FFF; box-shadow:0 2px 6px rgba(0,0,0,0.5); z-index:10;';
-                box.appendChild(timerBadge);
-              }
-              timerBadge.innerText = `⏱️ ${sec}s`;
-              timerBadge.style.display = 'block';
-            } else if (timerBadge) {
-              timerBadge.style.display = 'none';
+        [0, 1, 2, 3].forEach(idx => {
+          const ringEl = document.getElementById(`timer-ring-${idx}`);
+          const fillEl = document.getElementById(`timer-fill-${idx}`);
+          const badgeEl = document.getElementById(`timer-badge-${idx}`);
+          if (!ringEl || !fillEl || !badgeEl) return;
+
+          if (idx === activePlayerId && game.timerActive && remainingSec > 0) {
+            ringEl.style.display = 'block';
+            badgeEl.style.display = 'flex';
+
+            const circumference = 201.06; // 2 * PI * 32
+            const fraction = Math.max(0, Math.min(1, remainingSec / totalSec));
+            const offset = (1.0 - fraction) * circumference;
+            fillEl.style.strokeDashoffset = offset;
+            badgeEl.innerText = sec;
+
+            if (remainingSec <= 5) {
+              fillEl.classList.add('warning');
+              badgeEl.classList.add('warning');
+            } else {
+              fillEl.classList.remove('warning');
+              badgeEl.classList.remove('warning');
             }
+          } else {
+            ringEl.style.display = 'none';
+            badgeEl.style.display = 'none';
           }
         });
       };
@@ -1438,6 +1480,15 @@
         const { activePlayer, state, currentRoll, history, isGameOver } = data;
         const progress = data.playerProgress || [];
         const numPlayers = data.numPlayers || 4;
+
+        if (state !== 'WAIT_ROLL' && state !== 'WAIT_SELECT') {
+          [0, 1, 2, 3].forEach(idx => {
+            const ringEl = document.getElementById(`timer-ring-${idx}`);
+            const badgeEl = document.getElementById(`timer-badge-${idx}`);
+            if (ringEl) ringEl.style.display = 'none';
+            if (badgeEl) badgeEl.style.display = 'none';
+          });
+        }
 
         cornerEls.forEach((el, idx) => {
           if (el) el.style.display = (idx < numPlayers) ? '' : 'none';
