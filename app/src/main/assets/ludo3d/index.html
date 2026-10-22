@@ -578,6 +578,16 @@
         </div>
       </div>
 
+      <div style="background:#0F172A; padding:10px; border-radius:12px; border:1px solid #38BDF8; margin-top:8px;">
+        <b style="color:#FBBF24; display:block; margin-bottom:6px;">🌌 Menu Background Theme</b>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+          <button class="modal-btn" id="menu-bg-blue" style="padding:6px; font-size:11px;">🔵 Space Blue</button>
+          <button class="modal-btn" id="menu-bg-sunset" style="padding:6px; font-size:11px;">🌅 Sunset Gold</button>
+          <button class="modal-btn" id="menu-bg-cyber" style="padding:6px; font-size:11px;">🏙️ Cyberpunk</button>
+          <button class="modal-btn" id="menu-bg-emerald" style="padding:6px; font-size:11px;">🌲 Emerald</button>
+        </div>
+      </div>
+
       <button id="btn-close-inventory" class="modal-btn" style="background:#475569; margin-top:8px;">Close</button>
     </div>
   </div>
@@ -1350,6 +1360,24 @@
         };
       });
 
+      const setMenuBackground = (bgName) => {
+        try { localStorage.setItem('ludoSpark.menuBg', bgName); } catch (e) {}
+        mainMenuEl.classList.remove('menu-bg-sunset', 'menu-bg-cyber', 'menu-bg-emerald');
+        if (bgName !== 'blue') {
+          mainMenuEl.classList.add(`menu-bg-${bgName}`);
+        }
+        ['blue', 'sunset', 'cyber', 'emerald'].forEach(b => {
+          const btn = document.getElementById(`menu-bg-${b}`);
+          if (btn) btn.style.background = (b === bgName) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      setMenuBackground(localStorage.getItem('ludoSpark.menuBg') || 'blue');
+
+      ['blue', 'sunset', 'cyber', 'emerald'].forEach(b => {
+        const btn = document.getElementById(`menu-bg-${b}`);
+        if (btn) btn.onclick = () => { playClick(); setMenuBackground(b); };
+      });
+
       // Start BGM
       window.soundEngine.startBGM();
 
@@ -1500,8 +1528,12 @@
         }
       };
 
+      // Initialize HUD with the current game state (dice blink, active player, tags)
+      game.notifyUI();
+
       // Tapping the Dice Slot triggers roll
-      const tryRoll = () => {        if (game.state === 'WAIT_ROLL' && !game.playerConfigs[game.activePlayerIndex].isAI) {
+      const tryRoll = () => {
+        if (game.state === 'WAIT_ROLL' && !game.playerConfigs[game.activePlayerIndex].isAI) {
           game.handleRoll();
         }
       };

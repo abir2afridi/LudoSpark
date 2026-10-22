@@ -72,7 +72,18 @@ body, html {
   color: #FFFFFF;
   overflow: hidden;
   touch-action: manipulation;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, background 0.4s ease;
+}
+
+/* Background Theme Variants */
+.main-menu-overlay.menu-bg-sunset {
+  background: radial-gradient(circle at 50% 30%, #7C2D12 0%, #451A03 55%, #180902 100%);
+}
+.main-menu-overlay.menu-bg-cyber {
+  background: radial-gradient(circle at 50% 30%, #4C1D95 0%, #1E1B4B 55%, #0F0E26 100%);
+}
+.main-menu-overlay.menu-bg-emerald {
+  background: radial-gradient(circle at 50% 30%, #064E3B 0%, #022C22 55%, #01140E 100%);
 }
 
 /* Background watermark / subtle ludo board texture */
@@ -177,6 +188,29 @@ body, html {
 .shop-cart-btn {
   background: linear-gradient(180deg, #F59E0B 0%, #B45309 100%);
   border-color: #FEF3C7;
+}
+
+/* Audio Equalizer Bars in Header */
+.equalizer-icon {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+  margin-left: 4px;
+}
+.equalizer-bar {
+  width: 3px;
+  background: #FEF3C7;
+  border-radius: 2px;
+  animation: eqWave 0.6s infinite ease-in-out alternate;
+}
+.equalizer-bar:nth-child(1) { height: 60%; animation-delay: 0.1s; }
+.equalizer-bar:nth-child(2) { height: 100%; animation-delay: 0.3s; }
+.equalizer-bar:nth-child(3) { height: 40%; animation-delay: 0.2s; }
+
+@keyframes eqWave {
+  0% { height: 20%; }
+  100% { height: 100%; }
 }
 
 /* Resources Right */

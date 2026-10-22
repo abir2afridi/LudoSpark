@@ -1247,12 +1247,32 @@ class LudoGame {
     this.fitBoardToScreen();
   }
 
+  spawnDiceTrailParticle(pos) {
+    const geom = new THREE.SphereGeometry(0.08, 8, 8);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xFBBF24, transparent: true, opacity: 0.85 });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.copy(pos);
+    this.scene.add(mesh);
+    this.confettiParticles.push({
+      mesh,
+      vel: new THREE.Vector3((Math.random() - 0.5) * 1, Math.random() * 2, (Math.random() - 0.5) * 1),
+      rotVel: new THREE.Vector3(0,0,0),
+      lifetime: 0.4,
+      age: 0
+    });
+  }
+
   animate() {
     requestAnimationFrame(this.animate);
     const delta = this.clock.getDelta();
 
     // Physics step
     if (this.physics) {
+      this.physics.update(delta);
+      if (this.physics.isRolling && this.diceMesh && Math.random() < 0.6) {
+        this.spawnDiceTrailParticle(this.diceMesh.position);
+      }
+    }
       this.physics.update(delta);
     }
 
