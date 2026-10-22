@@ -31,6 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.example.ui.theme.MidnightNavy
 import com.example.ui.theme.MyApplicationTheme
 
@@ -40,10 +43,29 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
 
+    // Immersive fullscreen: hide status + system navigation bars.
+    // Swiping from a screen edge briefly reveals them (standard game behavior).
+    WindowCompat.setDecorFitsSystemWindows(window, false)
+    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+    insetsController.hide(WindowInsetsCompat.Type.systemBars())
+    insetsController.systemBarsBehavior =
+      WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
     setContent {
       MyApplicationTheme {
         LudoMainScreen()
       }
+    }
+  }
+
+  override fun onWindowFocusChanged(hasFocus: Boolean) {
+    super.onWindowFocusChanged(hasFocus)
+    if (hasFocus) {
+      // Re-hide bars in case the system brought them back (e.g. after dialogs)
+      val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+      insetsController.hide(WindowInsetsCompat.Type.systemBars())
+      insetsController.systemBarsBehavior =
+        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
   }
 }
