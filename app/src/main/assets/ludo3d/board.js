@@ -1,21 +1,15 @@
 /**
  * 3D Ludo Board Generator & Procedural Texture Studio
- * Matches the official Ludo game layout in the reference screenshot:
- * - Top-Left: RED (Player 2)
- * - Top-Right: GREEN (Player 3)
- * - Bottom-Left: BLUE (Player 1)
- * - Bottom-Right: YELLOW (Player 4)
- * - Neon metallic cyan/blue border frame
- * - Percentage progress indicators on yards
- * - Distinct colored stars & curving directional arrows
+ * Supports multiple 3D Dice Skins & Board Themes:
+ * - Skins: Classic White, Royal Gold, Cyber Neon, Ruby Jewel, Emerald Jade
+ * - Themes: Classic Royal, Mahogany Wood, Cyberpunk Neon, Galaxy Nebula
  */
 class LudoBoardBuilder {
   constructor() {
-    this.boardSize = 18.0; // 3D units across
-    this.cellSize = this.boardSize / 15.0; // 1.2 units per cell
+    this.boardSize = 18.0;
+    this.cellSize = this.boardSize / 15.0;
   }
 
-  // Convert (row, col) [0..14] to 3D world (x, z)
   cellToWorld(row, col) {
     const half = this.boardSize / 2;
     const x = (col + 0.5) * this.cellSize - half;
@@ -24,21 +18,40 @@ class LudoBoardBuilder {
   }
 
   /**
-   * Generates a 2048x2048 high-res Ludo board texture matching the screenshot
+   * Generates a high-res 2048x2048 Ludo board texture
    */
-  createBoardTexture() {
+  createBoardTexture(theme = 'classic') {
     const canvas = document.createElement('canvas');
     canvas.width = 2048;
     canvas.height = 2048;
     const ctx = canvas.getContext('2d');
     const S = 2048;
-    const cs = S / 15; // ~136.5px per cell
+    const cs = S / 15;
 
-    // 1. Board Background: Pure White
-    ctx.fillStyle = '#FFFFFF';
+    // Theme color palettes
+    let bgFill = '#FFFFFF';
+    let lineStroke = '#334155';
+    let yardBg = '#F8FAFC';
+
+    if (theme === 'wood') {
+      bgFill = '#5C3317';
+      lineStroke = '#3D1E0B';
+      yardBg = '#8B4513';
+    } else if (theme === 'cyber') {
+      bgFill = '#090D16';
+      lineStroke = '#38BDF8';
+      yardBg = '#1E293B';
+    } else if (theme === 'galaxy') {
+      bgFill = '#020617';
+      lineStroke = '#6366F1';
+      yardBg = '#0F172A';
+    }
+
+    // 1. Board Background
+    ctx.fillStyle = bgFill;
     ctx.fillRect(0, 0, S, S);
 
-    // Helper: Rounded rectangle
+    // Helpers
     const roundRect = (x, y, w, h, r, fill, stroke, strokeW = 3) => {
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -62,7 +75,6 @@ class LudoBoardBuilder {
       }
     };
 
-    // Helper: 5-point Star
     const drawStar = (cx, cy, spikes, outerRadius, innerRadius, fillColor, strokeColor) => {
       let rot = (Math.PI / 2) * 3;
       let x = cx;
@@ -93,14 +105,12 @@ class LudoBoardBuilder {
       }
     };
 
-    // Helper: Curving Start Arrow (matching screenshot)
     const drawCurvedArrow = (cx, cy, rotAngle, color) => {
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(rotAngle);
 
       ctx.beginPath();
-      // Curved U-turn tail
       ctx.arc(0, cs * 0.1, cs * 0.22, Math.PI, 0, false);
       ctx.lineTo(cs * 0.22, -cs * 0.15);
       ctx.lineWidth = 8;
@@ -108,7 +118,6 @@ class LudoBoardBuilder {
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Arrowhead
       ctx.beginPath();
       ctx.moveTo(cs * 0.05, -cs * 0.12);
       ctx.lineTo(cs * 0.22, -cs * 0.28);
@@ -120,22 +129,19 @@ class LudoBoardBuilder {
       ctx.restore();
     };
 
-    // 2. Draw 4 Corner Home Yards
+    // 2. Corner Home Yards
     const drawBase = (row, col, colorHex, label, labelSide) => {
       const bx = col * cs;
       const by = row * cs;
       const bw = 6 * cs;
       const bh = 6 * cs;
 
-      // Solid color base
       ctx.fillStyle = colorHex;
       ctx.fillRect(bx, by, bw, bh);
 
-      // Inner white card with rounded corners and subtle shadow
       const pad = cs * 0.85;
-      roundRect(bx + pad, by + pad, bw - pad * 2, bh - pad * 2, 22, '#F8FAFC', '#94A3B8', 4);
+      roundRect(bx + pad, by + pad, bw - pad * 2, bh - pad * 2, 22, yardBg, '#94A3B8', 4);
 
-      // 4 circular token sockets with silver outer ring & colored center
       const sockets = [
         { r: row + 1.8, c: col + 1.8 },
         { r: row + 1.8, c: col + 4.2 },
@@ -149,13 +155,11 @@ class LudoBoardBuilder {
         const outerR = cs * 0.65;
         const innerR = cs * 0.48;
 
-        // Shadow
         ctx.beginPath();
         ctx.arc(sx, sy + 3, outerR, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,0,0,0.15)';
         ctx.fill();
 
-        // Metallic silver outer ring
         const ringGrad = ctx.createLinearGradient(sx - outerR, sy - outerR, sx + outerR, sy + outerR);
         ringGrad.addColorStop(0, '#E2E8F0');
         ringGrad.addColorStop(0.5, '#CBD5E1');
@@ -168,7 +172,6 @@ class LudoBoardBuilder {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Colored recessed center socket
         ctx.beginPath();
         ctx.arc(sx, sy, innerR, 0, Math.PI * 2);
         ctx.fillStyle = colorHex;
@@ -178,7 +181,6 @@ class LudoBoardBuilder {
         ctx.stroke();
       });
 
-      // Player Label
       ctx.save();
       ctx.font = 'bold 30px sans-serif';
       ctx.fillStyle = '#FFFFFF';
@@ -201,183 +203,64 @@ class LudoBoardBuilder {
       ctx.restore();
     };
 
-    // Draw 4 Yards according to screenshot layout:
-    // Top-Left: RED (Player 2)
     drawBase(0, 0, '#E11D48', 'Player 2', 'left');
-    // Top-Right: GREEN (Player 3)
     drawBase(0, 9, '#16A34A', 'Player 3', 'top');
-    // Bottom-Left: BLUE (Player 1)
     drawBase(9, 0, '#2563EB', 'Player 1', 'bottom');
-    // Bottom-Right: YELLOW (Player 4)
     drawBase(9, 9, '#EAB308', 'Player 4', 'right');
 
-    // 3. Draw Track Grid (15x15)
+    // 3. Track Grid
     for (let r = 0; r < 15; r++) {
       for (let c = 0; c < 15; c++) {
-        // Skip yard quadrants and center goal
         const inRedBase = r < 6 && c < 6;
         const inGreenBase = r < 6 && c >= 9;
         const inBlueBase = r >= 9 && c < 6;
         const inYellowBase = r >= 9 && c >= 9;
         const inCenter = r >= 6 && r <= 8 && c >= 6 && c <= 8;
 
-        if (inRedBase || inGreenBase || inBlueBase || inYellowBase || inCenter) {
-          continue;
-        }
+        if (inRedBase || inGreenBase || inBlueBase || inYellowBase || inCenter) continue;
 
-        const x = c * cs;
-        const y = r * cs;
-
-        ctx.strokeStyle = '#334155';
+        ctx.strokeStyle = lineStroke;
         ctx.lineWidth = 2.5;
-        ctx.strokeRect(x, y, cs, cs);
+        ctx.strokeRect(c * cs, r * cs, cs, cs);
       }
     }
 
-    // 4. Colored Home Corridors
-    // Red Corridor: row 7, cols 1..5
-    for (let c = 1; c <= 5; c++) {
-      ctx.fillStyle = '#E11D48';
-      ctx.fillRect(c * cs, 7 * cs, cs, cs);
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(c * cs, 7 * cs, cs, cs);
-    }
-    // Green Corridor: col 7, rows 1..5
-    for (let r = 1; r <= 5; r++) {
-      ctx.fillStyle = '#16A34A';
-      ctx.fillRect(7 * cs, r * cs, cs, cs);
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(7 * cs, r * cs, cs, cs);
-    }
-    // Yellow Corridor: row 7, cols 9..13
-    for (let c = 9; c <= 13; c++) {
-      ctx.fillStyle = '#EAB308';
-      ctx.fillRect(c * cs, 7 * cs, cs, cs);
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(c * cs, 7 * cs, cs, cs);
-    }
-    // Blue Corridor: col 7, rows 9..13
-    for (let r = 9; r <= 13; r++) {
-      ctx.fillStyle = '#2563EB';
-      ctx.fillRect(7 * cs, r * cs, cs, cs);
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(7 * cs, r * cs, cs, cs);
-    }
+    // 4. Corridors
+    for (let c = 1; c <= 5; c++) { ctx.fillStyle = '#E11D48'; ctx.fillRect(c * cs, 7 * cs, cs, cs); }
+    for (let r = 1; r <= 5; r++) { ctx.fillStyle = '#16A34A'; ctx.fillRect(7 * cs, r * cs, cs, cs); }
+    for (let c = 9; c <= 13; c++) { ctx.fillStyle = '#EAB308'; ctx.fillRect(c * cs, 7 * cs, cs, cs); }
+    for (let r = 9; r <= 13; r++) { ctx.fillStyle = '#2563EB'; ctx.fillRect(7 * cs, r * cs, cs, cs); }
 
-    // 5. Start Cells with Matching Colors & Curving Arrows
-    // Red Start: row 6, col 1
-    ctx.fillStyle = '#E11D48';
-    ctx.fillRect(1 * cs, 6 * cs, cs, cs);
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(1 * cs, 6 * cs, cs, cs);
-    drawCurvedArrow(1.5 * cs, 6.5 * cs, 0, '#E11D48'); // red curving right
+    // 5. Start Cells & Arrows
+    ctx.fillStyle = '#E11D48'; ctx.fillRect(1 * cs, 6 * cs, cs, cs); drawCurvedArrow(1.5 * cs, 6.5 * cs, 0, '#E11D48');
+    ctx.fillStyle = '#16A34A'; ctx.fillRect(8 * cs, 1 * cs, cs, cs); drawCurvedArrow(8.5 * cs, 1.5 * cs, Math.PI / 2, '#16A34A');
+    ctx.fillStyle = '#EAB308'; ctx.fillRect(13 * cs, 8 * cs, cs, cs); drawCurvedArrow(13.5 * cs, 8.5 * cs, Math.PI, '#EAB308');
+    ctx.fillStyle = '#2563EB'; ctx.fillRect(6 * cs, 13 * cs, cs, cs); drawCurvedArrow(6.5 * cs, 13.5 * cs, -Math.PI / 2, '#2563EB');
 
-    // Green Start: row 1, col 8
-    ctx.fillStyle = '#16A34A';
-    ctx.fillRect(8 * cs, 1 * cs, cs, cs);
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(8 * cs, 1 * cs, cs, cs);
-    drawCurvedArrow(8.5 * cs, 1.5 * cs, Math.PI / 2, '#16A34A'); // green curving down
-
-    // Yellow Start: row 8, col 13
-    ctx.fillStyle = '#EAB308';
-    ctx.fillRect(13 * cs, 8 * cs, cs, cs);
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(13 * cs, 8 * cs, cs, cs);
-    drawCurvedArrow(13.5 * cs, 8.5 * cs, Math.PI, '#EAB308'); // yellow curving left
-
-    // Blue Start: row 13, col 6
-    ctx.fillStyle = '#2563EB';
-    ctx.fillRect(6 * cs, 13 * cs, cs, cs);
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(6 * cs, 13 * cs, cs, cs);
-    drawCurvedArrow(6.5 * cs, 13.5 * cs, -Math.PI / 2, '#2563EB'); // blue curving up
-
-    // 6. Star Safe Cells (with matching colors from screenshot)
-    // Red Star: (8, 2)
+    // 6. Star Safe Cells
     drawStar(2.5 * cs, 8.5 * cs, 5, cs * 0.38, cs * 0.18, '#E11D48', '#9F1239');
-    // Green Star: (2, 6)
     drawStar(6.5 * cs, 2.5 * cs, 5, cs * 0.38, cs * 0.18, '#16A34A', '#15803D');
-    // Yellow Star: (6, 12)
     drawStar(12.5 * cs, 6.5 * cs, 5, cs * 0.38, cs * 0.18, '#EAB308', '#A16207');
-    // Blue Star: (12, 8)
     drawStar(8.5 * cs, 12.5 * cs, 5, cs * 0.38, cs * 0.18, '#2563EB', '#1D4ED8');
 
-    // 7. Center Home Triangles
-    const cx = 7.5 * cs;
-    const cy = 7.5 * cs;
-    const minX = 6 * cs;
-    const maxX = 9 * cs;
-    const minY = 6 * cs;
-    const maxY = 9 * cs;
+    // 7. Center Triangles
+    const cx = 7.5 * cs, cy = 7.5 * cs;
+    const minX = 6 * cs, maxX = 9 * cs, minY = 6 * cs, maxY = 9 * cs;
 
-    // Red Center Triangle (Left)
-    ctx.beginPath();
-    ctx.moveTo(minX, minY);
-    ctx.lineTo(cx, cy);
-    ctx.lineTo(minX, maxY);
-    ctx.closePath();
-    ctx.fillStyle = '#E11D48';
-    ctx.fill();
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Green Center Triangle (Top)
-    ctx.beginPath();
-    ctx.moveTo(minX, minY);
-    ctx.lineTo(cx, cy);
-    ctx.lineTo(maxX, minY);
-    ctx.closePath();
-    ctx.fillStyle = '#16A34A';
-    ctx.fill();
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Yellow Center Triangle (Right)
-    ctx.beginPath();
-    ctx.moveTo(maxX, minY);
-    ctx.lineTo(cx, cy);
-    ctx.lineTo(maxX, maxY);
-    ctx.closePath();
-    ctx.fillStyle = '#EAB308';
-    ctx.fill();
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Blue Center Triangle (Bottom)
-    ctx.beginPath();
-    ctx.moveTo(minX, maxY);
-    ctx.lineTo(cx, cy);
-    ctx.lineTo(maxX, maxY);
-    ctx.closePath();
-    ctx.fillStyle = '#2563EB';
-    ctx.fill();
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Board outline boundary
-    ctx.strokeStyle = '#0F172A';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(0, 0, S, S);
+    ctx.beginPath(); ctx.moveTo(minX, minY); ctx.lineTo(cx, cy); ctx.lineTo(minX, maxY); ctx.closePath(); ctx.fillStyle = '#E11D48'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(minX, minY); ctx.lineTo(cx, cy); ctx.lineTo(maxX, minY); ctx.closePath(); ctx.fillStyle = '#16A34A'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(maxX, minY); ctx.lineTo(cx, cy); ctx.lineTo(maxX, maxY); ctx.closePath(); ctx.fillStyle = '#EAB308'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(minX, maxY); ctx.lineTo(cx, cy); ctx.lineTo(maxX, maxY); ctx.closePath(); ctx.fillStyle = '#2563EB'; ctx.fill();
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.anisotropy = 8;
     return texture;
   }
 
-  createDiceMaterials() {
+  /**
+   * Creates 3D Dice materials for customizable skins
+   */
+  createDiceMaterials(skin = 'white') {
     const materials = [];
     const configs = [
       { val: 1, pips: [[0.5, 0.5]], color: '#DC2626', size: 0.22 },
@@ -398,14 +281,30 @@ class LudoBoardBuilder {
       const ctx = canvas.getContext('2d');
       const S = 512;
 
-      // Clean white glossy dice face
+      let bgGrad1 = '#FFFFFF', bgGrad2 = '#F1F5F9', pipCol = cfg.color;
+      let roughnessVal = 0.2, metalnessVal = 0.1;
+
+      if (skin === 'gold') {
+        bgGrad1 = '#F59E0B'; bgGrad2 = '#B45309'; pipCol = '#FEF3C7';
+        roughnessVal = 0.1; metalnessVal = 0.85;
+      } else if (skin === 'neon') {
+        bgGrad1 = '#0F172A'; bgGrad2 = '#020617'; pipCol = '#38BDF8';
+        roughnessVal = 0.3; metalnessVal = 0.4;
+      } else if (skin === 'ruby') {
+        bgGrad1 = '#EF4444'; bgGrad2 = '#991B1B'; pipCol = '#FFFFFF';
+        roughnessVal = 0.15; metalnessVal = 0.3;
+      } else if (skin === 'emerald') {
+        bgGrad1 = '#10B981'; bgGrad2 = '#065F46'; pipCol = '#FBBF24';
+        roughnessVal = 0.15; metalnessVal = 0.3;
+      }
+
       const bgGrad = ctx.createRadialGradient(S / 2, S / 2, 60, S / 2, S / 2, S * 0.7);
-      bgGrad.addColorStop(0, '#FFFFFF');
-      bgGrad.addColorStop(1, '#F1F5F9');
+      bgGrad.addColorStop(0, bgGrad1);
+      bgGrad.addColorStop(1, bgGrad2);
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, S, S);
 
-      ctx.strokeStyle = 'rgba(203,213,225,0.6)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
       ctx.lineWidth = 14;
       ctx.strokeRect(7, 7, S - 14, S - 14);
 
@@ -415,17 +314,12 @@ class LudoBoardBuilder {
         const r = cfg.size * S;
 
         const pipGrad = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.2, r * 0.1, cx, cy, r);
-        pipGrad.addColorStop(0, cfg.color);
+        pipGrad.addColorStop(0, pipCol);
         pipGrad.addColorStop(1, '#000000');
 
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fillStyle = pipGrad;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(cx - r * 0.35, cy - r * 0.35, r * 0.2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.45)';
         ctx.fill();
       });
 
@@ -433,8 +327,8 @@ class LudoBoardBuilder {
       materials.push(
         new THREE.MeshStandardMaterial({
           map: tex,
-          roughness: 0.2,
-          metalness: 0.1
+          roughness: roughnessVal,
+          metalness: metalnessVal
         })
       );
     });
@@ -442,14 +336,13 @@ class LudoBoardBuilder {
     return materials;
   }
 
-  buildBoard(scene) {
+  buildBoard(scene, theme = 'classic') {
     const group = new THREE.Group();
 
-    // 1. Glowing Neon-Cyan Metallic Frame (matches the glowing blue rim in screenshot)
     const baseW = this.boardSize + 0.9;
     const baseGeom = new THREE.BoxGeometry(baseW, 0.65, baseW);
     const baseMat = new THREE.MeshStandardMaterial({
-      color: 0x0088EE,
+      color: theme === 'wood' ? 0x5C3317 : (theme === 'cyber' ? 0x0F172A : 0x0088EE),
       metalness: 0.85,
       roughness: 0.25
     });
@@ -459,15 +352,13 @@ class LudoBoardBuilder {
     boardBase.castShadow = true;
     group.add(boardBase);
 
-    // Cyan Neon Accent Line
     const neonGeom = new THREE.BoxGeometry(baseW + 0.08, 0.12, baseW + 0.08);
     const neonMat = new THREE.MeshBasicMaterial({ color: 0x38BDF8 });
     const neonMesh = new THREE.Mesh(neonGeom, neonMat);
     neonMesh.position.y = 0.26;
     group.add(neonMesh);
 
-    // 2. High-Res Ludo Playing Field Surface
-    const boardTex = this.createBoardTexture();
+    const boardTex = this.createBoardTexture(theme);
     this.boardTexture = boardTex;
     const surfaceGeom = new THREE.PlaneGeometry(this.boardSize, this.boardSize);
     const surfaceMat = new THREE.MeshStandardMaterial({
@@ -485,13 +376,9 @@ class LudoBoardBuilder {
     return group;
   }
 
-  /**
-   * Creates 3D Pawn tokens matching the domed cap with silver base in screenshot
-   */
   createTokenMesh(colorHex, playerId, tokenIndex) {
     const pawnGroup = new THREE.Group();
 
-    // Silver metallic pedestal base
     const baseGeom = new THREE.CylinderGeometry(0.38, 0.44, 0.24, 24);
     const silverMat = new THREE.MeshStandardMaterial({
       color: 0xCBD5E1,
@@ -502,7 +389,6 @@ class LudoBoardBuilder {
     baseMesh.position.y = 0.12;
     baseMesh.castShadow = true;
 
-    // Colored domed body & cap
     const bodyGeom = new THREE.CylinderGeometry(0.24, 0.36, 0.5, 24);
     const headGeom = new THREE.SphereGeometry(0.34, 24, 24);
 
@@ -534,8 +420,8 @@ class LudoBoardBuilder {
     return pawnGroup;
   }
 
-  createDiceMesh() {
-    const diceMaterials = this.createDiceMaterials();
+  createDiceMesh(skin = 'white') {
+    const diceMaterials = this.createDiceMaterials(skin);
     const diceGeom = new THREE.BoxGeometry(1.15, 1.15, 1.15);
     const diceMesh = new THREE.Mesh(diceGeom, diceMaterials);
     diceMesh.castShadow = true;

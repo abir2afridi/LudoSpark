@@ -19,8 +19,240 @@
   <!-- 3D WebGL Canvas Container -->
   <div id="canvas-container"></div>
 
-  <!-- In-Game UI Overlay Matching Screenshot -->
-  <div id="ui-overlay">
+  <!-- ========================================================================== -->
+  <!-- MAIN MENU OVERLAY (EXACT SCREENSHOT DESIGN)                                -->
+  <!-- ========================================================================== -->
+  <div id="main-menu" class="main-menu-overlay">
+    <!-- Top Header Bar -->
+    <div class="menu-top-bar">
+      <!-- Left: Profile Avatar + Level Star + Settings + Mail -->
+      <div class="menu-left-profile">
+        <div class="profile-avatar-container" id="menu-btn-profile">
+          <img src="avatar1.jpg" alt="Profile" class="profile-avatar-img">
+          <div class="profile-level-badge">
+            <span class="star-icon">★</span>
+            <span class="level-num">1</span>
+          </div>
+        </div>
+        <button class="menu-header-circle-btn" id="menu-btn-settings" title="Settings">⚙️</button>
+        <button class="menu-header-circle-btn" id="menu-btn-mail" title="Mail">✉️</button>
+      </div>
+
+      <!-- Center/Right: Diamonds + Coins + Shop Cart -->
+      <div class="menu-right-resources">
+        <!-- Diamond Pill -->
+        <div class="resource-pill" id="menu-btn-diamonds">
+          <span class="res-icon">💎</span>
+          <span class="res-val" id="menu-diamond-count">50</span>
+          <button class="res-plus-btn">+</button>
+        </div>
+
+        <!-- Coin Pill -->
+        <div class="resource-pill" id="menu-btn-coins">
+          <span class="res-icon">🪙</span>
+          <span class="res-val" id="menu-coin-count">2,550</span>
+          <button class="res-plus-btn">+</button>
+        </div>
+
+        <!-- Shop Cart Button -->
+        <button class="menu-header-circle-btn shop-cart-btn" id="menu-btn-shop" title="Shop">🛒</button>
+      </div>
+    </div>
+
+    <!-- Top Right Free Treasure Chest -->
+    <div class="top-free-chest-wrapper" id="menu-btn-free-chest">
+      <div class="free-chest-badge">FREE</div>
+      <div class="free-chest-icon">🧰</div>
+    </div>
+
+    <!-- Main Content Body -->
+    <div class="menu-body-content">
+      <!-- Hero Title Logo ("KING LUDO") -->
+      <div class="hero-logo-container">
+        <div class="crown-icon">👑</div>
+        <div class="logo-text-king">KING</div>
+        <div class="logo-letters-row">
+          <span class="ludo-letter letter-l">L</span>
+          <span class="ludo-letter letter-u">U</span>
+          <span class="ludo-letter letter-d">D</span>
+          <span class="ludo-letter letter-o">O</span>
+        </div>
+
+        <!-- 3D Pawns & Board Hero Center Graphic -->
+        <div class="hero-3d-graphic">
+          <div class="pawn pawn-blue">♟</div>
+          <div class="pawn pawn-red">♟</div>
+          <div class="mini-board-preview">
+            <div class="mini-dice">🎲</div>
+          </div>
+          <div class="pawn pawn-green">♟</div>
+          <div class="pawn pawn-yellow">♟</div>
+        </div>
+
+        <!-- Help Question Speech Bubble Button -->
+        <button class="help-question-btn" id="menu-btn-help" title="How to Play">❓</button>
+      </div>
+
+      <!-- Game Mode Grid (Exact Screenshot Layout) -->
+      <div class="game-modes-grid">
+        <!-- Row 1: ONLINE | TEAM UP | FRIENDS -->
+        <div class="modes-row-top">
+          <!-- ONLINE -->
+          <button class="mode-card-3d" id="mode-btn-online">
+            <span class="mode-card-header">
+              <span class="mode-icon-wrapper">
+                <span class="globe-icon">🌍</span>
+                <span class="cards-deck-left">🃏</span>
+                <span class="cards-deck-right">🎴</span>
+              </span>
+            </span>
+            <span class="mode-card-footer">
+              <span class="mode-title-text">ONLINE</span>
+            </span>
+          </button>
+
+          <!-- TEAM UP -->
+          <button class="mode-card-3d" id="mode-btn-teamup">
+            <span class="mode-card-header">
+              <span class="mode-icon-wrapper">
+                <span class="swords-icon">⚔️</span>
+                <span class="pin-icon pin-green">📍</span>
+                <span class="pin-icon pin-red">📍</span>
+              </span>
+            </span>
+            <span class="mode-card-footer">
+              <span class="mode-title-text">TEAM UP</span>
+            </span>
+          </button>
+
+          <!-- FRIENDS -->
+          <button class="mode-card-3d" id="mode-btn-friends">
+            <span class="mode-card-header">
+              <span class="mode-icon-wrapper">
+                <span class="hearts-icon">❤️</span>
+                <span class="mic-bubble">🎙️</span>
+              </span>
+            </span>
+            <span class="mode-card-footer">
+              <span class="mode-title-text">FRIENDS</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Row 2: COMPUTER | PASS N PLAY -->
+        <div class="modes-row-mid">
+          <!-- COMPUTER -->
+          <button class="mode-card-wide" id="mode-btn-computer">
+            <span class="wide-card-inner">
+              <span class="wide-card-icon-box">
+                <span class="vs-phone-icon">📱<span class="vs-badge">VS</span></span>
+              </span>
+              <span class="wide-card-label">COMPUTER</span>
+            </span>
+          </button>
+
+          <!-- PASS N PLAY -->
+          <button class="mode-card-wide" id="mode-btn-passplay">
+            <span class="wide-card-inner">
+              <span class="wide-card-icon-box">
+                <span class="kids-icon">🧑‍🤝‍🧑</span>
+              </span>
+              <span class="wide-card-label">PASS N PLAY</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Row 3: 7 Mini Game | TOURNAMENT | SNAKE & LADDER -->
+        <div class="modes-row-bot">
+          <!-- 7 Mini Game -->
+          <button class="circle-feature-btn" id="mode-btn-7game" title="7 Mini Game">
+            <span class="circle-btn-inner">
+              <span>7️⃣</span>
+            </span>
+          </button>
+
+          <!-- TOURNAMENT Banner -->
+          <button class="banner-tournament-btn" id="mode-btn-tournament">
+            <span class="banner-crown">👑</span>
+            <span class="banner-text">TOURNAMENT</span>
+          </button>
+
+          <!-- SNAKE & LADDER -->
+          <button class="circle-feature-btn" id="mode-btn-snake" title="Snake & Ladder">
+            <span class="circle-btn-inner">
+              <span>🐍</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Side Rewards (Bottom Left & Bottom Right above footer) -->
+      <div class="menu-side-rewards-row">
+        <!-- Bottom Left: Free Ad Reward -->
+        <div class="side-reward-card card-free-ad" id="menu-btn-ad-reward">
+          <div class="free-badge-tag">FREE</div>
+          <div class="ad-reward-content">
+            <div class="film-ad-box">🎬 x 4 AD</div>
+            <div class="reward-gems-coins">💎🪙 1200</div>
+          </div>
+        </div>
+
+        <!-- Bottom Right: Spin Wheel -->
+        <div class="side-reward-card card-spin-wheel" id="menu-btn-spin">
+          <div class="spin-wheel-circle">
+            <div class="wheel-spinner">🎡</div>
+            <div class="spin-center-text">SPIN</div>
+          </div>
+          <div class="spin-status-label" id="spin-status-text">Ready!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Footer Bar -->
+    <div class="menu-bottom-nav">
+      <button class="nav-tab active" id="nav-tab-home">
+        <span class="nav-icon-box">
+          <span class="nav-icon">🏠</span>
+        </span>
+        <span class="nav-label">HOME</span>
+      </button>
+
+      <button class="nav-tab" id="nav-tab-event">
+        <span class="nav-icon-box">
+          <span class="nav-icon">📅</span>
+          <span class="nav-dot-badge">!</span>
+        </span>
+        <span class="nav-label">EVENT</span>
+      </button>
+
+      <button class="nav-tab" id="nav-tab-adda">
+        <span class="nav-icon-box">
+          <span class="nav-icon">🎙️</span>
+          <span class="nav-new-badge">NEW</span>
+        </span>
+        <span class="nav-label">ADDA</span>
+      </button>
+
+      <button class="nav-tab" id="nav-tab-inventory">
+        <span class="nav-icon-box">
+          <span class="nav-icon">🎁</span>
+        </span>
+        <span class="nav-label">INVENTORY</span>
+      </button>
+
+      <button class="nav-tab" id="nav-tab-social">
+        <span class="nav-icon-box">
+          <span class="nav-icon">💬</span>
+        </span>
+        <span class="nav-label">SOCIAL</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================== -->
+  <!-- IN-GAME UI OVERLAY                                                         -->
+  <!-- ========================================================================== -->
+  <div id="ui-overlay" style="display: none;">
     <!-- Top Header -->
     <div class="top-header">
       <div id="btn-back-header" class="btn-back" title="Menu">←</div>
@@ -34,7 +266,7 @@
     <!-- Center Toast Prompt -->
     <div id="center-toast" class="center-toast">Your Turn: Roll the Dice!</div>
 
-    <!-- 4 Corner Player Avatars (Exact Screenshot Positioning) -->
+    <!-- 4 Corner Player Avatars -->
     <!-- Top-Left: Player 2 (Red) -->
     <div class="player-corner corner-top-left" id="corner-p2">
       <div class="avatar-box red-border" id="avatar-p2">
@@ -51,17 +283,16 @@
       </div>
     </div>
 
-    <!-- Bottom-Left: Player 1 (Blue - Human) + Dice Slot with pointing hand -->
+    <!-- Bottom-Left: Player 1 (Blue - Human) + Dice Slot -->
     <div class="player-corner corner-bottom-left" id="corner-p1">
       <div class="avatar-box blue-border active-turn" id="avatar-p1">
         <img src="avatar1.jpg" alt="Player 1">
         <div class="player-tag">Player 1</div>
       </div>
 
-      <!-- Interactive Dice Box (matching screenshot's lightning/dice slot) -->
+      <!-- Interactive Dice Box -->
       <div class="dice-slot" id="dice-slot">
         <div class="dice-content" id="dice-display">⚡</div>
-        <!-- Animated cartoon pointing hand -->
         <div class="pointing-hand" id="pointing-hand">👆</div>
       </div>
     </div>
@@ -74,29 +305,18 @@
       </div>
     </div>
 
-    <!-- Quick Token Choice Bar (When multiple tokens can move) -->
+    <!-- Quick Token Choice Bar -->
     <div id="token-selector-bar" class="token-selector-bar"></div>
   </div>
 
-  <!-- Rules Dialog -->
-  <div id="modal-rules" class="modal-overlay">
-    <div class="modal-card">
-      <h2 class="modal-title">🏆 How to Play Ludo</h2>
-      <div class="modal-desc">
-        <p>• <b>Rolling 6:</b> Unlocks a token from your base to the starting track, or gives an extra roll.</p><br>
-        <p>• <b>Capturing:</b> Land on an opponent's token to send them back to base and earn a bonus roll!</p><br>
-        <p>• <b>Safe Stars:</b> Tokens on Star tiles or colored start squares cannot be captured.</p><br>
-        <p>• <b>Home Goal:</b> Travel around all 52 track cells and up your colored home corridor. First to get all 4 tokens home wins!</p><br>
-        <p>• <b>Controls:</b> Pure screen fit! Tap the dice box or 3D dice to roll; tap highlighted tokens to move.</p>
-      </div>
-      <button id="btn-close-rules" class="modal-btn">Got It!</button>
-    </div>
-  </div>
+  <!-- ========================================================================== -->
+  <!-- MODAL DIALOGS                                                              -->
+  <!-- ========================================================================== -->
 
-  <!-- New Game Dialog -->
-  <div id="modal-new-game" class="modal-overlay">
+  <!-- Mode Setup Dialog (Pick Players, Mode & Difficulty) -->
+  <div id="modal-mode-setup" class="modal-overlay">
     <div class="modal-card">
-      <h2 class="modal-title">🎮 New Game Setup</h2>
+      <h2 class="modal-title" id="mode-setup-title">🎮 Game Setup</h2>
       <div class="modal-desc">
         <p style="margin-bottom: 8px;"><b>Number of Players:</b></p>
         <div style="display:flex; gap:10px; margin-bottom:14px;">
@@ -105,7 +325,7 @@
           <button class="modal-btn" id="opt-4p" style="flex:1; background:#3B82F6;">4 Players</button>
         </div>
 
-        <p style="margin-bottom: 8px;"><b>Mode:</b></p>
+        <p style="margin-bottom: 8px;"><b>Match Mode:</b></p>
         <div style="display:flex; gap:10px; margin-bottom:14px;">
           <button class="modal-btn" id="opt-vs-bot" style="flex:1; background:#3B82F6;">Vs AI Bots</button>
           <button class="modal-btn" id="opt-pass-play" style="flex:1; background:#1E293B; border:1px solid #38BDF8;">Pass & Play</button>
@@ -118,8 +338,94 @@
           <button class="modal-btn" id="opt-hard" style="flex:1; background:#1E293B; border:1px solid #38BDF8;">Hard</button>
         </div>
       </div>
-      <button id="btn-start-game" class="modal-btn" style="background:#10B981;">Start Game</button>
+      <button id="btn-start-game" class="modal-btn" style="background:#10B981;">▶ Start Match</button>
       <button id="btn-cancel-game" class="modal-btn" style="background:#475569;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="modal-menu-settings" class="modal-overlay">
+    <div class="modal-card" style="text-align:center;">
+      <h2 class="modal-title">⚙️ Game Settings</h2>
+      <p class="modal-desc">Configure Audio & Camera</p>
+      <button id="btn-setting-sound" class="modal-btn" style="background:#3B82F6;">🔊 Sound Effects: <span id="setting-sound-label">On</span></button>
+      <button id="btn-setting-camera" class="modal-btn" style="background:#0EA5E9;">📷 Camera View: <span id="setting-camera-label">Top-Down</span></button>
+      <button id="btn-setting-difficulty" class="modal-btn" style="background:#EC4899;">🤖 AI Difficulty: <span id="setting-diff-label">Normal</span></button>
+      <button id="btn-setting-exit" class="modal-btn" style="background:#EF4444;">✖ Exit App</button>
+      <button id="btn-setting-close" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- Lucky Spin Wheel Modal -->
+  <div id="modal-spin-wheel" class="modal-overlay">
+    <div class="modal-card" style="text-align:center;">
+      <h2 class="modal-title">🎡 Lucky Spin Wheel</h2>
+      <p class="modal-desc">Spin the wheel to win free coins!</p>
+
+      <div style="position:relative; margin:10px 0;">
+        <canvas id="spin-wheel-canvas" width="220" height="220"></canvas>
+        <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:24px; z-index:10;">🔻</div>
+      </div>
+
+      <button id="btn-do-spin" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900; font-size:17px;">SPIN NOW!</button>
+      <button id="btn-close-spin" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- Mail Inbox Modal -->
+  <div id="modal-mail" class="modal-overlay">
+    <div class="modal-card">
+      <h2 class="modal-title">✉️ Mail Inbox</h2>
+      <div class="modal-desc">
+        <div style="background:#0F172A; padding:10px; border-radius:12px; margin-bottom:8px; border:1px solid #38BDF8;">
+          <b style="color:#FBBF24;">🎁 Daily Reward</b>
+          <p style="font-size:12px; color:#94A3B8; margin-top:2px;">Welcome to Ludo Spark! Claim your bonus 1,000 coins.</p>
+        </div>
+      </div>
+      <button id="btn-claim-mail" class="modal-btn" style="background:#10B981;">Claim All Rewards</button>
+      <button id="btn-close-mail" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- Shop Modal -->
+  <div id="modal-shop" class="modal-overlay">
+    <div class="modal-card">
+      <h2 class="modal-title">🛒 Coin & Gem Store</h2>
+      <div class="modal-desc" style="display:flex; flex-direction:column; gap:8px;">
+        <div style="background:#0F172A; padding:10px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #38BDF8;">
+          <div><b>🪙 10,000 Coins</b></div>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.addCoins(10000)">Free Claim</button>
+        </div>
+        <div style="background:#0F172A; padding:10px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #38BDF8;">
+          <div><b>💎 500 Gems</b></div>
+          <button class="modal-btn" style="padding:6px 12px; font-size:12px; background:#10B981;" onclick="window.addGems(500)">Free Claim</button>
+        </div>
+      </div>
+      <button id="btn-close-shop" class="modal-btn" style="background:#475569;">Close</button>
+    </div>
+  </div>
+
+  <!-- General Nav Tab Info Modal -->
+  <div id="modal-nav-info" class="modal-overlay">
+    <div class="modal-card" style="text-align:center;">
+      <div id="nav-info-icon" style="font-size:48px; margin-bottom:4px;">✨</div>
+      <h2 class="modal-title" id="nav-info-title">Feature Title</h2>
+      <p class="modal-desc" id="nav-info-desc">Information content</p>
+      <button id="btn-close-nav-info" class="modal-btn" style="background:#3B82F6;">Awesome!</button>
+    </div>
+  </div>
+
+  <!-- Rules Dialog -->
+  <div id="modal-rules" class="modal-overlay">
+    <div class="modal-card">
+      <h2 class="modal-title">🏆 How to Play Ludo</h2>
+      <div class="modal-desc">
+        <p>• <b>Rolling 6:</b> Unlocks a token from base to start track, or gives an extra roll.</p><br>
+        <p>• <b>Capturing:</b> Land on an opponent's token to send them back to base and earn a bonus roll!</p><br>
+        <p>• <b>Safe Stars:</b> Tokens on Star tiles or colored start squares cannot be captured.</p><br>
+        <p>• <b>Home Goal:</b> Travel around 52 track cells and up colored home corridor. First to get all 4 tokens home wins!</p>
+      </div>
+      <button id="btn-close-rules" class="modal-btn">Got It!</button>
     </div>
   </div>
 
@@ -129,11 +435,9 @@
       <h2 class="modal-title" style="color:#38BDF8;">⚡ Ludo Spark</h2>
       <p class="modal-desc">Game Paused</p>
       <button id="btn-pause-resume" class="modal-btn" style="background:#10B981;">▶ Resume</button>
+      <button id="btn-pause-mainmenu" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900;">🏠 Main Menu</button>
       <button id="btn-pause-newgame" class="modal-btn" style="background:#3B82F6;">🔄 New Game</button>
       <button id="btn-pause-rules" class="modal-btn" style="background:#7C3AED;">📖 How to Play</button>
-      <button id="btn-pause-camera" class="modal-btn" style="background:#0EA5E9;">📷 Camera: <span id="pause-camera-label">Top-Down</span></button>
-      <button id="btn-pause-sound" class="modal-btn" style="background:#F59E0B;">🔊 Sound: <span id="pause-sound-label">On</span></button>
-      <button id="btn-pause-difficulty" class="modal-btn" style="background:#EC4899;">🤖 AI Difficulty: <span id="pause-difficulty-label">Normal</span></button>
       <button id="btn-pause-quit" class="modal-btn" style="background:#EF4444;">✖ Quit Game</button>
     </div>
   </div>
@@ -142,9 +446,9 @@
   <div id="modal-resume" class="modal-overlay">
     <div class="modal-card" style="text-align:center;">
       <div style="font-size: 46px; margin-bottom: 4px;">💾</div>
-      <h2 class="modal-title">Resume Game?</h2>
+      <h2 class="modal-title">Resume Saved Game?</h2>
       <p class="modal-desc">A saved game was found. Continue where you left off?</p>
-      <button id="btn-resume-yes" class="modal-btn" style="background:#10B981; margin-top:10px;">▶ Resume</button>
+      <button id="btn-resume-yes" class="modal-btn" style="background:#10B981; margin-top:10px;">▶ Resume Match</button>
       <button id="btn-resume-no" class="modal-btn" style="background:#475569;">Start New Game</button>
     </div>
   </div>
@@ -155,10 +459,12 @@
       <div style="font-size: 52px; margin-bottom: 6px;">👑</div>
       <h2 id="winner-title" class="modal-title" style="color:#FBBF24;">Victory!</h2>
       <p id="winner-desc" class="modal-desc">Player 1 has achieved victory!</p>
-      <button id="btn-play-again" class="modal-btn" style="background:#10B981; margin-top:12px;">Play Again</button>
+      <button id="btn-winner-mainmenu" class="modal-btn" style="background:#F59E0B; color:#0F172A; font-weight:900; margin-top:10px;">🏠 Main Menu</button>
+      <button id="btn-play-again" class="modal-btn" style="background:#10B981; margin-top:6px;">Play Again</button>
     </div>
   </div>
 
+  <!-- Script setup -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       const game = new LudoGame();
@@ -167,19 +473,386 @@
       const diceUnicode = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
       // UI Element references
+      const mainMenuEl = document.getElementById('main-menu');
+      const uiOverlayEl = document.getElementById('ui-overlay');
       const toastEl = document.getElementById('center-toast');
       const diceSlot = document.getElementById('dice-slot');
       const diceDisplay = document.getElementById('dice-display');
       const pointingHand = document.getElementById('pointing-hand');
       const tokenSelectorBar = document.getElementById('token-selector-bar');
+
       const soundBtn = document.getElementById('btn-sound');
       const cameraBtn = document.getElementById('btn-camera');
       const rulesModal = document.getElementById('modal-rules');
-      const newGameModal = document.getElementById('modal-new-game');
+      const modeSetupModal = document.getElementById('modal-mode-setup');
       const winnerModal = document.getElementById('modal-winner');
       const pauseModal = document.getElementById('modal-pause');
       const resumeModal = document.getElementById('modal-resume');
+      const settingsModal = document.getElementById('modal-menu-settings');
+      const spinModal = document.getElementById('modal-spin-wheel');
+      const mailModal = document.getElementById('modal-mail');
+      const shopModal = document.getElementById('modal-shop');
+      const navInfoModal = document.getElementById('modal-nav-info');
 
+      // Resources state
+      let currentCoins = parseInt(localStorage.getItem('ludoSpark.coins') || '2550');
+      let currentGems = parseInt(localStorage.getItem('ludoSpark.gems') || '50');
+
+      const updateResourceUI = () => {
+        document.getElementById('menu-coin-count').innerText = currentCoins.toLocaleString();
+        document.getElementById('menu-diamond-count').innerText = currentGems.toLocaleString();
+        localStorage.setItem('ludoSpark.coins', currentCoins);
+        localStorage.setItem('ludoSpark.gems', currentGems);
+      };
+      updateResourceUI();
+
+      // Restore persisted sound preference + sync setting labels
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('ludoSpark.sound') === '0') {
+          window.soundEngine.enabled = false;
+        }
+      } catch (e) { /* ignore */ }
+      const syncSettingsLabels = () => {
+        document.getElementById('setting-sound-label').innerText = window.soundEngine.enabled ? 'On' : 'Off';
+        document.getElementById('setting-camera-label').innerText = game.currentPreset === 'top' ? 'Top-Down' : '3D View';
+        const diff = (game.difficulty || 'normal');
+        document.getElementById('setting-diff-label').innerText = diff.charAt(0).toUpperCase() + diff.slice(1);
+        soundBtn.innerText = window.soundEngine.enabled ? '🔊' : '🔇';
+        cameraBtn.innerText = game.currentPreset === 'top' ? '📷' : '🗺';
+      };
+      syncSettingsLabels();
+
+      const setSoundEnabled = (on) => {
+        window.soundEngine.enabled = on;
+        try { localStorage.setItem('ludoSpark.sound', on ? '1' : '0'); } catch (e) {}
+        syncSettingsLabels();
+      };
+      const applyCameraPreset = (next) => {
+        game.setCameraPreset(next);
+        try { localStorage.setItem('ludoSpark.camera', next); } catch (e) {}
+        syncSettingsLabels();
+      };
+      const cycleDifficulty = () => {
+        const levels = ['easy', 'normal', 'hard'];
+        const next = levels[(levels.indexOf(game.difficulty) + 1) % levels.length];
+        game.difficulty = next;
+        try { localStorage.setItem('ludoSpark.difficulty', next); } catch (e) {}
+        syncSettingsLabels();
+      };
+
+      window.addCoins = (amt) => {
+        currentCoins += amt;
+        updateResourceUI();
+        if (window.soundEngine) window.soundEngine.playTokenHome();
+      };
+      window.addGems = (amt) => {
+        currentGems += amt;
+        updateResourceUI();
+        if (window.soundEngine) window.soundEngine.playTokenHome();
+      };
+
+      // Sound click helper
+      const playClick = () => {
+        if (window.soundEngine) window.soundEngine.playButtonClick();
+      };
+
+      // Show/Hide Main Menu vs Game Screen
+      const showMainMenu = () => {
+        mainMenuEl.style.display = 'flex';
+        uiOverlayEl.style.display = 'none';
+        pauseModal.style.display = 'none';
+        winnerModal.style.display = 'none';
+      };
+      const startGameScreen = () => {
+        mainMenuEl.style.display = 'none';
+        uiOverlayEl.style.display = 'flex';
+      };
+
+      // Hardware/back-button hook (called from Android MainActivity)
+      window.openPauseMenu = () => {
+        if (game.state === 'GAME_OVER') return;
+        if (uiOverlayEl.style.display !== 'none') {
+          pauseModal.style.display = 'flex';
+        }
+      };
+
+      let selectedPlayers = 4;
+      let isVsBot = true;
+      let selectedDifficulty = game.difficulty || 'normal';
+
+      // Setup setup buttons
+      const setPCount = (cnt) => {
+        selectedPlayers = cnt;
+        ['opt-2p', 'opt-3p', 'opt-4p'].forEach((id, idx) => {
+          const btn = document.getElementById(id);
+          if (btn) btn.style.background = (idx + 2 === cnt) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      document.getElementById('opt-2p').onclick = () => { playClick(); setPCount(2); };
+      document.getElementById('opt-3p').onclick = () => { playClick(); setPCount(3); };
+      document.getElementById('opt-4p').onclick = () => { playClick(); setPCount(4); };
+
+      document.getElementById('opt-vs-bot').onclick = () => {
+        playClick();
+        isVsBot = true;
+        document.getElementById('opt-vs-bot').style.background = '#3B82F6';
+        document.getElementById('opt-pass-play').style.background = '#1E293B';
+      };
+      document.getElementById('opt-pass-play').onclick = () => {
+        playClick();
+        isVsBot = false;
+        document.getElementById('opt-pass-play').style.background = '#3B82F6';
+        document.getElementById('opt-vs-bot').style.background = '#1E293B';
+      };
+
+      const setDifficulty = (level) => {
+        selectedDifficulty = level;
+        [['opt-easy', 'easy'], ['opt-normal', 'normal'], ['opt-hard', 'hard']].forEach(([id, val]) => {
+          const btn = document.getElementById(id);
+          if (btn) btn.style.background = (val === level) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      document.getElementById('opt-easy').onclick = () => { playClick(); setDifficulty('easy'); };
+      document.getElementById('opt-normal').onclick = () => { playClick(); setDifficulty('normal'); };
+      document.getElementById('opt-hard').onclick = () => { playClick(); setDifficulty('hard'); };
+
+      // ---- Mode Card Clicks ----
+      const openModeSetup = (titleStr, vsBotDefault = true) => {
+        playClick();
+        document.getElementById('mode-setup-title').innerText = titleStr;
+        isVsBot = vsBotDefault;
+        document.getElementById('opt-vs-bot').style.background = isVsBot ? '#3B82F6' : '#1E293B';
+        document.getElementById('opt-pass-play').style.background = isVsBot ? '#1E293B' : '#3B82F6';
+        modeSetupModal.style.display = 'flex';
+      };
+
+      document.getElementById('mode-btn-online').onclick = () => openModeSetup('🌍 Online Ludo Room', true);
+      document.getElementById('mode-btn-teamup').onclick = () => openModeSetup('⚔️ Team Up 2v2 Match', true);
+      document.getElementById('mode-btn-friends').onclick = () => openModeSetup('❤️ Friends Private Table', false);
+      document.getElementById('mode-btn-computer').onclick = () => openModeSetup('📱 Vs Computer', true);
+      document.getElementById('mode-btn-passplay').onclick = () => openModeSetup('🧑‍🤝‍🧑 Pass & Play', false);
+      document.getElementById('mode-btn-7game').onclick = () => openNavInfo('7️⃣ 7 Up 7 Down', 'Roll dice to guess if the total will be Over 7, Under 7, or Exactly 7 to win double coins!');
+      document.getElementById('mode-btn-tournament').onclick = () => openNavInfo('👑 Ludo Tournament', 'Compete in 8-player bracket tournaments and win massive coin pots!');
+      document.getElementById('mode-btn-snake').onclick = () => openNavInfo('🐍 Snake & Ladder 3D', 'Classic 3D Snake & Ladder board game mode available soon!');
+
+      document.getElementById('btn-start-game').onclick = () => {
+        playClick();
+        const botCount = isVsBot ? selectedPlayers - 1 : 0;
+        game.newGame(selectedPlayers, botCount, selectedDifficulty);
+        modeSetupModal.style.display = 'none';
+        startGameScreen();
+      };
+      document.getElementById('btn-cancel-game').onclick = () => {
+        playClick();
+        modeSetupModal.style.display = 'none';
+      };
+
+      // ---- Header / Side Reward Clicks ----
+      document.getElementById('menu-btn-settings').onclick = () => { playClick(); settingsModal.style.display = 'flex'; };
+      document.getElementById('menu-btn-mail').onclick = () => { playClick(); mailModal.style.display = 'flex'; };
+      document.getElementById('menu-btn-shop').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
+      document.getElementById('menu-btn-coins').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
+      document.getElementById('menu-btn-diamonds').onclick = () => { playClick(); shopModal.style.display = 'flex'; };
+      document.getElementById('menu-btn-free-chest').onclick = () => {
+        playClick();
+        window.addCoins(500);
+        alert('🧰 Free Daily Chest Opened!\n+500 Coins added!');
+      };
+      document.getElementById('menu-btn-ad-reward').onclick = () => {
+        playClick();
+        window.addCoins(1200);
+        window.addGems(10);
+        alert('🎬 Video Ad Watched!\n+1,200 Coins & +10 Gems added!');
+      };
+      document.getElementById('menu-btn-help').onclick = () => { playClick(); rulesModal.style.display = 'flex'; };
+
+      // ---- Lucky Spin Wheel ----
+      document.getElementById('menu-btn-spin').onclick = () => {
+        playClick();
+        spinModal.style.display = 'flex';
+        drawWheel();
+      };
+      document.getElementById('btn-close-spin').onclick = () => { playClick(); spinModal.style.display = 'none'; };
+
+      const wheelCanvas = document.getElementById('spin-wheel-canvas');
+      const wheelPrizes = ['500 🪙', '1,000 🪙', '2,500 🪙', '5,000 🪙', '100 💎', '1,200 🪙'];
+      const wheelColors = ['#F59E0B', '#3B82F6', '#10B981', '#EC4899', '#8B5CF6', '#EF4444'];
+      let wheelAngle = 0;
+      let isSpinning = false;
+
+      function drawWheel() {
+        if (!wheelCanvas) return;
+        const ctx = wheelCanvas.getContext('2d');
+        const numPrizes = wheelPrizes.length;
+        const arc = (Math.PI * 2) / numPrizes;
+
+        ctx.clearRect(0, 0, 220, 220);
+        for (let i = 0; i < numPrizes; i++) {
+          const angle = wheelAngle + i * arc;
+          ctx.beginPath();
+          ctx.fillStyle = wheelColors[i];
+          ctx.moveTo(110, 110);
+          ctx.arc(110, 110, 105, angle, angle + arc);
+          ctx.lineTo(110, 110);
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#FEF3C7';
+          ctx.stroke();
+
+          ctx.save();
+          ctx.translate(110, 110);
+          ctx.rotate(angle + arc / 2);
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = "bold 13px sans-serif";
+          ctx.fillText(wheelPrizes[i], 92, 4);
+          ctx.restore();
+        }
+      }
+
+      document.getElementById('btn-do-spin').onclick = () => {
+        if (isSpinning) return;
+        playClick();
+        isSpinning = true;
+        const extraRot = Math.PI * 2 * (4 + Math.floor(Math.random() * 4));
+        const randomTarget = Math.random() * Math.PI * 2;
+        const totalRot = wheelAngle + extraRot + randomTarget;
+
+        wheelCanvas.style.transform = `rotate(${totalRot}rad)`;
+        setTimeout(() => {
+          isSpinning = false;
+          window.addCoins(2500);
+          alert('🎉 Congratulations!\nYou won 2,500 Coins from the Spin Wheel!');
+          spinModal.style.display = 'none';
+        }, 4100);
+      };
+
+      // Settings modal
+      document.getElementById('btn-setting-close').onclick = () => { playClick(); settingsModal.style.display = 'none'; };
+      document.getElementById('btn-setting-sound').onclick = () => {
+        playClick();
+        window.soundEngine.enabled = !window.soundEngine.enabled;
+        document.getElementById('setting-sound-label').innerText = window.soundEngine.enabled ? 'On' : 'Off';
+      };
+      document.getElementById('btn-setting-bgm').onclick = () => {
+        playClick();
+        window.soundEngine.bgmEnabled = !window.soundEngine.bgmEnabled;
+        if (window.soundEngine.bgmEnabled) window.soundEngine.startBGM();
+        else window.soundEngine.stopBGM();
+        document.getElementById('setting-bgm-label').innerText = window.soundEngine.bgmEnabled ? 'On' : 'Off';
+      };
+      document.getElementById('btn-setting-camera').onclick = () => {
+        playClick();
+        const next = game.currentPreset === 'top' ? 'fit3d' : 'top';
+        game.setCameraPreset(next);
+        document.getElementById('setting-camera-label').innerText = next === 'top' ? 'Top-Down' : '3D View';
+      };
+      document.getElementById('btn-setting-exit').onclick = () => {
+        playClick();
+        if (window.AndroidBridge && window.AndroidBridge.exitApp) {
+          window.AndroidBridge.exitApp();
+        }
+      };
+
+      // ---- Inventory & Customization Modal ----
+      const inventoryModal = document.getElementById('modal-inventory');
+      document.getElementById('btn-close-inventory').onclick = () => { playClick(); inventoryModal.style.display = 'none'; };
+
+      const updateDiceSkinUI = (skin) => {
+        ['white', 'gold', 'neon', 'ruby', 'emerald'].forEach(s => {
+          const btn = document.getElementById(`skin-dice-${s}`);
+          if (btn) btn.style.background = (s === skin) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      updateDiceSkinUI(game.diceSkin);
+
+      ['white', 'gold', 'neon', 'ruby', 'emerald'].forEach(s => {
+        const btn = document.getElementById(`skin-dice-${s}`);
+        if (btn) btn.onclick = () => {
+          playClick();
+          game.setDiceSkin(s);
+          updateDiceSkinUI(s);
+        };
+      });
+
+      const updateBoardThemeUI = (theme) => {
+        ['classic', 'wood', 'cyber', 'galaxy'].forEach(t => {
+          const btn = document.getElementById(`theme-board-${t}`);
+          if (btn) btn.style.background = (t === theme) ? '#3B82F6' : '#1E293B';
+        });
+      };
+      updateBoardThemeUI(game.boardTheme);
+
+      ['classic', 'wood', 'cyber', 'galaxy'].forEach(t => {
+        const btn = document.getElementById(`theme-board-${t}`);
+        if (btn) btn.onclick = () => {
+          playClick();
+          game.setBoardTheme(t);
+          updateBoardThemeUI(t);
+        };
+      });
+
+      // Start BGM
+      window.soundEngine.startBGM();
+
+      // Mail / Shop
+      document.getElementById('btn-claim-mail').onclick = () => {
+        playClick();
+        window.addCoins(1000);
+        mailModal.style.display = 'none';
+        alert('🎁 Mail Rewards Claimed!');
+      };
+      document.getElementById('btn-close-mail').onclick = () => { playClick(); mailModal.style.display = 'none'; };
+      document.getElementById('btn-close-shop').onclick = () => { playClick(); shopModal.style.display = 'none'; };
+
+      // Nav Tabs
+      const openNavInfo = (title, desc, icon = '✨') => {
+        playClick();
+        document.getElementById('nav-info-title').innerText = title;
+        document.getElementById('nav-info-desc').innerText = desc;
+        document.getElementById('nav-info-icon').innerText = icon;
+        navInfoModal.style.display = 'flex';
+      };
+
+      document.getElementById('btn-close-nav-info').onclick = () => { playClick(); navInfoModal.style.display = 'none'; };
+
+      document.getElementById('nav-tab-home').onclick = () => { playClick(); showMainMenu(); };
+      document.getElementById('nav-tab-event').onclick = () => openNavInfo('📅 Special Events', 'Join the Season 1 Ludo Masters Event! Complete daily quests to earn exclusive golden avatars and dice skins.', '📅');
+      document.getElementById('nav-tab-adda').onclick = () => openNavInfo('🎙️ Voice Adda Chat', 'Chat with voice & animated emojis in real-time with Ludo players around the world!', '🎙️');
+      document.getElementById('nav-tab-inventory').onclick = () => { playClick(); inventoryModal.style.display = 'flex'; };
+      document.getElementById('nav-tab-social').onclick = () => openNavInfo('💬 Social & Friends', 'Invite Facebook & WhatsApp friends to play together on private tables!', '💬');
+
+      // ---- In-Game Pause / Home buttons ----
+      document.getElementById('btn-back-header').onclick = () => {
+        playClick();
+        pauseModal.style.display = 'flex';
+      };
+      document.getElementById('btn-pause-mainmenu').onclick = () => {
+        playClick();
+        game.saveGame();
+        showMainMenu();
+      };
+      document.getElementById('btn-pause-resume').onclick = () => { playClick(); pauseModal.style.display = 'none'; };
+      document.getElementById('btn-pause-newgame').onclick = () => { playClick(); pauseModal.style.display = 'none'; modeSetupModal.style.display = 'flex'; };
+      document.getElementById('btn-pause-rules').onclick = () => { playClick(); pauseModal.style.display = 'none'; rulesModal.style.display = 'flex'; };
+      document.getElementById('btn-pause-quit').onclick = () => {
+        playClick();
+        game.saveGame();
+        if (window.AndroidBridge && window.AndroidBridge.exitApp) {
+          window.AndroidBridge.exitApp();
+        } else {
+          showMainMenu();
+        }
+      };
+
+      document.getElementById('btn-winner-mainmenu').onclick = () => {
+        playClick();
+        showMainMenu();
+      };
+
+      document.getElementById('btn-close-rules').onclick = () => { playClick(); rulesModal.style.display = 'none'; };
+
+      // Avatar box corner references
       const avatarBoxes = [
         document.getElementById('avatar-p1'),
         document.getElementById('avatar-p2'),
@@ -193,62 +866,16 @@
         document.getElementById('corner-p4')
       ];
 
-      let selectedPlayers = 4;
-      let isVsBot = true;
-      let selectedDifficulty = game.difficulty || 'normal';
-
-      // ---- Apply persisted settings ----
-      const applySoundUI = () => {
-        const on = window.soundEngine.enabled;
-        soundBtn.innerText = on ? '🔊' : '🔇';
-        document.getElementById('pause-sound-label').innerText = on ? 'On' : 'Off';
-      };
-      const applyCameraUI = () => {
-        const isTop = game.currentPreset === 'top';
-        cameraBtn.innerText = isTop ? '📷' : '🗺';
-        document.getElementById('pause-camera-label').innerText = isTop ? 'Top-Down' : '3D View';
-      };
-      const applyDifficultyUI = () => {
-        selectedDifficulty = game.difficulty || 'normal';
-        document.getElementById('pause-difficulty-label').innerText =
-          selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1);
-        setDifficulty(selectedDifficulty);
-      };
-
-      // Restore sound preference
-      try {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('ludoSpark.sound') === '0') {
-          window.soundEngine.enabled = false;
-        }
-      } catch (e) { /* ignore */ }
-      applySoundUI();
-      applyCameraUI();
-
-      // Difficulty button state helper
-      const setDifficulty = (level) => {
-        selectedDifficulty = level;
-        [['opt-easy', 'easy'], ['opt-normal', 'normal'], ['opt-hard', 'hard']].forEach(([id, val]) => {
-          const btn = document.getElementById(id);
-          if (btn) btn.style.background = (val === level) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      setDifficulty(selectedDifficulty);
-      document.getElementById('opt-easy').onclick = () => setDifficulty('easy');
-      document.getElementById('opt-normal').onclick = () => setDifficulty('normal');
-      document.getElementById('opt-hard').onclick = () => setDifficulty('hard');
-
       // ---- Handle Game State updates ----
       window.onGameStateChanged = (data) => {
         const { activePlayer, state, currentRoll, history, isGameOver } = data;
         const progress = data.playerProgress || [];
         const numPlayers = data.numPlayers || 4;
 
-        // Hide corners of inactive players (2P / 3P games)
         cornerEls.forEach((el, idx) => {
           if (el) el.style.display = (idx < numPlayers) ? '' : 'none';
         });
 
-        // Highlight active player's avatar + live progress %
         avatarBoxes.forEach((box, idx) => {
           if (box) {
             box.classList.toggle('active-turn', idx === activePlayer.id);
@@ -259,7 +886,6 @@
           }
         });
 
-        // Dice slot animation & content
         if (state === 'ROLLING') {
           diceSlot.classList.add('rolling');
           diceDisplay.innerText = '🎲';
@@ -274,7 +900,6 @@
           }
         }
 
-        // State machine handling
         if (state === 'WAIT_ROLL') {
           tokenSelectorBar.style.display = 'none';
           if (!activePlayer.isAI) {
@@ -288,7 +913,6 @@
           pointingHand.style.display = 'none';
           toastEl.innerText = activePlayer.isAI ? 'AI selecting token...' : `Rolled ${currentRoll}! Tap token to move`;
 
-          // Quick buttons if multiple choices available
           tokenSelectorBar.innerHTML = '';
           if (!activePlayer.isAI && game.movableTokens.length > 0) {
             tokenSelectorBar.style.display = 'flex';
@@ -316,6 +940,7 @@
           document.getElementById('winner-title').innerText = `${winnerName} Wins!`;
           document.getElementById('winner-desc').innerText = `Congratulations on winning the match!`;
           winnerModal.style.display = 'flex';
+          window.addCoins(3000);
         }
       };
 
@@ -326,124 +951,45 @@
         }
       });
 
-      // Sound toggle (persisted)
-      const toggleSound = () => {
-        window.soundEngine.enabled = !window.soundEngine.enabled;
-        try { localStorage.setItem('ludoSpark.sound', window.soundEngine.enabled ? '1' : '0'); } catch (e) {}
-        applySoundUI();
+      // In-game header buttons
+      soundBtn.onclick = () => {
+        playClick();
+        setSoundEnabled(!window.soundEngine.enabled);
       };
-      soundBtn.addEventListener('click', toggleSound);
-
-      // Camera toggle (persisted)
-      const toggleCamera = () => {
-        const next = game.currentPreset === 'top' ? 'fit3d' : 'top';
-        game.setCameraPreset(next);
-        try { localStorage.setItem('ludoSpark.camera', next); } catch (e) {}
-        applyCameraUI();
+      cameraBtn.onclick = () => {
+        playClick();
+        applyCameraPreset(game.currentPreset === 'top' ? 'fit3d' : 'top');
       };
-      cameraBtn.addEventListener('click', toggleCamera);
-
-      // ---- Pause Menu ----
-      window.openPauseMenu = () => {
-        if (game.state === 'GAME_OVER') return;
-        applyCameraUI();
-        applySoundUI();
-        document.getElementById('pause-difficulty-label').innerText =
-          (game.difficulty || 'normal').charAt(0).toUpperCase() + (game.difficulty || 'normal').slice(1);
-        pauseModal.style.display = 'flex';
+      document.getElementById('btn-restart').onclick = () => {
+        playClick();
+        modeSetupModal.style.display = 'flex';
       };
 
-      document.getElementById('btn-back-header').addEventListener('click', () => window.openPauseMenu());
-
-      document.getElementById('btn-pause-resume').addEventListener('click', () => {
-        pauseModal.style.display = 'none';
-      });
-      document.getElementById('btn-pause-newgame').addEventListener('click', () => {
-        pauseModal.style.display = 'none';
-        newGameModal.style.display = 'flex';
-      });
-      document.getElementById('btn-pause-rules').addEventListener('click', () => {
-        pauseModal.style.display = 'none';
-        rulesModal.style.display = 'flex';
-      });
-      document.getElementById('btn-pause-camera').addEventListener('click', toggleCamera);
-      document.getElementById('btn-pause-sound').addEventListener('click', toggleSound);
-      document.getElementById('btn-pause-difficulty').addEventListener('click', () => {
-        const levels = ['easy', 'normal', 'hard'];
-        const next = levels[(levels.indexOf(game.difficulty) + 1) % levels.length];
-        game.difficulty = next;
-        try { localStorage.setItem('ludoSpark.difficulty', next); } catch (e) {}
-        document.getElementById('pause-difficulty-label').innerText = next.charAt(0).toUpperCase() + next.slice(1);
-      });
-      document.getElementById('btn-pause-quit').addEventListener('click', () => {
-        game.saveGame();
-        if (window.AndroidBridge && window.AndroidBridge.exitApp) {
-          window.AndroidBridge.exitApp();
-        } else {
-          pauseModal.style.display = 'none';
-        }
-      });
-
-      document.getElementById('btn-close-rules').addEventListener('click', () => {
-        rulesModal.style.display = 'none';
-      });
-
-      // Restart / New Game button
-      document.getElementById('btn-restart').addEventListener('click', () => {
-        newGameModal.style.display = 'flex';
-      });
-      document.getElementById('btn-cancel-game').addEventListener('click', () => {
-        newGameModal.style.display = 'none';
-      });
-
-      const setPCount = (cnt) => {
-        selectedPlayers = cnt;
-        ['opt-2p', 'opt-3p', 'opt-4p'].forEach((id, idx) => {
-          const btn = document.getElementById(id);
-          btn.style.background = (idx + 2 === cnt) ? '#3B82F6' : '#1E293B';
-        });
-      };
-      document.getElementById('opt-2p').onclick = () => setPCount(2);
-      document.getElementById('opt-3p').onclick = () => setPCount(3);
-      document.getElementById('opt-4p').onclick = () => setPCount(4);
-
-      document.getElementById('opt-vs-bot').onclick = () => {
-        isVsBot = true;
-        document.getElementById('opt-vs-bot').style.background = '#3B82F6';
-        document.getElementById('opt-pass-play').style.background = '#1E293B';
-      };
-      document.getElementById('opt-pass-play').onclick = () => {
-        isVsBot = false;
-        document.getElementById('opt-pass-play').style.background = '#3B82F6';
-        document.getElementById('opt-vs-bot').style.background = '#1E293B';
-      };
-
-      document.getElementById('btn-start-game').addEventListener('click', () => {
-        const botCount = isVsBot ? selectedPlayers - 1 : 0;
-        game.newGame(selectedPlayers, botCount, selectedDifficulty);
-        newGameModal.style.display = 'none';
-        pauseModal.style.display = 'none';
-      });
-
-      document.getElementById('btn-play-again').addEventListener('click', () => {
+      // Winner: play again with same configuration
+      document.getElementById('btn-play-again').onclick = () => {
+        playClick();
         winnerModal.style.display = 'none';
         const botCount = game.playerConfigs.filter(c => c.isAI).length;
         game.newGame(game.numPlayers, botCount, game.difficulty);
-      });
+        startGameScreen();
+      };
 
-      // ---- Resume saved game on launch ----
+      // Resume saved match if present
       const savedGame = game.loadSave();
       if (savedGame) {
         resumeModal.style.display = 'flex';
       }
-      document.getElementById('btn-resume-yes').addEventListener('click', () => {
+      document.getElementById('btn-resume-yes').onclick = () => {
+        playClick();
         resumeModal.style.display = 'none';
         game.restoreGame(savedGame);
-      });
-      document.getElementById('btn-resume-no').addEventListener('click', () => {
+        startGameScreen();
+      };
+      document.getElementById('btn-resume-no').onclick = () => {
+        playClick();
         resumeModal.style.display = 'none';
         game.clearSave();
-      });
+      };
     });
   </script>
 </body>

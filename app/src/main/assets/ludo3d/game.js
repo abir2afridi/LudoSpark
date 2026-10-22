@@ -20,6 +20,8 @@ class LudoGame {
     const ls = (typeof localStorage !== 'undefined') ? localStorage : null;
     this.currentPreset = (ls && ls.getItem('ludoSpark.camera')) || 'top';
     this.difficulty = (ls && ls.getItem('ludoSpark.difficulty')) || 'normal';
+    this.diceSkin = (ls && ls.getItem('ludoSpark.diceSkin')) || 'white';
+    this.boardTheme = (ls && ls.getItem('ludoSpark.boardTheme')) || 'classic';
 
     // Game Configuration
     // Game Configuration (matches screenshot: P1 Blue BL, P2 Red TL, P3 Green TR, P4 Yellow BR)
@@ -229,13 +231,35 @@ class LudoGame {
 
   initBoard() {
     this.builder = new LudoBoardBuilder();
-    this.builder.buildBoard(this.scene);
+    if (this.boardGroup) this.scene.remove(this.boardGroup);
+    this.boardGroup = this.builder.buildBoard(this.scene, this.boardTheme);
 
     // Dice Physics & Mesh
     this.physics = new DicePhysics(this.scene);
-    this.diceMesh = this.builder.createDiceMesh();
+    if (this.diceMesh) this.scene.remove(this.diceMesh);
+    this.diceMesh = this.builder.createDiceMesh(this.diceSkin);
     this.scene.add(this.diceMesh);
     this.physics.setDiceMesh(this.diceMesh);
+  }
+
+  setDiceSkin(skin) {
+    this.diceSkin = skin;
+    try { localStorage.setItem('ludoSpark.diceSkin', skin); } catch(e){}
+    if (this.diceMesh && this.builder) {
+      this.scene.remove(this.diceMesh);
+      this.diceMesh = this.builder.createDiceMesh(skin);
+      this.scene.add(this.diceMesh);
+      this.physics.setDiceMesh(this.diceMesh);
+    }
+  }
+
+  setBoardTheme(theme) {
+    this.boardTheme = theme;
+    try { localStorage.setItem('ludoSpark.boardTheme', theme); } catch(e){}
+    if (this.builder) {
+      if (this.boardGroup) this.scene.remove(this.boardGroup);
+      this.boardGroup = this.builder.buildBoard(this.scene, theme);
+    }
   }
 
   initTokens() {
@@ -444,6 +468,7 @@ class LudoGame {
 
     // Check consecutive sixes
     if (roll === 6) {
+      if (window.soundEngine) window.soundEngine.playSixRoll();
       this.consecutiveSixes++;
       if (this.consecutiveSixes >= 3) {
         this.addHistory(`Rolled 3 consecutive 6s! Turn passed.`);
