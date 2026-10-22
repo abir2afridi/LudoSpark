@@ -739,6 +739,7 @@ class LudoBoardBuilder {
       human.userData.isToken = true;
       human.userData.origColor = colorHex;
       human.userData.skin = 'human';
+      human.scale.set(1.35, 1.35, 1.35);
       return human;
     }
 
@@ -815,6 +816,7 @@ class LudoBoardBuilder {
         origColor: colorHex,
         skin: 'knight'
       };
+      knightGroup.scale.set(1.45, 1.45, 1.45);
       return knightGroup;
     }
 
@@ -882,6 +884,7 @@ class LudoBoardBuilder {
         origColor: colorHex,
         skin: 'cyber'
       };
+      cyberGroup.scale.set(1.45, 1.45, 1.45);
       return cyberGroup;
     }
 
@@ -954,6 +957,7 @@ class LudoBoardBuilder {
       origColor: colorHex,
       skin: 'classic'
     };
+    pawnGroup.scale.set(1.45, 1.45, 1.45);
 
     return pawnGroup;
   }
