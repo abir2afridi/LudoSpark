@@ -111,3 +111,95 @@ body, html {
   border-color: rgba(248, 113, 113, 0.8);
 }
 
+/* ==========================================================================
+   DESIGN TOKENS (single source of truth for palette, radii, type scale)
+   ========================================================================== */
+:root {
+  /* Surfaces */
+  --bg-deep: #02071E;
+  --bg-space-1: #061138;
+  --bg-space-2: #0C2366;
+  --menu-bg: radial-gradient(circle at 50% 30%, #0D3280 0%, #06184D 55%, #020B2A 100%);
+  --surface-900: #0F172A;
+  --surface-850: #060F24;
+  --surface-800: #131E3A;
+  --surface-700: #1E293B;
+  --surface-600: #334155;
+  --surface-500: #475569;
+
+  /* Text */
+  --text-primary: #F8FAFC;
+  --text-body: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-gold: #FBBF24;
+  --text-cream: #FEF3C7;
+  --text-sky: #BAE6FD;
+
+  /* Accents */
+  --accent-blue: #38BDF8;
+  --accent-blue-deep: #3B82F6;
+  --accent-royal: #2563EB;
+  --accent-gold: #F59E0B;
+  --accent-amber: #D97706;
+  --accent-green: #10B981;
+  --accent-red: #EF4444;
+  --accent-purple: #8B5CF6;
+  --accent-pink: #EC4899;
+  --accent-sky: #0EA5E9;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* Type scale (min readable body size is 11px) */
+  --font-xs: 9px;
+  --font-sm: 11px;
+  --font-md: 13px;
+  --font-lg: 15px;
+  --font-xl: 19px;
+
+  /* Touch targets */
+  --tap-min: 44px;
+}
+
+/* ==========================================================================
+   ACCESSIBILITY
+   ========================================================================== */
+:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE (small phones)
+   ========================================================================== */
+@media (max-width: 360px) {
+  .ludo-letter { font-size: 30px; padding: 2px 8px; }
+  .logo-text-king { font-size: 12px; letter-spacing: 3px; }
+  .hero-3d-graphic { gap: 6px; }
+  .mini-board-preview { width: 64px; height: 40px; }
+  .mode-card-3d { height: 72px; }
+  .mode-card-wide { height: 60px; }
+  .circle-feature-btn { width: 48px; height: 48px; }
+  .banner-tournament-btn { height: 44px; }
+  .banner-text { font-size: 12px; }
+  .items-cards-grid { gap: 8px; }
+  .item-preview-box { width: 72px; height: 72px; }
+  .nav-label { font-size: 10px; letter-spacing: 0; }
+  .modal-card { padding: 16px; border-radius: 20px; }
+  .streak-grid { gap: 4px; }
+}
+

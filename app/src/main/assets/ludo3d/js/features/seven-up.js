@@ -16,7 +16,7 @@
       category = next;
       [['bet-cat-down', 'down'], ['bet-cat-7', '7'], ['bet-cat-up', 'up']].forEach(function (pair) {
         const btn = App.byId(pair[0]);
-        if (btn) btn.style.background = (pair[1] === next) ? '#3B82F6' : '#1E293B';
+        if (btn) btn.classList.toggle('active', pair[1] === next);
       });
     };
 
@@ -24,7 +24,7 @@
       bet = amount;
       [['bet-amt-100', 100], ['bet-amt-500', 500], ['bet-amt-1000', 1000]].forEach(function (pair) {
         const btn = App.byId(pair[0]);
-        if (btn) btn.style.background = (pair[1] === amount) ? '#3B82F6' : '#1E293B';
+        if (btn) btn.classList.toggle('active', pair[1] === amount);
       });
     };
 

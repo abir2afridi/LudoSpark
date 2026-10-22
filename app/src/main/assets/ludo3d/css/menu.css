@@ -10,7 +10,10 @@
   padding: 8px 12px 16px 12px;
   position: relative;
   z-index: 20;
+  scrollbar-width: none;
 }
+
+.menu-tab-page::-webkit-scrollbar { display: none; }
 
 .menu-tab-page.active {
   display: flex;
@@ -92,7 +95,7 @@
 }
 
 .profile-level-badge .star-icon {
-  font-size: 8px;
+  font-size: 10px;
   color: #FEF3C7;
   margin-right: 1px;
 }
@@ -106,8 +109,8 @@
 
 /* Circle Icon Buttons (Gear, Mail, Shop) */
 .menu-header-circle-btn {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(180deg, #1E3A8A 0%, #0F172A 100%);
   border: 2px solid #38BDF8;
@@ -206,19 +209,31 @@
 }
 
 .res-plus-btn {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
   background: linear-gradient(180deg, #22C55E 0%, #15803D 100%);
   border: 1px solid #86EFAC;
   color: #FFFFFF;
   font-weight: 900;
-  font-size: 15px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+/* Expand hit area to 44px without changing visual size */
+.res-plus-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  transform: translate(-50%, -50%);
 }
 
 .res-plus-btn:active {
@@ -240,7 +255,7 @@
 .free-chest-badge {
   background: linear-gradient(180deg, #FBBF24 0%, #D97706 100%);
   color: #0F172A;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   padding: 1px 6px;
   border-radius: 8px;
@@ -424,13 +439,13 @@
   position: absolute;
   right: -4px;
   top: 18px;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(180deg, #1D4ED8 0%, #1E3A8A 100%);
   border: 2px solid #FBBF24;
   color: #FBBF24;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
   display: flex;
   align-items: center;
@@ -562,9 +577,9 @@
 .vs-badge {
   background: #E11D48;
   color: #FFFFFF;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 4px;
   border: 1px solid #FFE4E6;
 }
@@ -677,9 +692,9 @@
   left: 6px;
   background: #F59E0B;
   color: #0F172A;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 6px;
   border: 1px solid #FEF3C7;
 }
@@ -757,24 +772,26 @@
 
 .spin-center-text {
   position: absolute;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 900;
   color: #0F172A;
   background: #FEF3C7;
-  padding: 0 2px;
+  padding: 0 3px;
   border-radius: 3px;
 }
 
 .spin-status-label {
-  font-size: 10px;
+  font-size: 11px;
   color: #94A3B8;
   font-weight: 700;
 }
 
 /* 5. BOTTOM NAVIGATION FOOTER BAR */
 .menu-bottom-nav {
-  height: 54px;
+  min-height: 54px;
+  height: calc(54px + env(safe-area-inset-bottom, 0px));
   width: 100%;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: linear-gradient(180deg, #0369A1 0%, #0284C7 40%, #0369A1 100%);
   border-top: 2px solid #38BDF8;
   display: flex;
@@ -830,7 +847,7 @@
 }
 
 .nav-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.3px;
 }
@@ -847,29 +864,30 @@
 .nav-dot-badge {
   position: absolute;
   top: -2px;
-  right: -6px;
-  width: 13px;
-  height: 13px;
+  right: -7px;
+  width: 16px;
+  height: 16px;
   background: #EF4444;
   color: #FFFFFF;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #FFFFFF;
+  line-height: 1;
 }
 
 .nav-new-badge {
   position: absolute;
   top: -4px;
-  right: -12px;
+  right: -14px;
   background: #EC4899;
   color: #FFFFFF;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 900;
-  padding: 0 3px;
+  padding: 1px 4px;
   border-radius: 4px;
   border: 1px solid #FFFFFF;
 }

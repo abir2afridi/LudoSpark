@@ -22,7 +22,7 @@
 
       ['1', '2', '3', '4'].forEach(function (id) {
         const el = App.byId('select-avatar-' + id);
-        if (el) el.style.borderColor = (el.getAttribute('src') === src) ? '#3B82F6' : '#1E293B';
+        if (el) el.classList.toggle('active', el.getAttribute('src') === src);
       });
     };
 

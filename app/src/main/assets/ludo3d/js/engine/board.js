@@ -437,13 +437,11 @@ class LudoBoardBuilder {
   buildBoard(scene, theme = 'classic', mode = 'LUDO') {
     const group = new THREE.Group();
 
-    // 1. Luxury 3D Dining Tabletop beneath floating board
-    this.buildLuxuryTable(group, theme, mode);
-
-    const baseW = this.boardSize + 0.9;
-    const baseGeom = new THREE.BoxGeometry(baseW, 0.65, baseW);
+    // Sleek border frame matching board size
+    const baseW = this.boardSize + 0.3;
+    const baseGeom = new THREE.BoxGeometry(baseW, 0.35, baseW);
     const baseMat = new THREE.MeshStandardMaterial({
-      color: mode === 'SNAKE' ? 0x16A34A : (theme === 'wood' ? 0x5C3317 : (theme === 'cyber' ? 0x0F172A : 0x0088EE)),
+      color: mode === 'SNAKE' ? 0x16A34A : (theme === 'wood' ? 0x5C3317 : (theme === 'cyber' ? 0x0F172A : 0x0284C7)),
       metalness: 0.85,
       roughness: 0.25
     });
@@ -453,10 +451,10 @@ class LudoBoardBuilder {
     boardBase.castShadow = true;
     group.add(boardBase);
 
-    const neonGeom = new THREE.BoxGeometry(baseW + 0.08, 0.12, baseW + 0.08);
+    const neonGeom = new THREE.BoxGeometry(baseW + 0.06, 0.08, baseW + 0.06);
     const neonMat = new THREE.MeshBasicMaterial({ color: mode === 'SNAKE' ? 0xFBBF24 : 0x38BDF8 });
     const neonMesh = new THREE.Mesh(neonGeom, neonMat);
-    neonMesh.position.y = 0.26;
+    neonMesh.position.y = 0.16;
     group.add(neonMesh);
 
     const boardTex = mode === 'SNAKE' ? this.createSnakeLadderBoardTexture() : this.createBoardTexture(theme);
@@ -469,7 +467,7 @@ class LudoBoardBuilder {
     });
     this.surfaceMesh = new THREE.Mesh(surfaceGeom, surfaceMat);
     this.surfaceMesh.rotation.x = -Math.PI / 2;
-    this.surfaceMesh.position.y = 0.34;
+    this.surfaceMesh.position.y = 0.22;
     this.surfaceMesh.receiveShadow = true;
     group.add(this.surfaceMesh);
 

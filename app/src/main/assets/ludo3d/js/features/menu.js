@@ -13,7 +13,7 @@
       setup.players = count;
       ['opt-2p', 'opt-3p', 'opt-4p'].forEach(function (id, idx) {
         const btn = App.byId(id);
-        if (btn) btn.style.background = (idx + 2 === count) ? '#3B82F6' : '#1E293B';
+        if (btn) btn.classList.toggle('active', idx + 2 === count);
       });
     };
 
@@ -21,15 +21,15 @@
       setup.vsBot = value;
       const botBtn = App.byId('opt-vs-bot');
       const humanBtn = App.byId('opt-pass-play');
-      if (botBtn) botBtn.style.background = value ? '#3B82F6' : '#1E293B';
-      if (humanBtn) humanBtn.style.background = value ? '#1E293B' : '#3B82F6';
+      if (botBtn) botBtn.classList.toggle('active', value);
+      if (humanBtn) humanBtn.classList.toggle('active', !value);
     };
 
     const setDifficulty = function (level) {
       setup.difficulty = level;
       [['opt-easy', 'easy'], ['opt-normal', 'normal'], ['opt-hard', 'hard']].forEach(function (pair) {
         const btn = App.byId(pair[0]);
-        if (btn) btn.style.background = (pair[1] === level) ? '#3B82F6' : '#1E293B';
+        if (btn) btn.classList.toggle('active', pair[1] === level);
       });
     };
 

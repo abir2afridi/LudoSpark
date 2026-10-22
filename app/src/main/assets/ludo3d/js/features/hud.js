@@ -107,6 +107,14 @@
         const desc = App.byId('winner-desc');
         if (title) title.innerText = winnerName + ' Wins!';
         if (desc) desc.innerText = 'Congratulations on winning the match!';
+        const stats = data.stats || {};
+        const setStat = function (id, val) {
+          const el = App.byId(id);
+          if (el) el.innerText = (val === undefined || val === null) ? '—' : String(val);
+        };
+        setStat('stat-turns', stats.turns);
+        setStat('stat-sixes', stats.sixes);
+        setStat('stat-captures', stats.captures);
         App.setDisplay(App.dom.winnerModal, 'flex');
         App.wallet.addCoins(3000);
       }

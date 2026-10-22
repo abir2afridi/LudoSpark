@@ -21,7 +21,7 @@
       if (claim) {
         claim.disabled = claimed;
         claim.innerText = claimed ? 'CLAIMED TODAY' : "CLAIM TODAY'S REWARD!";
-        claim.style.background = claimed ? '#475569' : '#10B981';
+        claim.classList.toggle('btn-claimed', claimed);
       }
     };
 

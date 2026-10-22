@@ -19,12 +19,12 @@
         const el = App.byId(id);
         if (el) el.innerText = text;
       };
-      setLabel('setting-sound-label', window.soundEngine.enabled ? 'On' : 'Off');
       setLabel('setting-camera-label', game.currentPreset === 'top' ? 'Top-Down' : '3D View');
       const diff = game.difficulty || 'normal';
       setLabel('setting-diff-label', diff.charAt(0).toUpperCase() + diff.slice(1));
-      if (dom.soundBtn) dom.soundBtn.innerText = window.soundEngine.enabled ? '🔊' : '🔇';
-      if (dom.cameraBtn) dom.cameraBtn.innerText = game.currentPreset === 'top' ? '📷' : '🗺';
+      // Toggle state classes — never overwrite SVG icons via innerText.
+      if (dom.soundBtn) dom.soundBtn.classList.toggle('is-muted', !window.soundEngine.enabled);
+      if (dom.cameraBtn) dom.cameraBtn.classList.toggle('is-top-view', game.currentPreset === 'top');
     };
 
     const setSoundEnabled = function (on) {

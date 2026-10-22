@@ -61,11 +61,7 @@
     App.dom = {
       mainMenuEl: App.byId('main-menu'),
       uiOverlayEl: App.byId('ui-overlay'),
-      toastEl: App.byId('center-toast'),
       diceSlot: App.byId('dice-slot'),
-      diceDisplay: App.byId('dice-display'),
-      diceLabel: App.byId('dice-label'),
-      tokenSelectorBar: App.byId('token-selector-bar'),
       soundBtn: App.byId('btn-sound'),
       cameraBtn: App.byId('btn-camera'),
       rulesModal: App.byId('modal-rules'),

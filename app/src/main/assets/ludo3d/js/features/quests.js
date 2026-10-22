@@ -12,7 +12,7 @@
       const btn = App.byId('btn-claim-quest' + id);
       if (btn) {
         btn.innerText = 'Claimed ✓';
-        btn.style.background = '#475569';
+        btn.classList.add('btn-claimed');
         btn.disabled = true;
       }
 

@@ -55,6 +55,7 @@ class LudoGame {
     this.movableTokens = [];
     this.turnHistory = [];
     this.finishedPlayers = [];
+    this.stats = { turns: 0, sixes: 0, captures: 0 };
 
     // Track Coordinates (52 cells)
     this.trackCells = this.generateTrackCells();
@@ -665,6 +666,8 @@ class LudoGame {
   onDiceRollComplete(roll) {
     if (!this.gameActive) return;
     this.currentRoll = roll;
+    this.stats.turns++;
+    if (roll === 6) this.stats.sixes++;
 
     // Check consecutive sixes
     if (roll === 6) {
@@ -1127,6 +1130,7 @@ class LudoGame {
             if (this.characters) {
               this.characters.triggerEmote(opp.player, 'sad', 2.8);
             }
+            this.stats.captures++;
             this.addHistory(`${this.playerConfigs[token.player].name} captured ${this.playerConfigs[opp.player].name}'s token!`);
             this.animateTokenKnockoutReturn(opp);
           });
@@ -1381,7 +1385,12 @@ class LudoGame {
       finishedPlayers: this.finishedPlayers.map(p => this.playerConfigs[p].name),
       isGameOver: this.state === 'GAME_OVER',
       numPlayers: this.numPlayers,
-      playerProgress: this.playerConfigs.map((_, i) => this.getPlayerProgress(i))
+      playerProgress: this.playerConfigs.map((_, i) => this.getPlayerProgress(i)),
+      stats: {
+        turns: this.stats.turns,
+        sixes: this.stats.sixes,
+        captures: this.stats.captures
+      }
     };
 
     if (window.onGameStateChanged) {
@@ -1416,6 +1425,7 @@ class LudoGame {
     this.consecutiveSixes = 0;
     this.finishedPlayers = [];
     this.turnHistory = [];
+    this.stats = { turns: 0, sixes: 0, captures: 0 };
     this.diceHolder = -1;
     this.clearVictoryCelebration();
     this.clearMoveHighlights();
@@ -1470,6 +1480,7 @@ class LudoGame {
     this.currentRoll = 0;
     this.finishedPlayers = [];
     this.turnHistory = [];
+    this.stats = { turns: 0, sixes: 0, captures: 0 };
     this.clearMoveHighlights();
     this.fitBoardToScreen();
     this.addHistory(`🐍 3D Snake & Ladder game started with ${numPlayers} players!`);
@@ -1503,7 +1514,8 @@ class LudoGame {
         currentRoll: this.currentRoll,
         consecutiveSixes: this.consecutiveSixes,
         finishedPlayers: this.finishedPlayers,
-        tokenSteps: this.tokens.map(t => t.step)
+        tokenSteps: this.tokens.map(t => t.step),
+        stats: this.stats
       };
       localStorage.setItem('ludoSparkSave', JSON.stringify(data));
     } catch (e) {
@@ -1555,6 +1567,7 @@ class LudoGame {
       this.consecutiveSixes = data.consecutiveSixes || 0;
       this.finishedPlayers = Array.isArray(data.finishedPlayers) ? data.finishedPlayers : [];
       this.turnHistory = [];
+      this.stats = data.stats || { turns: 0, sixes: 0, captures: 0 };
       this.diceHolder = -1;
       this.clearMoveHighlights();
 

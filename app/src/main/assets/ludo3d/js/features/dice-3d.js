@@ -1,6 +1,6 @@
 /**
  * Dedicated 3D UI Dice Module for Ludo Spark.
- * Renders a full 3D WebGL rotating/tumbling dice cube inside the player corner HUD.
+ * Renders a full 3D WebGL tumbling dice cube inside the player corner HUD.
  */
 class UIDice3D {
   constructor(containerId = 'dice-slot') {
@@ -79,7 +79,6 @@ class UIDice3D {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
-    const ctx = canvas.getContext('2d');
 
     const getFaceTexture = (val, bgHex, dotHex) => {
       const cvs = document.createElement('canvas');
@@ -145,21 +144,22 @@ class UIDice3D {
 
     if (this.isRolling) {
       const elapsed = performance.now() - this.rollStartTime;
-      const duration = 600;
+      const duration = 650;
       const t = Math.min(1.0, elapsed / duration);
 
       if (t < 1.0) {
-        this.diceMesh.rotation.x += 0.35;
-        this.diceMesh.rotation.y += 0.45;
-        this.diceMesh.rotation.z += 0.25;
+        this.diceMesh.rotation.x += 0.45;
+        this.diceMesh.rotation.y += 0.55;
+        this.diceMesh.rotation.z += 0.35;
       } else {
         this.isRolling = false;
         const targetRot = this.getFaceRotation(this.targetFace);
         this.diceMesh.rotation.set(targetRot.x, targetRot.y, targetRot.z);
       }
     } else {
-      // Idle gentle float rotation
-      this.diceMesh.rotation.y += 0.015;
+      // Stay firmly facing the target rolled face (1..6) in perfect sync with the board
+      const targetRot = this.getFaceRotation(this.targetFace);
+      this.diceMesh.rotation.set(targetRot.x, targetRot.y, targetRot.z);
     }
 
     this.renderer.render(this.scene, this.camera);

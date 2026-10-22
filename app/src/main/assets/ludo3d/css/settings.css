@@ -1,79 +1,8 @@
-/* Settings + System Logs full-screen pages */
-.settings-page {
-  align-items: stretch;
-  justify-content: stretch;
-  padding: 0 !important;
-  background: radial-gradient(circle at 50% 30%, #0D3280 0%, #06184D 55%, #020B2A 100%) !important;
-}
-
-.settings-page .modal-card {
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  border-radius: 0 !important;
-  border: none !important;
-  margin: 0 !important;
-  padding: 16px 20px 24px 20px !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-start !important;
-  gap: 12px;
-  overflow-y: auto !important;
-}
+/* Settings + System Logs pages share the .fullscreen-page shell (modals.css).
+   Only page-specific log UI lives here. Ribbon header moved to components.css. */
 
 #modal-menu-settings #btn-setting-exit {
   margin-top: auto;
-}
-
-.settings-page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-shrink: 0;
-  padding-bottom: 8px;
-  border-bottom: 1.5px solid rgba(56, 189, 248, 0.3);
-  margin-bottom: 12px;
-}
-
-.settings-back-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 2px solid #FEF3C7;
-  background: linear-gradient(180deg, #F59E0B 0%, #D97706 55%, #B45309 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.settings-back-btn:active {
-  transform: scale(0.90);
-}
-
-.modal-ribbon-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 6px 16px;
-  border-radius: 12px;
-  border: 1.5px solid rgba(251, 191, 36, 0.65);
-  background: linear-gradient(180deg, #1E3A8A 0%, #0F172A 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.modal-ribbon-title {
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  color: #FEF3C7;
 }
 
 #system-logs-page .modal-card {
@@ -91,9 +20,9 @@
 .logs-pill {
   flex: 1;
   min-width: 70px;
-  padding: 5px 8px;
+  padding: 6px 8px;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: var(--font-sm);
   font-weight: 900;
   letter-spacing: 0.4px;
   text-align: center;
@@ -120,13 +49,14 @@
 
 .log-filter-btn {
   flex: 1;
-  padding: 5px 4px;
+  padding: 10px 4px;
+  min-height: 40px;
   border-radius: 9px;
   border: 1px solid rgba(148, 163, 184, 0.3);
   background: #131E3A;
   color: #94A3B8;
   font-family: inherit;
-  font-size: 9px;
+  font-size: var(--font-sm);
   font-weight: 900;
   cursor: pointer;
 }
@@ -147,8 +77,9 @@
 .logs-actions .modal-btn {
   width: 100%;
   margin: 0;
-  padding: 8px 6px;
-  font-size: 11px;
+  padding: 10px 6px;
+  min-height: 40px;
+  font-size: var(--font-sm);
 }
 
 .system-logs-list {
@@ -184,7 +115,7 @@
 .log-meta {
   margin-bottom: 3px;
   color: #94A3B8;
-  font-size: 9px;
+  font-size: var(--font-sm);
   font-weight: 800;
   letter-spacing: 0.3px;
 }
@@ -202,7 +133,7 @@
   max-height: 120px;
   overflow: auto;
   color: #FCA5A5;
-  font-size: 9px;
+  font-size: var(--font-sm);
   line-height: 1.35;
   white-space: pre-wrap;
   word-break: break-word;
